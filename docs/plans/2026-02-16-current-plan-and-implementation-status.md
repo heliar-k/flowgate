@@ -58,6 +58,118 @@
 2. 仅校验单测与静态命令可运行性，不引入外部服务依赖。  
 3. 在 README 标注 CI 覆盖范围与限制。
 
+## 建议新增任务（补充）
+
+### Task 4: 配置契约与迁移策略（P0）
+
+**Goal:** 为配置演进建立兼容机制，避免字段变更导致运行中断。  
+
+**Files:**
+- Modify: `src/llm_router/config.py`
+- Modify: `config/examples/routertool.yaml`
+- Modify: `README.md`
+
+**Steps:**
+1. 增加 `config_version` 字段校验与默认策略。  
+2. 增加最小迁移逻辑（例如字段重命名兼容层）。  
+3. 在 README 增加“配置升级说明”。
+
+### Task 5: 健康检查语义标准化（P0）
+
+**Goal:** 统一 `liveness/readiness` 语义与失败处理。  
+
+**Files:**
+- Modify: `src/llm_router/health.py`
+- Modify: `src/llm_router/cli.py`
+- Modify: `config/examples/routertool.yaml`
+- Test: `tests/test_cli.py`
+
+**Steps:**
+1. 明确定义并实现健康检查策略（服务存活 vs 服务可用）。  
+2. 统一 CLI `health` 输出字段和非 200 场景判定。  
+3. 覆盖关键分支测试并更新示例配置。
+
+### Task 6: 可观测性基线（P0）
+
+**Goal:** 提供可追踪的运行日志最小集合。  
+
+**Files:**
+- Modify: `src/llm_router/process.py`
+- Modify: `src/llm_router/cli.py`
+- Modify: `README.md`
+
+**Steps:**
+1. 增加统一日志字段（service/profile/provider/result）。  
+2. 记录关键事件（启动、重启、失败原因）。  
+3. 在 README 增加日志排查指引。
+
+### Task 7: 故障排查 Runbook（P1）
+
+**Goal:** 将常见故障处理流程文档化。  
+
+**Files:**
+- Create: `docs/runbook-troubleshooting.md`
+- Modify: `README.md`
+
+**Steps:**
+1. 整理常见场景（端口冲突、OAuth 失败、权限错误、依赖缺失）。  
+2. 给出可直接执行的诊断命令与预期现象。  
+3. 在 README 添加入口链接。
+
+### Task 8: 统一环境自检命令（P1）
+
+**Goal:** 一条命令完成运行前检查。  
+
+**Files:**
+- Create: `scripts/doctor.sh`
+- Modify: `README.md`
+- Test: `tests/test_cli.py`
+
+**Steps:**
+1. 检查配置文件、运行目录、二进制、权限与依赖组。  
+2. 输出明确的 pass/fail 与修复建议。  
+3. 在 README 增加使用说明。
+
+### Task 9: 测试分层与覆盖目标（P1）
+
+**Goal:** 明确单元/集成/冒烟边界与最低覆盖要求。  
+
+**Files:**
+- Modify: `README.md`
+- Modify: `docs/plans/2026-02-16-current-plan-and-implementation-status.md`
+
+**Steps:**
+1. 定义测试分层及对应命令。  
+2. 标注关键路径必须覆盖项（bootstrap/profile/auth/service）。  
+3. 作为 PR 验收基线写入文档。
+
+### Task 10: 发布与回滚流程（P2）
+
+**Goal:** 标准化版本发布与异常回退。  
+
+**Files:**
+- Create: `docs/release-and-rollback.md`
+- Modify: `README.md`
+
+**Steps:**
+1. 定义发布流程（版本号、tag、变更说明）。  
+2. 定义回滚流程（配置回滚、runtime 回滚、历史注意事项）。  
+3. 增加执行 checklist。
+
+### Task 11: 安全基线补充（P2）
+
+**Goal:** 降低凭证泄露与权限配置风险。  
+
+**Files:**
+- Modify: `.gitignore`
+- Create: `scripts/security_check.sh`
+- Modify: `README.md`
+
+**Steps:**
+1. 增加敏感文件与权限检查脚本。  
+2. 强化文档中的密钥与 auth 文件管理要求。  
+3. 将安全检查纳入日常执行建议（本地或 CI）。
+
 ## 风险与注意事项
 
 - 历史 commit message 已重写，本地 hash 与旧远端历史不兼容；推送需 `--force-with-lease`。  
