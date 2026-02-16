@@ -144,3 +144,11 @@ uv run python -m unittest discover -s tests -v
 
 - Config parser accepts YAML via PyYAML when installed, and always accepts JSON (JSON is valid YAML subset).
 - In this repo example, sample config is stored in JSON-compatible YAML to avoid hard dependency for parsing during bootstrap.
+
+## Config upgrade notes
+
+- Current schema version is `config_version: 2` (recommended to set explicitly in local config).
+- If omitted, parser defaults to version `2`.
+- Compatibility migration is built in for common legacy keys:
+  - top-level `secrets` -> `secret_files`
+  - `services.cliproxyapi` -> `services.cliproxyapi_plus`

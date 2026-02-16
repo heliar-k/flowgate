@@ -10,6 +10,7 @@ class ConfigError(ValueError):
 
 
 _ALLOWED_TOP_LEVEL_KEYS = {
+    "config_version",
     "paths",
     "services",
     "litellm_base",
@@ -24,6 +25,9 @@ _REQUIRED_TOP_LEVEL_KEYS = {
     "litellm_base",
     "profiles",
 }
+
+_LATEST_CONFIG_VERSION = 2
+_SUPPORTED_CONFIG_VERSIONS = {1, 2}
 
 
 def _parse_yaml_like(path: Path) -> dict[str, Any]:
@@ -90,9 +94,34 @@ def _validate_oauth(oauth: dict[str, Any]) -> None:
             raise ConfigError(f"oauth.{name} must be a mapping/object")
 
 
+def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(data)
+
+    version_raw = normalized.get("config_version", _LATEST_CONFIG_VERSION)
+    if not isinstance(version_raw, int):
+        raise ConfigError("config_version must be an integer")
+    if version_raw not in _SUPPORTED_CONFIG_VERSIONS:
+        versions = ", ".join(str(v) for v in sorted(_SUPPORTED_CONFIG_VERSIONS))
+        raise ConfigError(f"Unsupported config_version={version_raw}; supported versions: {versions}")
+    normalized["config_version"] = version_raw
+
+    if "secret_files" not in normalized and "secrets" in normalized:
+        normalized["secret_files"] = normalized["secrets"]
+    normalized.pop("secrets", None)
+
+    services_raw = normalized.get("services")
+    if isinstance(services_raw, dict):
+        services = dict(services_raw)
+        if "cliproxyapi_plus" not in services and "cliproxyapi" in services:
+            services["cliproxyapi_plus"] = services.pop("cliproxyapi")
+        normalized["services"] = services
+
+    return normalized
+
+
 def load_router_config(path: str | Path) -> dict[str, Any]:
     path_obj = Path(path)
-    data = _parse_yaml_like(path_obj)
+    data = _normalize_legacy_fields(_parse_yaml_like(path_obj))
 
     unknown = sorted(set(data.keys()) - _ALLOWED_TOP_LEVEL_KEYS)
     if unknown:
@@ -120,6 +149,7 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
         raise ConfigError("secret_files must be a list of string paths")
 
     return {
+        "config_version": data["config_version"],
         "paths": paths,
         "services": services,
         "litellm_base": litellm_base,

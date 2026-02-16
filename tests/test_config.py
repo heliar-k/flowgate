@@ -73,6 +73,33 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaises(ConfigError):
             load_router_config(path)
 
+    def test_defaults_config_version_to_2(self):
+        path = self._write_config(self._base_config())
+        cfg = load_router_config(path)
+        self.assertEqual(cfg["config_version"], 2)
+
+    def test_rejects_unsupported_config_version(self):
+        data = self._base_config()
+        data["config_version"] = 99
+        path = self._write_config(data)
+
+        with self.assertRaises(ConfigError):
+            load_router_config(path)
+
+    def test_migrates_legacy_secrets_key(self):
+        data = self._base_config()
+        data["secrets"] = data.pop("secret_files")
+        path = self._write_config(data)
+        cfg = load_router_config(path)
+        self.assertEqual(cfg["secret_files"], ["auth/codex.json", "auth/copilot.json"])
+
+    def test_migrates_legacy_cliproxyapi_service_name(self):
+        data = self._base_config()
+        data["services"]["cliproxyapi"] = data["services"].pop("cliproxyapi_plus")
+        path = self._write_config(data)
+        cfg = load_router_config(path)
+        self.assertIn("cliproxyapi_plus", cfg["services"])
+
     def test_merge_dicts_deep(self):
         base = {
             "litellm_settings": {"num_retries": 1, "cooldown_time": 10},
