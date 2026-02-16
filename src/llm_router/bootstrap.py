@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import platform
 import tarfile
 import zipfile
@@ -82,17 +83,30 @@ def _http_get_bytes(url: str) -> bytes:
 
 def _extract_binary_from_bytes(data: bytes, asset_name: str) -> bytes:
     lower = asset_name.lower()
+    preferred_basenames = {
+        "cliproxyapiplus",
+        "cliproxyapi",
+        "cliproxyapiplus.exe",
+        "cliproxyapi.exe",
+        "cli-proxy-api-plus",
+        "cli-proxy-api-plus.exe",
+    }
 
     if lower.endswith(".tar.gz"):
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
             members = [m for m in tf.getmembers() if m.isfile()]
             for member in members:
                 base = Path(member.name).name.lower()
-                if base in {"cliproxyapiplus", "cliproxyapi"}:
+                if base in preferred_basenames:
                     extracted = tf.extractfile(member)
                     if extracted is None:
                         continue
                     return extracted.read()
+            for member in members:
+                if member.mode & 0o111:
+                    extracted = tf.extractfile(member)
+                    if extracted is not None:
+                        return extracted.read()
             if members:
                 extracted = tf.extractfile(members[0])
                 if extracted is not None:
@@ -103,7 +117,11 @@ def _extract_binary_from_bytes(data: bytes, asset_name: str) -> bytes:
             names = [n for n in zf.namelist() if not n.endswith("/")]
             for name in names:
                 base = Path(name).name.lower()
-                if base in {"cliproxyapiplus", "cliproxyapi", "cliproxyapiplus.exe", "cliproxyapi.exe"}:
+                if base in preferred_basenames:
+                    return zf.read(name)
+            for name in names:
+                base = Path(name).name.lower()
+                if "cli-proxy-api-plus" in base or "cliproxyapi" in base:
                     return zf.read(name)
             if names:
                 return zf.read(names[0])
@@ -158,3 +176,31 @@ def prepare_litellm_runner(bin_dir: str | Path, *, version: str = DEFAULT_LITELL
     runner.write_text(script, encoding="utf-8")
     runner.chmod(0o755)
     return runner
+
+
+def validate_cliproxy_binary(path: str | Path) -> bool:
+    target = Path(path)
+    if not target.exists() or not target.is_file():
+        return False
+    if target.stat().st_size < 1_000_000:
+        return False
+    if not os.access(target, os.X_OK):
+        return False
+    return True
+
+
+def validate_litellm_runner(path: str | Path, *, version: str = DEFAULT_LITELLM_VERSION) -> bool:
+    target = Path(path)
+    if not target.exists() or not target.is_file():
+        return False
+    if not os.access(target, os.X_OK):
+        return False
+
+    content = target.read_text(encoding="utf-8")
+    if "uvx --from" not in content:
+        return False
+    if f"litellm=={version}" not in content:
+        return False
+    if 'litellm "$@"' not in content:
+        return False
+    return True

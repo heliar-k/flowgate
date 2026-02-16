@@ -149,6 +149,8 @@ class CLITests(unittest.TestCase):
                 "llm_router.cli.prepare_litellm_runner",
                 return_value=Path("/tmp/runtime/bin/litellm"),
             ) as litellm_prepare,
+            mock.patch("llm_router.cli.validate_cliproxy_binary", return_value=True) as cliproxy_validate,
+            mock.patch("llm_router.cli.validate_litellm_runner", return_value=True) as litellm_validate,
         ):
             code = run_cli(["--config", str(self.cfg), "bootstrap", "download"], stdout=out)
         self.assertEqual(code, 0)
@@ -156,6 +158,8 @@ class CLITests(unittest.TestCase):
         self.assertIn("litellm=/tmp/runtime/bin/litellm", out.getvalue())
         cliproxy_download.assert_called_once()
         litellm_prepare.assert_called_once()
+        cliproxy_validate.assert_called_once()
+        litellm_validate.assert_called_once()
 
 
 if __name__ == "__main__":

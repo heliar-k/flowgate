@@ -13,6 +13,8 @@ from .bootstrap import (
     DEFAULT_LITELLM_VERSION,
     download_cliproxyapi_plus,
     prepare_litellm_runner,
+    validate_cliproxy_binary,
+    validate_litellm_runner,
 )
 from .config import ConfigError, load_router_config
 from .health import check_health_url
@@ -221,6 +223,10 @@ def _cmd_bootstrap_download(
             repo=cliproxy_repo,
         )
         litellm = prepare_litellm_runner(runtime_bin_dir, version=litellm_version)
+        if not validate_cliproxy_binary(cliproxy):
+            raise RuntimeError(f"Invalid CLIProxyAPIPlus binary downloaded: {cliproxy}")
+        if not validate_litellm_runner(litellm, version=litellm_version):
+            raise RuntimeError(f"Invalid litellm runner generated: {litellm}")
     except Exception as exc:  # noqa: BLE001
         print(f"bootstrap failed: {exc}", file=stderr)
         return 1
