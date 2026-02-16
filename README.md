@@ -156,6 +156,14 @@ uv run llm-router --config config/routertool.yaml profile set reliability
 uv run python -m unittest discover -s tests -v
 ```
 
+## Troubleshooting
+
+- See `docs/runbook-troubleshooting.md` for common issues and direct repair commands.
+- Start from:
+  - `uv run llm-router --config config/routertool.yaml status`
+  - `uv run llm-router --config config/routertool.yaml health`
+  - `tail -n 50 .router/runtime/events.log`
+
 ## Notes
 
 - Config parser accepts YAML via PyYAML when installed, and always accepts JSON (JSON is valid YAML subset).
