@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from llm_router.cli import run_cli
+from llm_router.cli import _build_parser, run_cli
 
 
 def write_config(path: Path) -> None:
@@ -217,6 +217,12 @@ class CLITests(unittest.TestCase):
         litellm_prepare.assert_called_once()
         cliproxy_validate.assert_called_once()
         litellm_validate.assert_called_once()
+
+    def test_bootstrap_download_rejects_litellm_version_flag(self):
+        parser = _build_parser()
+        with self.assertRaises(SystemExit) as ctx:
+            parser.parse_args(["bootstrap", "download", "--litellm-version", "1.2.3"])
+        self.assertNotEqual(ctx.exception.code, 0)
 
 
 if __name__ == "__main__":

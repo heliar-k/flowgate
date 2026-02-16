@@ -10,7 +10,6 @@ from typing import Any, Iterable, TextIO
 from .bootstrap import (
     DEFAULT_CLIPROXY_REPO,
     DEFAULT_CLIPROXY_VERSION,
-    DEFAULT_LITELLM_VERSION,
     download_cliproxyapi_plus,
     prepare_litellm_runner,
     validate_cliproxy_binary,
@@ -248,7 +247,6 @@ def _cmd_bootstrap_download(
     *,
     cliproxy_version: str,
     cliproxy_repo: str,
-    litellm_version: str,
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
@@ -259,10 +257,10 @@ def _cmd_bootstrap_download(
             version=cliproxy_version,
             repo=cliproxy_repo,
         )
-        litellm = prepare_litellm_runner(runtime_bin_dir, version=litellm_version)
+        litellm = prepare_litellm_runner(runtime_bin_dir)
         if not validate_cliproxy_binary(cliproxy):
             raise RuntimeError(f"Invalid CLIProxyAPIPlus binary downloaded: {cliproxy}")
-        if not validate_litellm_runner(litellm, version=litellm_version):
+        if not validate_litellm_runner(litellm):
             raise RuntimeError(f"Invalid litellm runner generated: {litellm}")
     except Exception as exc:  # noqa: BLE001
         print(f"bootstrap failed: {exc}", file=stderr)
@@ -312,7 +310,6 @@ def _build_parser() -> argparse.ArgumentParser:
     download = bootstrap_sub.add_parser("download")
     download.add_argument("--cliproxy-version", default=DEFAULT_CLIPROXY_VERSION)
     download.add_argument("--cliproxy-repo", default=DEFAULT_CLIPROXY_REPO)
-    download.add_argument("--litellm-version", default=DEFAULT_LITELLM_VERSION)
 
     return parser
 
@@ -378,7 +375,6 @@ def run_cli(argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO
                 config,
                 cliproxy_version=args.cliproxy_version,
                 cliproxy_repo=args.cliproxy_repo,
-                litellm_version=args.litellm_version,
                 stdout=stdout,
                 stderr=stderr,
             )
