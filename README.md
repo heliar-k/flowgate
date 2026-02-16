@@ -164,6 +164,27 @@ uv run llm-router --config config/routertool.yaml profile set reliability
 uv run python -m unittest discover -s tests -v
 ```
 
+## Testing strategy
+
+Test layers:
+- Unit tests: core modules and pure logic (`tests/test_config.py`, `tests/test_process.py`, `tests/test_security.py`).
+- Integration tests: cross-module behavior with temp runtime/config (`tests/test_cli.py`, `tests/test_integration_profile_switch.py`).
+- Local smoke checks: operator flow validation on a real runtime (`doctor`, `profile set`, `service start`, `health`, `service stop`).
+
+Recommended commands:
+```bash
+# unit + integration (CI baseline)
+uv run python -m unittest discover -s tests -v
+
+# optional coverage report (local quality gate)
+uv run pytest --cov=src/llm_router --cov-report=term-missing
+```
+
+Coverage/acceptance baseline:
+- PRs must include or update tests for affected behavior.
+- Critical paths (`bootstrap`, `profile`, `auth`, `service`, `health`) must each keep at least one automated regression test.
+- For non-trivial runtime behavior changes, include one local smoke validation command/result in PR notes.
+
 ## Troubleshooting
 
 - See `docs/runbook-troubleshooting.md` for common issues and direct repair commands.
