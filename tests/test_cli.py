@@ -160,6 +160,41 @@ class CLITests(unittest.TestCase):
         self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
         importer.assert_called_once()
 
+    def test_auth_codex_import_headless_default_dest_follows_runtime_root(self):
+        cfg_dir = self.root / "config"
+        cfg_dir.mkdir(parents=True, exist_ok=True)
+        cfg_path = cfg_dir / "routertool.yaml"
+
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        data["paths"]["runtime_dir"] = "../.router/runtime"
+        data["paths"]["active_config"] = "../.router/runtime/litellm.active.yaml"
+        data["paths"]["state_file"] = "../.router/runtime/state.json"
+        data["paths"]["log_file"] = "../.router/logs/routerctl.log"
+        cfg_path.write_text(json.dumps(data), encoding="utf-8")
+
+        out = io.StringIO()
+        with mock.patch(
+            "llm_router.cli.import_codex_headless_auth",
+            return_value=Path("/tmp/auths/codex-headless-import.json"),
+        ) as importer:
+            code = run_cli(
+                [
+                    "--config",
+                    str(cfg_path),
+                    "auth",
+                    "codex",
+                    "import-headless",
+                    "--source",
+                    "/tmp/codex-auth.json",
+                ],
+                stdout=out,
+            )
+
+        self.assertEqual(code, 0)
+        self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
+        expected_dest = str((self.root / ".router" / "auths").resolve())
+        importer.assert_called_once_with("/tmp/codex-auth.json", expected_dest)
+
     def test_bootstrap_download(self):
         out = io.StringIO()
         with (

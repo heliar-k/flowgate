@@ -25,9 +25,11 @@ htmlcov/
 .uv-cache/
 
 # Local runtime artifacts
+.router/
 runtime/
 logs/
 auth/
+auths/
 *.log
 *.pid
 

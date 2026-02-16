@@ -1,6 +1,6 @@
 host: "127.0.0.1"
 port: 8317
-auth-dir: "./auths"
+auth-dir: "./.router/auths"
 api-keys:
   - "sk-local-test"
 remote-management:

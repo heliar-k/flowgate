@@ -71,6 +71,15 @@ def _read_state_file(state_path: Path) -> dict[str, Any]:
         return {}
 
 
+def _default_auth_dir(config: dict[str, Any]) -> str:
+    runtime_dir = config.get("paths", {}).get("runtime_dir")
+    if isinstance(runtime_dir, str) and runtime_dir:
+        return str((Path(runtime_dir).resolve().parent / "auths").resolve())
+
+    config_dir = Path(config.get("_meta", {}).get("config_dir", os.getcwd()))
+    return str((config_dir / "auths").resolve())
+
+
 def _service_names(config: dict[str, Any], target: str) -> list[str]:
     if target == "all":
         return list(config["services"].keys())
@@ -189,8 +198,7 @@ def _cmd_auth_codex_import_headless(
 ) -> int:
     resolved_dest = dest_dir
     if not resolved_dest:
-        config_dir = Path(config.get("_meta", {}).get("config_dir", os.getcwd()))
-        resolved_dest = str((config_dir / "auths").resolve())
+        resolved_dest = _default_auth_dir(config)
 
     try:
         saved = import_codex_headless_auth(source, resolved_dest)

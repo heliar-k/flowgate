@@ -32,6 +32,8 @@ cp config/examples/routertool.yaml config/routertool.yaml
 cp config/examples/cliproxyapi.yaml config/cliproxyapi.yaml
 ```
 
+Generated runtime files are kept under `./.router/` (not inside `config/`).
+
 2. Set runtime secrets:
 
 ```bash
@@ -64,12 +66,20 @@ uv run llm-router --config config/routertool.yaml status
 uv run llm-router --config config/routertool.yaml health
 ```
 
+## Directory layout
+
+- `src/llm_router/`: CLI and core modules
+- `tests/`: unit/integration tests
+- `config/examples/`: tracked templates
+- `config/routertool.yaml`, `config/cliproxyapi.yaml`: local runtime config (ignored)
+- `.router/`: runtime binaries, active profile, pids, logs, auth artifacts (ignored)
+
 ## Runtime bootstrap
 
 `bootstrap download` will:
 
-- Download a platform-matched `CLIProxyAPIPlus` release binary into `runtime/bin/CLIProxyAPIPlus`
-- Generate a pinned `litellm` runner script at `runtime/bin/litellm` (using `uvx --from litellm==<version>`)
+- Download a platform-matched `CLIProxyAPIPlus` release binary into `.router/runtime/bin/CLIProxyAPIPlus`
+- Generate a pinned `litellm` runner script at `.router/runtime/bin/litellm` (using `uvx --from litellm==<version>`)
 
 Custom versions:
 
@@ -102,8 +112,10 @@ Custom source or destination:
 ```bash
 uv run llm-router --config config/routertool.yaml auth codex import-headless \
   --source ~/.codex/auth.json \
-  --dest-dir ./config/auths
+  --dest-dir ./.router/auths
 ```
+
+If `--dest-dir` is omitted, the default is `<runtime_dir parent>/auths` (example: `./.router/auths`).
 
 ### GitHub Copilot OAuth
 

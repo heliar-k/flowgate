@@ -1,9 +1,9 @@
 {
   "paths": {
-    "runtime_dir": "runtime",
-    "active_config": "runtime/litellm.active.yaml",
-    "state_file": "runtime/state.json",
-    "log_file": "logs/routerctl.log"
+    "runtime_dir": "../.router/runtime",
+    "active_config": "../.router/runtime/litellm.active.yaml",
+    "state_file": "../.router/runtime/state.json",
+    "log_file": "../.router/logs/routerctl.log"
   },
   "services": {
     "litellm": {
@@ -11,8 +11,8 @@
       "port": 4000,
       "health_path": "/healthz",
       "command": {
-        "cwd": ".",
-        "args": ["runtime/bin/litellm", "--config", "runtime/litellm.active.yaml"]
+        "cwd": "..",
+        "args": [".router/runtime/bin/litellm", "--config", ".router/runtime/litellm.active.yaml"]
       }
     },
     "cliproxyapi_plus": {
@@ -20,8 +20,8 @@
       "port": 8317,
       "health_path": "/healthz",
       "command": {
-        "cwd": ".",
-        "args": ["runtime/bin/CLIProxyAPIPlus", "-config", "cliproxyapi.yaml"]
+        "cwd": "..",
+        "args": [".router/runtime/bin/CLIProxyAPIPlus", "-config", "config/cliproxyapi.yaml"]
       }
     }
   },
@@ -92,7 +92,7 @@
     }
   },
   "secret_files": [
-    "auth/codex.json",
-    "auth/copilot.json"
+    "../.router/auths/codex.json",
+    "../.router/auths/copilot.json"
   ]
 }
