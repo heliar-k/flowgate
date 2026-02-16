@@ -81,6 +81,20 @@ class CLITests(unittest.TestCase):
         text = out.getvalue()
         self.assertIn("current_profile=reliability", text)
 
+    def test_profile_set_restarts_litellm_when_running(self):
+        out = io.StringIO()
+        with mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls:
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.return_value = True
+            supervisor.restart.return_value = 4321
+
+            code = run_cli(["--config", str(self.cfg), "profile", "set", "balanced"], stdout=out)
+
+        self.assertEqual(code, 0)
+        supervisor.is_running.assert_called_once_with("litellm")
+        supervisor.restart.assert_called_once()
+        self.assertIn("litellm:restarted pid=4321", out.getvalue())
+
     def test_health_command(self):
         out = io.StringIO()
         with mock.patch(
@@ -92,6 +106,25 @@ class CLITests(unittest.TestCase):
         text = out.getvalue()
         self.assertIn("litellm:ok", text)
         self.assertIn("cliproxyapi_plus:fail", text)
+
+    def test_service_start_stop_all(self):
+        out = io.StringIO()
+        with mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls:
+            supervisor = supervisor_cls.return_value
+            supervisor.start.side_effect = [111, 222]
+            code = run_cli(["--config", str(self.cfg), "service", "start", "all"], stdout=out)
+        self.assertEqual(code, 0)
+        self.assertIn("litellm:started pid=111", out.getvalue())
+        self.assertIn("cliproxyapi_plus:started pid=222", out.getvalue())
+
+        out = io.StringIO()
+        with mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls:
+            supervisor = supervisor_cls.return_value
+            supervisor.stop.side_effect = [True, True]
+            code = run_cli(["--config", str(self.cfg), "service", "stop", "all"], stdout=out)
+        self.assertEqual(code, 0)
+        self.assertIn("litellm:stopped", out.getvalue())
+        self.assertIn("cliproxyapi_plus:stopped", out.getvalue())
 
     def test_auth_login(self):
         out = io.StringIO()

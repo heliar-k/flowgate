@@ -80,6 +80,15 @@ def _cmd_profile_set(config: dict[str, Any], profile: str, *, stdout: TextIO, st
     print(f"profile={profile}", file=stdout)
     print(f"active_config={active_path}", file=stdout)
     print(f"state_file={state_path}", file=stdout)
+
+    # If LiteLLM is already running, apply the profile switch immediately by restart.
+    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
+    if "litellm" in config["services"] and supervisor.is_running("litellm"):
+        service = config["services"]["litellm"]
+        command = service["command"]["args"]
+        cwd = service["command"].get("cwd") or os.getcwd()
+        pid = supervisor.restart("litellm", command, cwd=cwd)
+        print(f"litellm:restarted pid={pid}", file=stdout)
     return 0
 
 
