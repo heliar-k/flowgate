@@ -24,41 +24,22 @@
 Latest verification:
 - Command: `UV_CACHE_DIR=.uv-cache uv run python -m unittest discover -s tests -v`
 - Result: `Ran 35 tests ... OK`
+- Command: `UV_CACHE_DIR=.uv-cache uv run llm-router --help`
+- Result: `usage: llm-router ...`
 
-## Open Items (Next)
+## Next Iteration Items (Completed)
 
-### Task A: Local Smoke Script (P1)
+### Task A: Local Smoke Script (P1) ✅
 
-**Files:**
-- Create: `scripts/smoke_local.sh`
-- Modify: `README.md`
+**Implemented:** `scripts/smoke_local.sh` + README 最小验证路径说明。
 
-**Steps:**
-1. 脚本化 `bootstrap -> profile set -> service start -> readiness check -> service stop`。
-2. 增加超时等待、端口占用提示、失败时保留诊断信息。
-3. README 增加“最小验证路径”。
+### Task B: CI Baseline (P1) ✅
 
-### Task B: CI Baseline (P1)
+**Implemented:** `.github/workflows/ci.yml` + README CI 覆盖范围说明。
 
-**Files:**
-- Create: `.github/workflows/ci.yml`
-- Modify: `README.md`
+### Task C: CLI Naming Consistency (P1) ✅
 
-**Steps:**
-1. 在 CI 中执行 `uv sync --group runtime --group test`。
-2. 执行 `uv run python -m unittest discover -s tests -v`。
-3. 加入轻量 CLI 可运行性检查（不依赖外部服务）。
-
-### Task C: CLI Naming Consistency (P1)
-
-**Files:**
-- Modify: `src/llm_router/cli.py`
-- Modify: `README.md` (if needed)
-
-**Steps:**
-1. 统一 CLI 帮助输出程序名与文档示例（`llm-router`）。
-2. 验证 `--help` 与错误输出的一致性。
-3. 回归测试确保无行为变化。
+**Implemented:** `argparse prog` 从 `routerctl` 统一为 `llm-router`，并添加回归测试。
 
 ## Risks and Notes
 
