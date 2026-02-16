@@ -78,6 +78,16 @@ uv run llm-router --config config/routertool.yaml doctor
 ./scripts/doctor.sh config/routertool.yaml
 ```
 
+8. Run minimal smoke validation:
+
+```bash
+./scripts/smoke_local.sh config/routertool.yaml
+```
+
+Optional controls:
+- `PROFILE=reliability ./scripts/smoke_local.sh config/routertool.yaml`
+- `STARTUP_TIMEOUT=60 ./scripts/smoke_local.sh config/routertool.yaml`
+
 ## Directory layout
 
 - `src/llm_router/`: CLI and core modules
