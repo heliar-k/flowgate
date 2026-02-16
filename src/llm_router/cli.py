@@ -377,7 +377,7 @@ def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="routerctl")
+    parser = argparse.ArgumentParser(prog="llm-router")
     parser.add_argument("--config", default="config/routertool.yaml")
 
     sub = parser.add_subparsers(dest="command", required=True)

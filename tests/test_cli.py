@@ -258,6 +258,10 @@ class CLITests(unittest.TestCase):
             parser.parse_args(["bootstrap", "download", "--litellm-version", "1.2.3"])
         self.assertNotEqual(ctx.exception.code, 0)
 
+    def test_parser_prog_name_is_llm_router(self):
+        parser = _build_parser()
+        self.assertIn("llm-router", parser.format_usage())
+
     def test_doctor_reports_missing_runtime_artifacts(self):
         out = io.StringIO()
         with mock.patch("llm_router.cli._runtime_dependency_available", return_value=True):
