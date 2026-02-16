@@ -88,6 +88,23 @@ uv run llm-router --config config/routertool.yaml \
 uv run llm-router --config config/routertool.yaml auth codex login --timeout 180 --poll-interval 2
 ```
 
+### Codex headless import (device auth)
+
+If you already authenticated with Codex CLI using device auth (`codex login --device-auth`),
+import `~/.codex/auth.json` into CLIProxyAPI auth storage:
+
+```bash
+uv run llm-router --config config/routertool.yaml auth codex import-headless
+```
+
+Custom source or destination:
+
+```bash
+uv run llm-router --config config/routertool.yaml auth codex import-headless \
+  --source ~/.codex/auth.json \
+  --dest-dir ./config/auths
+```
+
 ### GitHub Copilot OAuth
 
 ```bash

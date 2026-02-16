@@ -17,6 +17,7 @@ from .bootstrap import (
     validate_litellm_runner,
 )
 from .config import ConfigError, load_router_config
+from .headless_import import import_codex_headless_auth
 from .health import check_health_url
 from .oauth import fetch_auth_url, poll_auth_status
 from .process import ProcessSupervisor
@@ -53,7 +54,12 @@ def _resolve_config_paths(config: dict[str, Any], config_path: Path) -> dict[str
 def _load_and_resolve_config(path: str) -> dict[str, Any]:
     cfg_path = Path(path)
     cfg = load_router_config(cfg_path)
-    return _resolve_config_paths(cfg, cfg_path)
+    resolved = _resolve_config_paths(cfg, cfg_path)
+    resolved["_meta"] = {
+        "config_path": str(cfg_path.resolve()),
+        "config_dir": str(cfg_path.resolve().parent),
+    }
+    return resolved
 
 
 def _read_state_file(state_path: Path) -> dict[str, Any]:
@@ -173,6 +179,29 @@ def _cmd_auth_login(
         return 1
 
 
+def _cmd_auth_codex_import_headless(
+    config: dict[str, Any],
+    *,
+    source: str,
+    dest_dir: str | None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    resolved_dest = dest_dir
+    if not resolved_dest:
+        config_dir = Path(config.get("_meta", {}).get("config_dir", os.getcwd()))
+        resolved_dest = str((config_dir / "auths").resolve())
+
+    try:
+        saved = import_codex_headless_auth(source, resolved_dest)
+    except Exception as exc:  # noqa: BLE001
+        print(f"headless import failed: {exc}", file=stderr)
+        return 1
+
+    print(f"saved_auth={saved}", file=stdout)
+    return 0
+
+
 def _cmd_service_action(config: dict[str, Any], action: str, target: str, *, stdout: TextIO, stderr: TextIO) -> int:
     supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
     try:
@@ -259,6 +288,10 @@ def _build_parser() -> argparse.ArgumentParser:
         login = provider_sub.add_parser("login")
         login.add_argument("--timeout", type=float, default=120)
         login.add_argument("--poll-interval", type=float, default=2)
+        if provider == "codex":
+            import_headless = provider_sub.add_parser("import-headless")
+            import_headless.add_argument("--source", default="~/.codex/auth.json")
+            import_headless.add_argument("--dest-dir", default="")
 
     service = sub.add_parser("service")
     service_sub = service.add_subparsers(dest="service_cmd", required=True)
@@ -310,6 +343,14 @@ def run_cli(argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO
                 args.provider,
                 timeout=args.timeout,
                 poll_interval=args.poll_interval,
+                stdout=stdout,
+                stderr=stderr,
+            )
+        if args.provider == "codex" and args.auth_cmd == "import-headless":
+            return _cmd_auth_codex_import_headless(
+                config,
+                source=args.source,
+                dest_dir=args.dest_dir if args.dest_dir else None,
                 stdout=stdout,
                 stderr=stderr,
             )

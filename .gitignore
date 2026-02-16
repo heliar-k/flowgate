@@ -37,3 +37,4 @@ auth/
 config/routertool.yaml
 config/cliproxyapi.yaml
 config/auths/
+config/static/

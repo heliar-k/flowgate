@@ -138,6 +138,28 @@ class CLITests(unittest.TestCase):
         f_url.assert_called_once()
         p_status.assert_called_once()
 
+    def test_auth_codex_import_headless(self):
+        out = io.StringIO()
+        with mock.patch(
+            "llm_router.cli.import_codex_headless_auth",
+            return_value=Path("/tmp/auths/codex-headless-import.json"),
+        ) as importer:
+            code = run_cli(
+                [
+                    "--config",
+                    str(self.cfg),
+                    "auth",
+                    "codex",
+                    "import-headless",
+                    "--source",
+                    "/tmp/codex-auth.json",
+                ],
+                stdout=out,
+            )
+        self.assertEqual(code, 0)
+        self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
+        importer.assert_called_once()
+
     def test_bootstrap_download(self):
         out = io.StringIO()
         with (
