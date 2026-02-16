@@ -17,7 +17,7 @@ from .bootstrap import (
 )
 from .config import ConfigError, load_router_config
 from .headless_import import import_codex_headless_auth
-from .health import check_health_url
+from .health import check_http_health
 from .oauth import fetch_auth_url, poll_auth_status
 from .process import ProcessSupervisor
 from .profile import activate_profile
@@ -138,16 +138,39 @@ def _cmd_status(config: dict[str, Any], *, stdout: TextIO) -> int:
 
 
 def _cmd_health(config: dict[str, Any], *, stdout: TextIO) -> int:
+    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
     all_ok = True
     for name, service in sorted(config["services"].items()):
+        running = supervisor.is_running(name)
+        liveness_ok = running
+
         host = service.get("host", "127.0.0.1")
         port = service.get("port")
-        health_path = service.get("health_path", "/healthz")
-        url = f"http://{host}:{port}{health_path}"
-        ok = check_health_url(url, timeout=1.0)
-        print(f"{name}:{'ok' if ok else 'fail'} url={url}", file=stdout)
-        if not ok:
-            all_ok = False
+        readiness_path = service.get("readiness_path") or service.get("health_path") or "/v1/models"
+
+        if isinstance(port, int):
+            readiness_url = f"http://{host}:{port}{readiness_path}"
+            readiness = check_http_health(readiness_url, timeout=1.0)
+        else:
+            readiness_url = "n/a"
+            readiness = {"ok": False, "status_code": None, "error": "missing-port"}
+
+        readiness_ok = bool(readiness["ok"])
+        code = readiness["status_code"]
+        error = readiness["error"]
+        print(
+            (
+                f"{name}:liveness={'ok' if liveness_ok else 'fail'} "
+                f"readiness={'ok' if readiness_ok else 'fail'} "
+                f"running={'yes' if running else 'no'} "
+                f"readiness_code={code if code is not None else 'n/a'} "
+                f"readiness_error={error or 'none'} "
+                f"readiness_url={readiness_url}"
+            ),
+            file=stdout,
+        )
+
+        all_ok = all_ok and liveness_ok and readiness_ok
     return 0 if all_ok else 1
 
 

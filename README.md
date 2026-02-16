@@ -66,6 +66,10 @@ uv run llm-router --config config/routertool.yaml status
 uv run llm-router --config config/routertool.yaml health
 ```
 
+`health` command semantics:
+- `liveness`: process supervisor sees the service process as alive.
+- `readiness`: HTTP check on `services.<name>.readiness_path` (fallback: `health_path`, default: `/v1/models`) and only `2xx` is treated as ready.
+
 ## Directory layout
 
 - `src/llm_router/`: CLI and core modules

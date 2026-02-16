@@ -97,15 +97,40 @@ class CLITests(unittest.TestCase):
 
     def test_health_command(self):
         out = io.StringIO()
-        with mock.patch(
-            "llm_router.cli.check_health_url",
-            side_effect=lambda url, timeout=1.0: "4000" in url,
+        with (
+            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "llm_router.cli.check_http_health",
+                side_effect=lambda url, timeout=1.0: {
+                    "ok": "4000" in url,
+                    "status_code": 200 if "4000" in url else 503,
+                    "error": None,
+                },
+            ),
         ):
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.side_effect = [True, True]
             code = run_cli(["--config", str(self.cfg), "health"], stdout=out)
         self.assertEqual(code, 1)
         text = out.getvalue()
-        self.assertIn("litellm:ok", text)
-        self.assertIn("cliproxyapi_plus:fail", text)
+        self.assertIn("litellm:liveness=ok readiness=ok", text)
+        self.assertIn("cliproxyapi_plus:liveness=ok readiness=fail", text)
+        self.assertIn("readiness_code=503", text)
+
+    def test_health_command_fails_when_service_not_running(self):
+        out = io.StringIO()
+        with (
+            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "llm_router.cli.check_http_health",
+                return_value={"ok": True, "status_code": 200, "error": None},
+            ),
+        ):
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.side_effect = [True, False]
+            code = run_cli(["--config", str(self.cfg), "health"], stdout=out)
+        self.assertEqual(code, 1)
+        self.assertIn("litellm:liveness=fail readiness=ok", out.getvalue())
 
     def test_service_start_stop_all(self):
         out = io.StringIO()
