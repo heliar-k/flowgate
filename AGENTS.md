@@ -28,12 +28,21 @@
 - For behavior changes, add/adjust tests first, then run the full suite before committing.
 
 ## Commit & Pull Request Guidelines
-- Follow Conventional Commit style seen in history: `type(scope): summary` (for example, `fix(bootstrap): ...`, `refactor(cli): ...`).
-- Keep commits focused to one feature/fix and include related tests in the same commit.
-- PRs should include:
-  - what changed and why,
-  - test evidence (exact command + result),
-  - config or migration notes when behavior/path defaults change.
+- Use Conventional Commit subject line: `type(scope): summary` (for example, `fix(bootstrap): ...`, `refactor(cli): ...`).
+- Commit message body should follow the `@git-commit` style used in this repo:
+  - `Why this change was needed:`
+  - `What changed:`
+  - `Problem solved:`
+- Example:
+  - `feat(cli): add profile switch restart behavior`
+  - `Why this change was needed:`
+  - `...`
+  - `What changed:`
+  - `...`
+  - `Problem solved:`
+  - `...`
+- Keep each commit focused to one feature/fix and include related tests in the same commit.
+- PRs should include change intent, test evidence (exact command + result), and migration/config impact.
 
 ## Security & Configuration Tips
 - Never commit real credentials or local auth artifacts.
