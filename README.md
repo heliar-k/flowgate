@@ -193,6 +193,10 @@ Coverage/acceptance baseline:
   - `uv run llm-router --config config/routertool.yaml health`
   - `tail -n 50 .router/runtime/events.log`
 
+## Release and rollback
+
+- Follow `docs/release-and-rollback.md` for standardized release tagging and rollback steps.
+
 ## Notes
 
 - Config parser accepts YAML via PyYAML when installed, and always accepts JSON (JSON is valid YAML subset).
