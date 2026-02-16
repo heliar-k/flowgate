@@ -18,7 +18,8 @@ A local control tool built for `CLIProxyAPIPlus + LiteLLM` stacks.
 ## Install
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv sync
+export UV_CACHE_DIR=.uv-cache
+uv sync --group test
 ```
 
 ## Quick start
@@ -40,26 +41,26 @@ export CUSTOM_API_KEY="sk-..."
 3. Bootstrap runtime binaries (auto download):
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml bootstrap download
+uv run llm-router --config config/routertool.yaml bootstrap download
 ```
 
 4. Generate active profile config:
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml profile set balanced
+uv run llm-router --config config/routertool.yaml profile set balanced
 ```
 
 5. Start services:
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml service start all
+uv run llm-router --config config/routertool.yaml service start all
 ```
 
 6. Check status and health:
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml status
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml health
+uv run llm-router --config config/routertool.yaml status
+uv run llm-router --config config/routertool.yaml health
 ```
 
 ## Runtime bootstrap
@@ -72,7 +73,7 @@ UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml health
 Custom versions:
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml \
+uv run llm-router --config config/routertool.yaml \
   bootstrap download \
   --cliproxy-version v6.8.16-0 \
   --litellm-version 1.75.8
@@ -83,13 +84,13 @@ UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml \
 ### Codex OAuth
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml auth codex login --timeout 180 --poll-interval 2
+uv run llm-router --config config/routertool.yaml auth codex login --timeout 180 --poll-interval 2
 ```
 
 ### GitHub Copilot OAuth
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml auth copilot login --timeout 180 --poll-interval 2
+uv run llm-router --config config/routertool.yaml auth copilot login --timeout 180 --poll-interval 2
 ```
 
 ## Strategy profiles
@@ -101,13 +102,13 @@ UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml auth co
 Switch with:
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml profile set reliability
+uv run llm-router --config config/routertool.yaml profile set reliability
 ```
 
 ## Run tests
 
 ```bash
-UV_CACHE_DIR=.uv-cache PYTHONPATH=src uv run python -m unittest discover -s tests -v
+uv run python -m unittest discover -s tests -v
 ```
 
 ## Notes
