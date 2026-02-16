@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -256,6 +257,44 @@ class CLITests(unittest.TestCase):
         with self.assertRaises(SystemExit) as ctx:
             parser.parse_args(["bootstrap", "download", "--litellm-version", "1.2.3"])
         self.assertNotEqual(ctx.exception.code, 0)
+
+    def test_doctor_reports_missing_runtime_artifacts(self):
+        out = io.StringIO()
+        with mock.patch("llm_router.cli._runtime_dependency_available", return_value=True):
+            code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
+        self.assertEqual(code, 1)
+        text = out.getvalue()
+        self.assertIn("doctor:runtime_dir=fail", text)
+        self.assertIn("doctor:runtime_binaries=fail", text)
+
+    def test_doctor_passes_when_runtime_ready(self):
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        secret_dir = self.root / "auths"
+        secret_dir.mkdir(parents=True, exist_ok=True)
+        secret_file = secret_dir / "codex.json"
+        secret_file.write_text("{}", encoding="utf-8")
+        os.chmod(secret_file, 0o600)
+        data["secret_files"] = [str(secret_file)]
+        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+        runtime_bin = self.root / "runtime" / "bin"
+        runtime_bin.mkdir(parents=True, exist_ok=True)
+        cliproxy = runtime_bin / "CLIProxyAPIPlus"
+        litellm = runtime_bin / "litellm"
+        cliproxy.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        litellm.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        os.chmod(cliproxy, 0o755)
+        os.chmod(litellm, 0o755)
+
+        out = io.StringIO()
+        with mock.patch("llm_router.cli._runtime_dependency_available", return_value=True):
+            code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
+        self.assertEqual(code, 0)
+        text = out.getvalue()
+        self.assertIn("doctor:runtime_dir=pass", text)
+        self.assertIn("doctor:runtime_binaries=pass", text)
+        self.assertIn("doctor:secret_permissions=pass", text)
+        self.assertIn("doctor:runtime_dependency=pass", text)
 
 
 if __name__ == "__main__":

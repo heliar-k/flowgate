@@ -87,6 +87,18 @@ def _service_names(config: dict[str, Any], target: str) -> list[str]:
     return [target]
 
 
+def _runtime_dependency_available(module_name: str) -> bool:
+    try:
+        __import__(module_name)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _is_executable_file(path: Path) -> bool:
+    return path.exists() and path.is_file() and os.access(path, os.X_OK)
+
+
 def _cmd_profile_list(config: dict[str, Any], *, stdout: TextIO) -> int:
     for name in sorted(config["profiles"].keys()):
         print(name, file=stdout)
@@ -301,6 +313,69 @@ def _cmd_bootstrap_download(
     return 0
 
 
+def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
+    all_ok = True
+
+    config_path = config.get("_meta", {}).get("config_path", "unknown")
+    print(f"doctor:config=pass path={config_path}", file=stdout)
+
+    runtime_dir = Path(config["paths"]["runtime_dir"])
+    if runtime_dir.exists():
+        print(f"doctor:runtime_dir=pass path={runtime_dir}", file=stdout)
+    else:
+        all_ok = False
+        print(
+            "doctor:runtime_dir=fail "
+            f"path={runtime_dir} "
+            "suggestion='run bootstrap download to create runtime artifacts'",
+            file=stdout,
+        )
+
+    runtime_bin = runtime_dir / "bin"
+    required_bins = {
+        "CLIProxyAPIPlus": runtime_bin / "CLIProxyAPIPlus",
+        "litellm": runtime_bin / "litellm",
+    }
+    missing_or_non_exec = [
+        name for name, binary_path in required_bins.items() if not _is_executable_file(binary_path)
+    ]
+    if missing_or_non_exec:
+        all_ok = False
+        print(
+            "doctor:runtime_binaries=fail "
+            f"missing={','.join(missing_or_non_exec)} "
+            "suggestion='uv run llm-router --config config/routertool.yaml bootstrap download'",
+            file=stdout,
+        )
+    else:
+        print(f"doctor:runtime_binaries=pass path={runtime_bin}", file=stdout)
+
+    issues = check_secret_file_permissions(config.get("secret_files", []))
+    if issues:
+        all_ok = False
+        print(
+            "doctor:secret_permissions=fail "
+            f"issues={len(issues)} "
+            "suggestion='chmod 600 <secret-file>'",
+            file=stdout,
+        )
+    else:
+        print("doctor:secret_permissions=pass issues=0", file=stdout)
+
+    if _runtime_dependency_available("litellm"):
+        print("doctor:runtime_dependency=pass module=litellm", file=stdout)
+    else:
+        all_ok = False
+        print(
+            "doctor:runtime_dependency=fail "
+            "module=litellm "
+            "suggestion='uv sync --group runtime'",
+            file=stdout,
+        )
+
+    return 0 if all_ok else 1
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="routerctl")
     parser.add_argument("--config", default="config/routertool.yaml")
@@ -315,6 +390,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("status")
     sub.add_parser("health")
+    sub.add_parser("doctor")
 
     auth = sub.add_parser("auth")
     auth_sub = auth.add_subparsers(dest="provider", required=True)
@@ -370,6 +446,9 @@ def run_cli(argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO
 
     if args.command == "health":
         return _cmd_health(config, stdout=stdout)
+
+    if args.command == "doctor":
+        return _cmd_doctor(config, stdout=stdout)
 
     if args.command == "auth":
         if args.auth_cmd == "login":

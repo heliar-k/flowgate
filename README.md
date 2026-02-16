@@ -70,6 +70,14 @@ uv run llm-router --config config/routertool.yaml health
 - `liveness`: process supervisor sees the service process as alive.
 - `readiness`: HTTP check on `services.<name>.readiness_path` (fallback: `health_path`, default: `/v1/models`) and only `2xx` is treated as ready.
 
+7. Run preflight checks:
+
+```bash
+uv run llm-router --config config/routertool.yaml doctor
+# or
+./scripts/doctor.sh config/routertool.yaml
+```
+
 ## Directory layout
 
 - `src/llm_router/`: CLI and core modules
