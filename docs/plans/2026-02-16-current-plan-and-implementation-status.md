@@ -20,7 +20,7 @@
 - 提交规范已统一：commit message 使用 `type(scope): ...` + `Why/What/Problem` 三段正文。
 - 最新验证：  
   - 命令：`UV_CACHE_DIR=.uv-cache uv run python -m unittest discover -s tests -v`  
-  - 结果：`Ran 28 tests ... OK`
+  - 结果：`Ran 35 tests ... OK`
 
 ## P0/P1 执行进度（更新于 2026-02-16）
 
@@ -30,6 +30,8 @@
 - [x] Task 7（P1）故障排查 Runbook：已新增 `docs/runbook-troubleshooting.md` 并接入 README。
 - [x] Task 8（P1）统一环境自检命令：已新增 `doctor` 子命令与 `scripts/doctor.sh`。
 - [x] Task 9（P1）测试分层与覆盖目标：已在 README 明确测试分层、命令与验收基线。
+- [x] Task 10（P2）发布与回滚流程：已新增 `docs/release-and-rollback.md` 并接入 README。
+- [x] Task 11（P2）安全基线补充：已新增 `scripts/security_check.sh`、补充 `.gitignore` 并写入 README。
 
 ## 当前计划（下一阶段）
 

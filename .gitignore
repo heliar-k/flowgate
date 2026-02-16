@@ -36,6 +36,14 @@ auths/
 # Local-only config/secrets
 .env
 .env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.kdbx
+*.token
+secrets/
+private/
 config/routertool.yaml
 config/cliproxyapi.yaml
 config/auths/

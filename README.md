@@ -197,6 +197,21 @@ Coverage/acceptance baseline:
 
 - Follow `docs/release-and-rollback.md` for standardized release tagging and rollback steps.
 
+## Security checks
+
+- Run local security baseline checks:
+
+```bash
+./scripts/security_check.sh
+```
+
+- This script verifies:
+  - sensitive files are not tracked by git
+  - auth/secret file permissions are restrictive
+  - required ignore rules exist for common secret patterns
+
+- Recommended: run before push, or wire into CI as a non-blocking first stage.
+
 ## Notes
 
 - Config parser accepts YAML via PyYAML when installed, and always accepts JSON (JSON is valid YAML subset).
