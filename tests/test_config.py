@@ -4,6 +4,11 @@ import unittest
 from pathlib import Path
 
 from llm_router.config import ConfigError, load_router_config, merge_dicts
+from llm_router.constants import (
+    DEFAULT_SERVICE_HOST,
+    DEFAULT_SERVICE_PORTS,
+    DEFAULT_SERVICE_READINESS_PATHS,
+)
 
 
 class ConfigTests(unittest.TestCase):
@@ -24,16 +29,30 @@ class ConfigTests(unittest.TestCase):
             },
             "services": {
                 "litellm": {
-                    "host": "127.0.0.1",
-                    "port": 4000,
-                    "health_path": "/healthz",
-                    "command": {"args": ["python", "-m", "http.server", "4000"]},
+                    "host": DEFAULT_SERVICE_HOST,
+                    "port": DEFAULT_SERVICE_PORTS["litellm"],
+                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["litellm"],
+                    "command": {
+                        "args": [
+                            "python",
+                            "-m",
+                            "http.server",
+                            str(DEFAULT_SERVICE_PORTS["litellm"]),
+                        ]
+                    },
                 },
                 "cliproxyapi_plus": {
-                    "host": "127.0.0.1",
-                    "port": 8317,
-                    "health_path": "/healthz",
-                    "command": {"args": ["python", "-m", "http.server", "8317"]},
+                    "host": DEFAULT_SERVICE_HOST,
+                    "port": DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
+                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["cliproxyapi_plus"],
+                    "command": {
+                        "args": [
+                            "python",
+                            "-m",
+                            "http.server",
+                            str(DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]),
+                        ]
+                    },
                 },
             },
             "litellm_base": {
@@ -62,7 +81,7 @@ class ConfigTests(unittest.TestCase):
         cfg = load_router_config(path)
 
         self.assertIn("services", cfg)
-        self.assertEqual(cfg["services"]["litellm"]["port"], 4000)
+        self.assertEqual(cfg["services"]["litellm"]["port"], DEFAULT_SERVICE_PORTS["litellm"])
         self.assertIn("balanced", cfg["profiles"])
 
     def test_reject_unknown_top_level_key(self):

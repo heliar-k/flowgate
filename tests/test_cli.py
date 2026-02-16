@@ -7,6 +7,12 @@ from pathlib import Path
 from unittest import mock
 
 from llm_router.cli import _build_parser, run_cli
+from llm_router.constants import (
+    DEFAULT_READINESS_PATH,
+    DEFAULT_SERVICE_HOST,
+    DEFAULT_SERVICE_PORTS,
+    DEFAULT_SERVICE_READINESS_PATHS,
+)
 
 
 def write_config(path: Path) -> None:
@@ -19,15 +25,15 @@ def write_config(path: Path) -> None:
         },
         "services": {
             "litellm": {
-                "host": "127.0.0.1",
-                "port": 4000,
-                "health_path": "/healthz",
+                "host": DEFAULT_SERVICE_HOST,
+                "port": DEFAULT_SERVICE_PORTS["litellm"],
+                "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["litellm"],
                 "command": {"args": ["python", "-c", "import time; time.sleep(60)"]},
             },
             "cliproxyapi_plus": {
-                "host": "127.0.0.1",
-                "port": 8317,
-                "health_path": "/healthz",
+                "host": DEFAULT_SERVICE_HOST,
+                "port": DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
+                "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["cliproxyapi_plus"],
                 "command": {"args": ["python", "-c", "import time; time.sleep(60)"]},
             },
         },
@@ -104,8 +110,8 @@ class CLITests(unittest.TestCase):
             mock.patch(
                 "llm_router.cli.check_http_health",
                 side_effect=lambda url, timeout=1.0: {
-                    "ok": "4000" in url,
-                    "status_code": 200 if "4000" in url else 503,
+                    "ok": str(DEFAULT_SERVICE_PORTS["litellm"]) in url,
+                    "status_code": 200 if str(DEFAULT_SERVICE_PORTS["litellm"]) in url else 503,
                     "error": None,
                 },
             ),
@@ -118,6 +124,35 @@ class CLITests(unittest.TestCase):
         self.assertIn("litellm:liveness=ok readiness=ok", text)
         self.assertIn("cliproxyapi_plus:liveness=ok readiness=fail", text)
         self.assertIn("readiness_code=503", text)
+
+    def test_health_command_uses_default_readiness_path_when_missing(self):
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        for service in data["services"].values():
+            service.pop("readiness_path", None)
+            service.pop("health_path", None)
+        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+        out = io.StringIO()
+        with (
+            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "llm_router.cli.check_http_health",
+                return_value={"ok": True, "status_code": 200, "error": None},
+            ) as checker,
+        ):
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.side_effect = [True, True]
+            code = run_cli(["--config", str(self.cfg), "health"], stdout=out)
+
+        self.assertEqual(code, 0)
+        checked_urls = [call.args[0] for call in checker.call_args_list]
+        self.assertEqual(
+            checked_urls,
+            [
+                f"http://{DEFAULT_SERVICE_HOST}:{DEFAULT_SERVICE_PORTS['cliproxyapi_plus']}{DEFAULT_READINESS_PATH}",
+                f"http://{DEFAULT_SERVICE_HOST}:{DEFAULT_SERVICE_PORTS['litellm']}{DEFAULT_READINESS_PATH}",
+            ],
+        )
 
     def test_health_command_fails_when_service_not_running(self):
         out = io.StringIO()

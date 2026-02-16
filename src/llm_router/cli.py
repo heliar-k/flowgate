@@ -16,6 +16,7 @@ from .bootstrap import (
     validate_litellm_runner,
 )
 from .config import ConfigError, load_router_config
+from .constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from .headless_import import import_codex_headless_auth
 from .health import check_http_health
 from .oauth import fetch_auth_url, poll_auth_status
@@ -158,9 +159,9 @@ def _cmd_health(config: dict[str, Any], *, stdout: TextIO) -> int:
         running = supervisor.is_running(name)
         liveness_ok = running
 
-        host = service.get("host", "127.0.0.1")
+        host = service.get("host", DEFAULT_SERVICE_HOST)
         port = service.get("port")
-        readiness_path = service.get("readiness_path") or service.get("health_path") or "/v1/models"
+        readiness_path = service.get("readiness_path") or service.get("health_path") or DEFAULT_READINESS_PATH
 
         if isinstance(port, int):
             readiness_url = f"http://{host}:{port}{readiness_path}"

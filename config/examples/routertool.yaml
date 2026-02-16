@@ -10,7 +10,7 @@
     "litellm": {
       "host": "127.0.0.1",
       "port": 4000,
-      "readiness_path": "/v1/models",
+      "readiness_path": "/health",
       "command": {
         "cwd": "..",
         "args": [".router/runtime/bin/litellm", "--config", ".router/runtime/litellm.active.yaml"]
@@ -19,7 +19,7 @@
     "cliproxyapi_plus": {
       "host": "127.0.0.1",
       "port": 8317,
-      "readiness_path": "/v1/models",
+      "readiness_path": "/",
       "command": {
         "cwd": "..",
         "args": [".router/runtime/bin/CLIProxyAPIPlus", "-config", "config/cliproxyapi.yaml"]

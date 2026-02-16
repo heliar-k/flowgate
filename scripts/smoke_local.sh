@@ -11,12 +11,53 @@ run_router() {
   uv run llm-router --config "$CONFIG_PATH" "$@"
 }
 
+list_service_ports() {
+  uv run python - "$CONFIG_PATH" <<'PY'
+from pathlib import Path
+
+from llm_router.config import load_router_config
+
+cfg = load_router_config(Path(__import__("sys").argv[1]))
+ports: set[int] = set()
+for service in cfg.get("services", {}).values():
+    port = service.get("port")
+    if isinstance(port, int):
+        ports.add(port)
+for port in sorted(ports):
+    print(port)
+PY
+}
+
+list_readiness_endpoints() {
+  uv run python - "$CONFIG_PATH" <<'PY'
+from pathlib import Path
+
+from llm_router.config import load_router_config
+from llm_router.constants import DEFAULT_SERVICE_HOST, DEFAULT_READINESS_PATH
+
+cfg = load_router_config(Path(__import__("sys").argv[1]))
+for service in cfg.get("services", {}).values():
+    host = service.get("host", DEFAULT_SERVICE_HOST)
+    port = service.get("port")
+    if not isinstance(port, int):
+        continue
+    path = service.get("readiness_path") or service.get("health_path") or DEFAULT_READINESS_PATH
+    print(f"http://{host}:{port}{path}")
+PY
+}
+
 print_port_hints() {
   if ! command -v lsof >/dev/null 2>&1; then
     echo "smoke: lsof not found, skip port diagnostics"
     return
   fi
-  for port in 4000 8317; do
+  ports="$(list_service_ports | awk 'NF')"
+  if [ -z "$ports" ]; then
+    echo "smoke: no service ports resolved from config, skip port diagnostics"
+    return
+  fi
+  echo "$ports" | while IFS= read -r port; do
+    [ -z "$port" ] && continue
     echo "smoke: checking listeners on port $port"
     lsof -nP -iTCP:"$port" -sTCP:LISTEN || true
   done
@@ -57,22 +98,7 @@ while true; do
 done
 
 echo "smoke: [4.5/5] verify readiness endpoints"
-endpoints="$({ uv run python - "$CONFIG_PATH" <<'PY'
-from pathlib import Path
-import json
-
-from llm_router.config import load_router_config
-
-cfg = load_router_config(Path(__import__('sys').argv[1]))
-for service in cfg.get("services", {}).values():
-    host = service.get("host", "127.0.0.1")
-    port = service.get("port")
-    if not isinstance(port, int):
-        continue
-    path = service.get("readiness_path") or service.get("health_path") or "/v1/models"
-    print(f"http://{host}:{port}{path}")
-PY
-} | awk 'NF' )"
+endpoints="$(list_readiness_endpoints | awk 'NF')"
 
 if command -v curl >/dev/null 2>&1; then
   echo "$endpoints" | while IFS= read -r url; do

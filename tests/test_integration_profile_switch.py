@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from llm_router.cli import run_cli
+from llm_router.constants import DEFAULT_SERVICE_HOST, DEFAULT_SERVICE_PORTS, DEFAULT_SERVICE_READINESS_PATHS
 
 
 class ProfileSwitchIntegrationTests(unittest.TestCase):
@@ -20,15 +21,15 @@ class ProfileSwitchIntegrationTests(unittest.TestCase):
             },
             "services": {
                 "litellm": {
-                    "host": "127.0.0.1",
-                    "port": 4000,
-                    "health_path": "/healthz",
+                    "host": DEFAULT_SERVICE_HOST,
+                    "port": DEFAULT_SERVICE_PORTS["litellm"],
+                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["litellm"],
                     "command": {"args": ["python", "-c", "import time; time.sleep(60)"]},
                 },
                 "cliproxyapi_plus": {
-                    "host": "127.0.0.1",
-                    "port": 8317,
-                    "health_path": "/healthz",
+                    "host": DEFAULT_SERVICE_HOST,
+                    "port": DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
+                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["cliproxyapi_plus"],
                     "command": {"args": ["python", "-c", "import time; time.sleep(60)"]},
                 },
             },
