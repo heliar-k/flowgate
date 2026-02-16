@@ -171,7 +171,8 @@ def prepare_litellm_runner(bin_dir: str | Path, *, version: str = DEFAULT_LITELL
     script = (
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
-        f"exec uvx --from 'litellm=={version}' litellm \"$@\"\n"
+        "project_root=\"$(cd \"$(dirname \"$0\")/../../..\" && pwd)\"\n"
+        "exec uv run --project \"$project_root\" --group runtime litellm \"$@\"\n"
     )
     runner.write_text(script, encoding="utf-8")
     runner.chmod(0o755)
@@ -197,9 +198,9 @@ def validate_litellm_runner(path: str | Path, *, version: str = DEFAULT_LITELLM_
         return False
 
     content = target.read_text(encoding="utf-8")
-    if "uvx --from" not in content:
+    if "uv run --project" not in content:
         return False
-    if f"litellm=={version}" not in content:
+    if "--group runtime litellm" not in content:
         return False
     if 'litellm "$@"' not in content:
         return False

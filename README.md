@@ -19,7 +19,7 @@ A local control tool built for `CLIProxyAPIPlus + LiteLLM` stacks.
 
 ```bash
 export UV_CACHE_DIR=.uv-cache
-uv sync --group test
+uv sync --group runtime --group test
 ```
 
 ## Quick start
@@ -79,15 +79,14 @@ uv run llm-router --config config/routertool.yaml health
 `bootstrap download` will:
 
 - Download a platform-matched `CLIProxyAPIPlus` release binary into `.router/runtime/bin/CLIProxyAPIPlus`
-- Generate a pinned `litellm` runner script at `.router/runtime/bin/litellm` (using `uvx --from litellm==<version>`)
+- Generate a `litellm` runner script at `.router/runtime/bin/litellm` (uses project environment via `uv run --project ... --group runtime`)
 
-Custom versions:
+Custom CLIProxyAPIPlus version:
 
 ```bash
 uv run llm-router --config config/routertool.yaml \
   bootstrap download \
-  --cliproxy-version v6.8.16-0 \
-  --litellm-version 1.75.8
+  --cliproxy-version v6.8.16-0
 ```
 
 ## OAuth login
