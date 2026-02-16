@@ -93,6 +93,7 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 0)
         supervisor.is_running.assert_called_once_with("litellm")
         supervisor.restart.assert_called_once()
+        supervisor.record_event.assert_called_once_with("profile_switch", profile="balanced", result="success")
         self.assertIn("litellm:restarted pid=4321", out.getvalue())
 
     def test_health_command(self):
@@ -154,6 +155,7 @@ class CLITests(unittest.TestCase):
     def test_auth_login(self):
         out = io.StringIO()
         with (
+            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
             mock.patch("llm_router.cli.fetch_auth_url", return_value="https://example.com/login") as f_url,
             mock.patch("llm_router.cli.poll_auth_status", return_value="success") as p_status,
         ):
@@ -162,6 +164,12 @@ class CLITests(unittest.TestCase):
         self.assertIn("https://example.com/login", out.getvalue())
         f_url.assert_called_once()
         p_status.assert_called_once()
+        supervisor = supervisor_cls.return_value
+        supervisor.record_event.assert_called_once_with(
+            "oauth_login",
+            provider="codex",
+            result="success",
+        )
 
     def test_auth_codex_import_headless(self):
         out = io.StringIO()

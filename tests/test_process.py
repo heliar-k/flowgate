@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import tempfile
@@ -25,6 +26,17 @@ class ProcessSupervisorTests(unittest.TestCase):
         stopped = supervisor.stop("litellm", timeout=2)
         self.assertTrue(stopped)
         self.assertFalse(supervisor.is_running("litellm"))
+
+        events_file = runtime_dir / "events.log"
+        self.assertTrue(events_file.exists())
+        events = [json.loads(line) for line in events_file.read_text(encoding="utf-8").splitlines() if line.strip()]
+        self.assertTrue(any(event["event"] == "service_start" for event in events))
+        self.assertTrue(any(event["event"] == "service_stop" for event in events))
+        for event in events:
+            self.assertIn("service", event)
+            self.assertIn("profile", event)
+            self.assertIn("provider", event)
+            self.assertIn("result", event)
 
     def test_health_check_handles_network_error(self):
         with mock.patch("llm_router.health.urlopen", side_effect=OSError("boom")):

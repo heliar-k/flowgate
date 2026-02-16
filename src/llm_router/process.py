@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import os
 import signal
 import subprocess
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping
 
@@ -13,6 +15,7 @@ class ProcessSupervisor:
         self.runtime_dir = Path(runtime_dir)
         self.pid_dir = self.runtime_dir / "pids"
         self.log_dir = self.runtime_dir / "process-logs"
+        self.events_log = self.runtime_dir / "events.log"
         self._children: dict[str, subprocess.Popen[bytes]] = {}
         self.pid_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -42,6 +45,33 @@ class ProcessSupervisor:
         except PermissionError:
             return True
 
+    def record_event(
+        self,
+        event: str,
+        *,
+        service: str | None = None,
+        profile: str | None = None,
+        provider: str | None = None,
+        result: str = "success",
+        detail: str | None = None,
+    ) -> None:
+        payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": event,
+            "service": service,
+            "profile": profile,
+            "provider": provider,
+            "result": result,
+            "detail": detail,
+        }
+        try:
+            self.events_log.parent.mkdir(parents=True, exist_ok=True)
+            with self.events_log.open("a", encoding="utf-8") as fp:
+                fp.write(json.dumps(payload, ensure_ascii=True) + "\n")
+        except OSError:
+            # Observability logging must never block service control path.
+            return
+
     def is_running(self, name: str) -> bool:
         pid = self._read_pid(name)
         if pid is None:
@@ -60,6 +90,7 @@ class ProcessSupervisor:
             pid = self._read_pid(name)
             if pid is None:
                 raise RuntimeError(f"{name} appears running but no pid is available")
+            self.record_event("service_start", service=name, result="already-running", detail=f"pid={pid}")
             return pid
 
         log_path = self.log_dir / f"{name}.log"
@@ -68,18 +99,25 @@ class ProcessSupervisor:
         if env:
             run_env.update(env)
 
-        process = subprocess.Popen(
-            command,
-            cwd=cwd,
-            env=run_env,
-            stdin=subprocess.DEVNULL,
-            stdout=log_file,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
+        try:
+            process = subprocess.Popen(
+                command,
+                cwd=cwd,
+                env=run_env,
+                stdin=subprocess.DEVNULL,
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.record_event("service_start", service=name, result="failed", detail=str(exc))
+            log_file.close()
+            raise
+
         self._pid_path(name).write_text(str(process.pid), encoding="utf-8")
         self._children[name] = process
         log_file.close()
+        self.record_event("service_start", service=name, result="success", detail=f"pid={process.pid}")
         return process.pid
 
     def stop(self, name: str, *, timeout: float = 5.0) -> bool:
@@ -94,26 +132,31 @@ class ProcessSupervisor:
                     child.wait(timeout=1)
             self._pid_path(name).unlink(missing_ok=True)
             self._children.pop(name, None)
+            self.record_event("service_stop", service=name, result="success")
             return True
 
         pid = self._read_pid(name)
         if pid is None:
+            self.record_event("service_stop", service=name, result="not-running")
             return True
 
         if not self._is_pid_running(pid):
             self._pid_path(name).unlink(missing_ok=True)
+            self.record_event("service_stop", service=name, result="stale-pid", detail=f"pid={pid}")
             return True
 
         try:
             os.kill(pid, signal.SIGTERM)
         except ProcessLookupError:
             self._pid_path(name).unlink(missing_ok=True)
+            self.record_event("service_stop", service=name, result="already-exited", detail=f"pid={pid}")
             return True
 
         deadline = time.time() + timeout
         while time.time() < deadline:
             if not self._is_pid_running(pid):
                 self._pid_path(name).unlink(missing_ok=True)
+                self.record_event("service_stop", service=name, result="success", detail=f"pid={pid}")
                 return True
             time.sleep(0.1)
 
@@ -125,9 +168,11 @@ class ProcessSupervisor:
         for _ in range(10):
             if not self._is_pid_running(pid):
                 self._pid_path(name).unlink(missing_ok=True)
+                self.record_event("service_stop", service=name, result="success-after-kill", detail=f"pid={pid}")
                 return True
             time.sleep(0.1)
 
+        self.record_event("service_stop", service=name, result="timeout", detail=f"pid={pid}")
         return False
 
     def restart(
@@ -138,5 +183,10 @@ class ProcessSupervisor:
         cwd: str | None = None,
         env: Mapping[str, str] | None = None,
     ) -> int:
-        self.stop(name)
-        return self.start(name, command, cwd=cwd, env=env)
+        stopped = self.stop(name)
+        if not stopped:
+            self.record_event("service_restart", service=name, result="failed", detail="stop-timeout")
+            raise RuntimeError(f"Failed to stop service before restart: {name}")
+        pid = self.start(name, command, cwd=cwd, env=env)
+        self.record_event("service_restart", service=name, result="success", detail=f"pid={pid}")
+        return pid

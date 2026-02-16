@@ -78,6 +78,18 @@ uv run llm-router --config config/routertool.yaml health
 - `config/routertool.yaml`, `config/cliproxyapi.yaml`: local runtime config (ignored)
 - `.router/`: runtime binaries, active profile, pids, logs, auth artifacts (ignored)
 
+## Observability
+
+- Runtime lifecycle events are written to `.router/runtime/events.log` as JSON lines.
+- Event fields are standardized: `event`, `service`, `profile`, `provider`, `result`, `detail`, `timestamp`.
+- Typical events include `service_start`, `service_stop`, `service_restart`, `profile_switch`, `oauth_login`.
+
+Quick inspect:
+
+```bash
+tail -n 50 .router/runtime/events.log
+```
+
 ## Runtime bootstrap
 
 `bootstrap download` will:

@@ -100,12 +100,14 @@ def _cmd_profile_set(config: dict[str, Any], profile: str, *, stdout: TextIO, st
         print(str(exc), file=stderr)
         return 2
 
+    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
+    supervisor.record_event("profile_switch", profile=profile, result="success")
+
     print(f"profile={profile}", file=stdout)
     print(f"active_config={active_path}", file=stdout)
     print(f"state_file={state_path}", file=stdout)
 
     # If LiteLLM is already running, apply the profile switch immediately by restart.
-    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
     if "litellm" in config["services"] and supervisor.is_running("litellm"):
         service = config["services"]["litellm"]
         command = service["command"]["args"]
@@ -183,8 +185,10 @@ def _cmd_auth_login(
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
+    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
     oauth = config.get("oauth", {})
     if provider not in oauth:
+        supervisor.record_event("oauth_login", provider=provider, result="failed", detail="provider-not-configured")
         print(f"OAuth provider not configured: {provider}", file=stderr)
         return 2
 
@@ -192,6 +196,7 @@ def _cmd_auth_login(
     auth_url_endpoint = provider_cfg.get("auth_url_endpoint")
     status_endpoint = provider_cfg.get("status_endpoint")
     if not auth_url_endpoint or not status_endpoint:
+        supervisor.record_event("oauth_login", provider=provider, result="failed", detail="endpoint-missing")
         print(f"OAuth endpoints not complete for provider={provider}", file=stderr)
         return 2
 
@@ -203,9 +208,11 @@ def _cmd_auth_login(
             timeout_seconds=timeout,
             poll_interval_seconds=poll_interval,
         )
+        supervisor.record_event("oauth_login", provider=provider, result="success")
         print(f"oauth_status={status}", file=stdout)
         return 0
     except Exception as exc:  # noqa: BLE001
+        supervisor.record_event("oauth_login", provider=provider, result="failed", detail=str(exc))
         print(f"OAuth login failed: {exc}", file=stderr)
         return 1
 
