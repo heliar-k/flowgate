@@ -7,6 +7,13 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, TextIO
 
+from .bootstrap import (
+    DEFAULT_CLIPROXY_REPO,
+    DEFAULT_CLIPROXY_VERSION,
+    DEFAULT_LITELLM_VERSION,
+    download_cliproxyapi_plus,
+    prepare_litellm_runner,
+)
 from .config import ConfigError, load_router_config
 from .health import check_health_url
 from .oauth import fetch_auth_url, poll_auth_status
@@ -197,6 +204,32 @@ def _cmd_service_action(config: dict[str, Any], action: str, target: str, *, std
     return 0 if ok else 1
 
 
+def _cmd_bootstrap_download(
+    config: dict[str, Any],
+    *,
+    cliproxy_version: str,
+    cliproxy_repo: str,
+    litellm_version: str,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    runtime_bin_dir = Path(config["paths"]["runtime_dir"]) / "bin"
+    try:
+        cliproxy = download_cliproxyapi_plus(
+            runtime_bin_dir,
+            version=cliproxy_version,
+            repo=cliproxy_repo,
+        )
+        litellm = prepare_litellm_runner(runtime_bin_dir, version=litellm_version)
+    except Exception as exc:  # noqa: BLE001
+        print(f"bootstrap failed: {exc}", file=stderr)
+        return 1
+
+    print(f"cliproxyapi_plus={cliproxy}", file=stdout)
+    print(f"litellm={litellm}", file=stdout)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="routerctl")
     parser.add_argument("--config", default="config/routertool.yaml")
@@ -226,6 +259,13 @@ def _build_parser() -> argparse.ArgumentParser:
     for action in ("start", "stop", "restart"):
         action_parser = service_sub.add_parser(action)
         action_parser.add_argument("target", nargs="?", default="all")
+
+    bootstrap = sub.add_parser("bootstrap")
+    bootstrap_sub = bootstrap.add_subparsers(dest="bootstrap_cmd", required=True)
+    download = bootstrap_sub.add_parser("download")
+    download.add_argument("--cliproxy-version", default=DEFAULT_CLIPROXY_VERSION)
+    download.add_argument("--cliproxy-repo", default=DEFAULT_CLIPROXY_REPO)
+    download.add_argument("--litellm-version", default=DEFAULT_LITELLM_VERSION)
 
     return parser
 
@@ -276,6 +316,17 @@ def run_cli(argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO
             stdout=stdout,
             stderr=stderr,
         )
+
+    if args.command == "bootstrap":
+        if args.bootstrap_cmd == "download":
+            return _cmd_bootstrap_download(
+                config,
+                cliproxy_version=args.cliproxy_version,
+                cliproxy_repo=args.cliproxy_repo,
+                litellm_version=args.litellm_version,
+                stdout=stdout,
+                stderr=stderr,
+            )
 
     print("Unknown command", file=stderr)
     return 2

@@ -1,3 +1,12 @@
+# OS/editor clutter
+.DS_Store
+Thumbs.db
+tags
+*.swp
+*.swo
+.idea/
+.vscode/
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -5,6 +14,24 @@ build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Virtual environments
-.venv
+# Virtual environments / tool cache
+.venv/
+.uv-cache/
+
+# Local runtime artifacts
+runtime/
+logs/
+auth/
+*.log
+*.pid
+
+# Local-only config/secrets
+.env
+.env.*
+config/routertool.yaml

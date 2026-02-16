@@ -13,8 +13,7 @@ A local control tool built for `CLIProxyAPIPlus + LiteLLM` stacks.
 
 - Python 3.12+
 - `uv` (dependency and runtime manager)
-- LiteLLM binary in PATH (`litellm`) when running real stack
-- CLIProxyAPIPlus binary available locally
+- Network access for first-time runtime bootstrap download
 
 ## Install
 
@@ -38,23 +37,45 @@ export ROUTER_UPSTREAM_API_KEY="sk-..."
 export CUSTOM_API_KEY="sk-..."
 ```
 
-3. Generate active profile config:
+3. Bootstrap runtime binaries (auto download):
+
+```bash
+UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml bootstrap download
+```
+
+4. Generate active profile config:
 
 ```bash
 UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml profile set balanced
 ```
 
-4. Start services:
+5. Start services:
 
 ```bash
 UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml service start all
 ```
 
-5. Check status and health:
+6. Check status and health:
 
 ```bash
 UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml status
 UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml health
+```
+
+## Runtime bootstrap
+
+`bootstrap download` will:
+
+- Download a platform-matched `CLIProxyAPIPlus` release binary into `runtime/bin/CLIProxyAPIPlus`
+- Generate a pinned `litellm` runner script at `runtime/bin/litellm` (using `uvx --from litellm==<version>`)
+
+Custom versions:
+
+```bash
+UV_CACHE_DIR=.uv-cache uv run llm-router --config config/routertool.yaml \
+  bootstrap download \
+  --cliproxy-version v6.8.16-0 \
+  --litellm-version 1.75.8
 ```
 
 ## OAuth login

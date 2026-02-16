@@ -138,6 +138,25 @@ class CLITests(unittest.TestCase):
         f_url.assert_called_once()
         p_status.assert_called_once()
 
+    def test_bootstrap_download(self):
+        out = io.StringIO()
+        with (
+            mock.patch(
+                "llm_router.cli.download_cliproxyapi_plus",
+                return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
+            ) as cliproxy_download,
+            mock.patch(
+                "llm_router.cli.prepare_litellm_runner",
+                return_value=Path("/tmp/runtime/bin/litellm"),
+            ) as litellm_prepare,
+        ):
+            code = run_cli(["--config", str(self.cfg), "bootstrap", "download"], stdout=out)
+        self.assertEqual(code, 0)
+        self.assertIn("cliproxyapi_plus=/tmp/runtime/bin/CLIProxyAPIPlus", out.getvalue())
+        self.assertIn("litellm=/tmp/runtime/bin/litellm", out.getvalue())
+        cliproxy_download.assert_called_once()
+        litellm_prepare.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
