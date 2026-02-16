@@ -1,0 +1,96 @@
+{
+  "paths": {
+    "runtime_dir": "runtime",
+    "active_config": "runtime/litellm.active.yaml",
+    "state_file": "runtime/state.json",
+    "log_file": "logs/routerctl.log"
+  },
+  "services": {
+    "litellm": {
+      "host": "127.0.0.1",
+      "port": 4000,
+      "health_path": "/healthz",
+      "command": {
+        "args": ["litellm", "--config", "runtime/litellm.active.yaml"]
+      }
+    },
+    "cliproxyapi_plus": {
+      "host": "127.0.0.1",
+      "port": 8317,
+      "health_path": "/healthz",
+      "command": {
+        "args": ["./CLIProxyAPIPlus", "-config", "config/cliproxyapi.yaml"]
+      }
+    }
+  },
+  "litellm_base": {
+    "model_list": [
+      {
+        "model_name": "router-default",
+        "litellm_params": {
+          "model": "openai/router-default",
+          "api_base": "http://127.0.0.1:8317/v1",
+          "api_key": "os.environ/ROUTER_UPSTREAM_API_KEY"
+        }
+      },
+      {
+        "model_name": "router-cheap",
+        "litellm_params": {
+          "model": "openai/gpt-4o-mini",
+          "api_base": "https://example-custom-openai/v1",
+          "api_key": "os.environ/CUSTOM_API_KEY"
+        }
+      }
+    ],
+    "router_settings": {
+      "routing_strategy": "simple-shuffle",
+      "enable_pre_call_checks": true
+    },
+    "litellm_settings": {
+      "num_retries": 1,
+      "request_timeout": 30,
+      "allowed_fails": 2,
+      "cooldown_time": 10
+    }
+  },
+  "profiles": {
+    "reliability": {
+      "litellm_settings": {
+        "num_retries": 3,
+        "allowed_fails": 1,
+        "cooldown_time": 60,
+        "fallbacks": [{"router-default": ["router-cheap"]}]
+      }
+    },
+    "balanced": {
+      "litellm_settings": {
+        "num_retries": 2,
+        "allowed_fails": 2,
+        "cooldown_time": 30,
+        "fallbacks": [{"router-default": ["router-cheap"]}]
+      }
+    },
+    "cost": {
+      "litellm_settings": {
+        "num_retries": 1,
+        "allowed_fails": 3,
+        "cooldown_time": 10,
+        "fallbacks": [{"router-cheap": ["router-default"]}]
+      }
+    }
+  },
+  "oauth": {
+    "codex": {
+      "auth_url_endpoint": "http://127.0.0.1:8317/v0/management/oauth/codex/auth-url",
+      "status_endpoint": "http://127.0.0.1:8317/v0/management/oauth/codex/status"
+    },
+    "copilot": {
+      "auth_url_endpoint": "http://127.0.0.1:8317/v0/management/oauth/github-copilot/auth-url",
+      "status_endpoint": "http://127.0.0.1:8317/v0/management/oauth/github-copilot/status"
+    }
+  },
+  "secret_files": [
+    "auth/codex.json",
+    "auth/copilot.json"
+  ]
+}
