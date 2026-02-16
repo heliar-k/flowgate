@@ -195,6 +195,15 @@ Coverage/acceptance baseline:
 - Critical paths (`bootstrap`, `profile`, `auth`, `service`, `health`) must each keep at least one automated regression test.
 - For non-trivial runtime behavior changes, include one local smoke validation command/result in PR notes.
 
+## CI baseline
+
+- Workflow file: `.github/workflows/ci.yml`
+- CI currently covers:
+  - `uv sync --group runtime --group test --locked`
+  - `uv run python -m unittest discover -s tests -v`
+  - CLI static help checks (`--help`)
+- CI intentionally does not start external services or run OAuth network flows.
+
 ## Troubleshooting
 
 - See `docs/runbook-troubleshooting.md` for common issues and direct repair commands.
