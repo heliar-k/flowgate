@@ -29,6 +29,7 @@ uv sync --group test
 ```bash
 mkdir -p config
 cp config/examples/routertool.yaml config/routertool.yaml
+cp config/examples/cliproxyapi.yaml config/cliproxyapi.yaml
 ```
 
 2. Set runtime secrets:

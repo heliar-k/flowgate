@@ -35,3 +35,5 @@ auth/
 .env
 .env.*
 config/routertool.yaml
+config/cliproxyapi.yaml
+config/auths/

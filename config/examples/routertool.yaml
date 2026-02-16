@@ -11,6 +11,7 @@
       "port": 4000,
       "health_path": "/healthz",
       "command": {
+        "cwd": ".",
         "args": ["runtime/bin/litellm", "--config", "runtime/litellm.active.yaml"]
       }
     },
@@ -19,7 +20,8 @@
       "port": 8317,
       "health_path": "/healthz",
       "command": {
-        "args": ["runtime/bin/CLIProxyAPIPlus", "-config", "config/cliproxyapi.yaml"]
+        "cwd": ".",
+        "args": ["runtime/bin/CLIProxyAPIPlus", "-config", "cliproxyapi.yaml"]
       }
     }
   },
