@@ -46,6 +46,22 @@ for service in cfg.get("services", {}).values():
 PY
 }
 
+litellm_base_url() {
+  uv run python - "$CONFIG_PATH" <<'PY'
+from pathlib import Path
+
+from flowgate.config import load_router_config
+from flowgate.constants import DEFAULT_SERVICE_HOST
+
+cfg = load_router_config(Path(__import__("sys").argv[1]))
+service = cfg.get("services", {}).get("litellm", {})
+host = service.get("host", DEFAULT_SERVICE_HOST)
+port = service.get("port")
+if isinstance(port, int):
+    print(f"http://{host}:{port}")
+PY
+}
+
 print_port_hints() {
   if ! command -v lsof >/dev/null 2>&1; then
     echo "smoke: lsof not found, skip port diagnostics"
@@ -110,7 +126,41 @@ else
   echo "smoke: curl not found, skip direct readiness endpoint checks"
 fi
 
-echo "smoke: [5/5] stop services"
+echo "smoke: [4.6/6] probe Claude messages endpoint"
+if command -v curl >/dev/null 2>&1; then
+  litellm_base="$(litellm_base_url | awk 'NF' | head -n 1)"
+  if [ -n "$litellm_base" ]; then
+    probe_status="$(
+      curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+        --max-time 5 \
+        -X POST "$litellm_base/v1/messages/count_tokens" \
+        -H "content-type: application/json" \
+        -H "anthropic-version: 2023-06-01" \
+        -H "authorization: Bearer sk-local-test" \
+        -d '{"model":"router-default","messages":[{"role":"user","content":"ping"}]}'
+    )"
+
+    case "$probe_status" in
+      2??|4??)
+        if [ "$probe_status" = "404" ]; then
+          echo "smoke: claude messages probe failed: status=$probe_status"
+          exit 1
+        fi
+        echo "smoke: claude messages probe status=$probe_status"
+        ;;
+      *)
+        echo "smoke: claude messages probe failed: status=$probe_status"
+        exit 1
+        ;;
+    esac
+  else
+    echo "smoke: litellm base url unresolved, skip claude messages probe"
+  fi
+else
+  echo "smoke: curl not found, skip claude messages probe"
+fi
+
+echo "smoke: [5/6] stop services"
 run_router service stop all
 
-echo "smoke: PASS"
+echo "smoke: [6/6] PASS"

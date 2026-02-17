@@ -24,6 +24,13 @@ class DevScriptTests(unittest.TestCase):
         self.assertIn('UV_TOOL_DIR="${UV_TOOL_DIR:-.uv-tools}"', text)
         self.assertIn("uvx --from . python -m unittest discover -s tests -v", text)
 
+    def test_smoke_script_has_claude_messages_probe(self):
+        path = Path("scripts/smoke_local.sh")
+        self.assertTrue(path.exists())
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("/v1/messages/count_tokens", text)
+        self.assertIn("anthropic-version: 2023-06-01", text)
+
 
 if __name__ == "__main__":
     unittest.main()
