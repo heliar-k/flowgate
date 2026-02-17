@@ -498,6 +498,36 @@ class CLITests(unittest.TestCase):
         parser = _build_parser()
         self.assertIn("flowgate", parser.format_usage())
 
+    def test_integration_print_codex(self):
+        out = io.StringIO()
+
+        code = run_cli(
+            ["--config", str(self.cfg), "integration", "print", "codex"],
+            stdout=out,
+        )
+
+        self.assertEqual(code, 0)
+        text = out.getvalue()
+        self.assertIn('model_provider = "flowgate"', text)
+        self.assertIn("[model_providers.flowgate]", text)
+        self.assertIn('base_url = "http://127.0.0.1:4000/v1"', text)
+        self.assertIn('model = "router-default"', text)
+
+    def test_integration_print_claude_code(self):
+        out = io.StringIO()
+
+        code = run_cli(
+            ["--config", str(self.cfg), "integration", "print", "claude-code"],
+            stdout=out,
+        )
+
+        self.assertEqual(code, 0)
+        text = out.getvalue()
+        self.assertIn("ANTHROPIC_BASE_URL=http://127.0.0.1:4000", text)
+        self.assertIn("ANTHROPIC_AUTH_TOKEN=your-gateway-token", text)
+        self.assertIn("ANTHROPIC_DEFAULT_SONNET_MODEL=router-default", text)
+        self.assertIn("ANTHROPIC_DEFAULT_HAIKU_MODEL=router-default", text)
+
     def test_doctor_reports_missing_runtime_artifacts(self):
         out = io.StringIO()
         with mock.patch(
