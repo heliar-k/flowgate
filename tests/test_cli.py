@@ -207,6 +207,22 @@ class CLITests(unittest.TestCase):
             result="success",
         )
 
+    def test_auth_login_timeout_error_contains_hint(self):
+        out = io.StringIO()
+        err = io.StringIO()
+        with (
+            mock.patch("llm_router.cli.ProcessSupervisor"),
+            mock.patch("llm_router.cli.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch(
+                "llm_router.cli.poll_auth_status",
+                side_effect=TimeoutError("OAuth login timed out; last status=pending"),
+            ),
+        ):
+            code = run_cli(["--config", str(self.cfg), "auth", "login", "codex"], stdout=out, stderr=err)
+        self.assertEqual(code, 1)
+        self.assertIn("last status=pending", err.getvalue())
+        self.assertIn("hint=", err.getvalue())
+
     def test_auth_list_reports_configured_providers_and_headless_support(self):
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
         data["oauth"]["custom"] = {

@@ -261,7 +261,13 @@ def _cmd_auth_login(
         return 0
     except Exception as exc:  # noqa: BLE001
         supervisor.record_event("oauth_login", provider=provider, result="failed", detail=str(exc))
-        print(f"OAuth login failed: {exc}", file=stderr)
+        print(
+            (
+                f"OAuth login failed: {exc} "
+                "hint=verify auth endpoints, run `auth status`, then retry with a larger --timeout if needed"
+            ),
+            file=stderr,
+        )
         return 1
 
 

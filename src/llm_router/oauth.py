@@ -36,8 +36,16 @@ def poll_auth_status(
 
     deadline = time.time() + timeout_seconds
     last_status = "unknown"
+    last_error: str | None = None
     while time.time() < deadline:
-        payload = _get_json(status_endpoint, timeout=5)
+        try:
+            payload = _get_json(status_endpoint, timeout=5)
+            last_error = None
+        except (TimeoutError, OSError) as exc:
+            last_error = str(exc)
+            time.sleep(poll_interval_seconds)
+            continue
+
         status_raw = payload.get("status", "unknown")
         status = str(status_raw).strip().lower()
         last_status = status
@@ -47,4 +55,7 @@ def poll_auth_status(
             raise RuntimeError(f"OAuth login failed with status: {status}")
         time.sleep(poll_interval_seconds)
 
-    raise TimeoutError(f"OAuth login timed out; last status={last_status}")
+    detail = f"OAuth login timed out; last status={last_status}"
+    if last_error:
+        detail = f"{detail}; last error={last_error}"
+    raise TimeoutError(detail)
