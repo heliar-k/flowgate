@@ -528,6 +528,33 @@ class CLITests(unittest.TestCase):
         self.assertIn("ANTHROPIC_DEFAULT_SONNET_MODEL=router-default", text)
         self.assertIn("ANTHROPIC_DEFAULT_HAIKU_MODEL=router-default", text)
 
+    def test_integration_apply_claude_code(self):
+        target = self.root / "claude-settings.json"
+        target.write_text(
+            json.dumps({"env": {"ANTHROPIC_AUTH_TOKEN": "old"}}),
+            encoding="utf-8",
+        )
+
+        out = io.StringIO()
+        code = run_cli(
+            [
+                "--config",
+                str(self.cfg),
+                "integration",
+                "apply",
+                "claude-code",
+                "--target",
+                str(target),
+            ],
+            stdout=out,
+        )
+
+        self.assertEqual(code, 0)
+        self.assertIn(f"saved_path={target}", out.getvalue())
+        saved = json.loads(target.read_text(encoding="utf-8"))
+        self.assertEqual(saved["env"]["ANTHROPIC_BASE_URL"], "http://127.0.0.1:4000")
+        self.assertEqual(saved["env"]["ANTHROPIC_AUTH_TOKEN"], "your-gateway-token")
+
     def test_doctor_reports_missing_runtime_artifacts(self):
         out = io.StringIO()
         with mock.patch(

@@ -16,6 +16,7 @@ from .bootstrap import (
     validate_cliproxy_binary,
     validate_litellm_runner,
 )
+from .client_apply import apply_claude_code_settings, apply_codex_config
 from .config import ConfigError, load_router_config
 from .constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from .health import check_http_health
@@ -601,6 +602,53 @@ def _cmd_integration_print(
     return 2
 
 
+def _cmd_integration_apply(
+    config: dict[str, Any],
+    client: str,
+    *,
+    target: str | None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        specs = build_integration_specs(config)
+    except Exception as exc:  # noqa: BLE001
+        print(f"integration render failed: {exc}", file=stderr)
+        return 1
+
+    if client == "codex":
+        resolved_target = target or "~/.codex/config.toml"
+        spec = specs.get("codex", {})
+        if not isinstance(spec, dict):
+            print("integration spec missing codex block", file=stderr)
+            return 1
+        try:
+            result = apply_codex_config(resolved_target, spec)
+        except Exception as exc:  # noqa: BLE001
+            print(f"integration apply failed: {exc}", file=stderr)
+            return 1
+    elif client == "claude-code":
+        resolved_target = target or "~/.claude/settings.json"
+        spec = specs.get("claude_code", {})
+        if not isinstance(spec, dict):
+            print("integration spec missing claude_code block", file=stderr)
+            return 1
+        try:
+            result = apply_claude_code_settings(resolved_target, spec)
+        except Exception as exc:  # noqa: BLE001
+            print(f"integration apply failed: {exc}", file=stderr)
+            return 1
+    else:
+        print(f"Unknown integration client: {client}", file=stderr)
+        return 2
+
+    print(f"saved_path={result['path']}", file=stdout)
+    backup_path = result.get("backup_path")
+    if backup_path:
+        print(f"backup_path={backup_path}", file=stdout)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="flowgate")
     parser.add_argument("--config", default="config/flowgate.yaml")
@@ -621,6 +669,9 @@ def _build_parser() -> argparse.ArgumentParser:
     integration_sub = integration.add_subparsers(dest="integration_cmd", required=True)
     integration_print = integration_sub.add_parser("print")
     integration_print.add_argument("client", choices=["codex", "claude-code"])
+    integration_apply = integration_sub.add_parser("apply")
+    integration_apply.add_argument("client", choices=["codex", "claude-code"])
+    integration_apply.add_argument("--target", default="")
 
     auth = sub.add_parser("auth")
     auth_sub = auth.add_subparsers(dest="provider", required=True)
@@ -700,6 +751,14 @@ def run_cli(
             return _cmd_integration_print(
                 config,
                 args.client,
+                stdout=stdout,
+                stderr=stderr,
+            )
+        if args.integration_cmd == "apply":
+            return _cmd_integration_apply(
+                config,
+                args.client,
+                target=args.target if args.target else None,
                 stdout=stdout,
                 stderr=stderr,
             )
