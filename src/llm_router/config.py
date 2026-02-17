@@ -15,6 +15,7 @@ _ALLOWED_TOP_LEVEL_KEYS = {
     "services",
     "litellm_base",
     "profiles",
+    "auth",
     "oauth",
     "secret_files",
 }
@@ -94,6 +95,12 @@ def _validate_oauth(oauth: dict[str, Any]) -> None:
             raise ConfigError(f"oauth.{name} must be a mapping/object")
 
 
+def _validate_auth_providers(providers: dict[str, Any]) -> None:
+    for name, provider in providers.items():
+        if not isinstance(provider, dict):
+            raise ConfigError(f"auth.providers.{name} must be a mapping/object")
+
+
 def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(data)
 
@@ -115,6 +122,18 @@ def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
         if "cliproxyapi_plus" not in services and "cliproxyapi" in services:
             services["cliproxyapi_plus"] = services.pop("cliproxyapi")
         normalized["services"] = services
+
+    auth_raw = normalized.get("auth")
+    oauth_raw = normalized.get("oauth")
+
+    if "auth" not in normalized and isinstance(oauth_raw, dict):
+        normalized["auth"] = {"providers": dict(oauth_raw)}
+    elif isinstance(auth_raw, dict):
+        providers_raw = auth_raw.get("providers", {})
+        providers = _ensure_mapping(providers_raw, "auth.providers")
+        normalized["auth"] = {"providers": providers}
+        if "oauth" not in normalized:
+            normalized["oauth"] = dict(providers)
 
     return normalized
 
@@ -144,6 +163,12 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     oauth_map = _ensure_mapping(oauth, "oauth")
     _validate_oauth(oauth_map)
 
+    auth_raw = data.get("auth", {})
+    auth_map = _ensure_mapping(auth_raw, "auth")
+    providers_raw = auth_map.get("providers", {})
+    providers = _ensure_mapping(providers_raw, "auth.providers")
+    _validate_auth_providers(providers)
+
     secret_files = data.get("secret_files", [])
     if not isinstance(secret_files, list) or not all(isinstance(p, str) for p in secret_files):
         raise ConfigError("secret_files must be a list of string paths")
@@ -154,6 +179,7 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
         "services": services,
         "litellm_base": litellm_base,
         "profiles": profiles,
+        "auth": {"providers": providers},
         "oauth": oauth_map,
         "secret_files": secret_files,
     }

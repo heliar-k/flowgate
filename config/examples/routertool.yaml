@@ -82,14 +82,18 @@
       }
     }
   },
-  "oauth": {
-    "codex": {
-      "auth_url_endpoint": "http://127.0.0.1:8317/v0/management/oauth/codex/auth-url",
-      "status_endpoint": "http://127.0.0.1:8317/v0/management/oauth/codex/status"
-    },
-    "copilot": {
-      "auth_url_endpoint": "http://127.0.0.1:8317/v0/management/oauth/github-copilot/auth-url",
-      "status_endpoint": "http://127.0.0.1:8317/v0/management/oauth/github-copilot/status"
+  "auth": {
+    "providers": {
+      "codex": {
+        "method": "oauth_poll",
+        "auth_url_endpoint": "http://127.0.0.1:8317/v0/management/oauth/codex/auth-url",
+        "status_endpoint": "http://127.0.0.1:8317/v0/management/oauth/codex/status"
+      },
+      "copilot": {
+        "method": "oauth_poll",
+        "auth_url_endpoint": "http://127.0.0.1:8317/v0/management/oauth/github-copilot/auth-url",
+        "status_endpoint": "http://127.0.0.1:8317/v0/management/oauth/github-copilot/status"
+      }
     }
   },
   "secret_files": [

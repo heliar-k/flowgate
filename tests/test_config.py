@@ -119,6 +119,23 @@ class ConfigTests(unittest.TestCase):
         cfg = load_router_config(path)
         self.assertIn("cliproxyapi_plus", cfg["services"])
 
+    def test_load_auth_providers_new_schema(self):
+        data = self._base_config()
+        data["auth"] = {
+            "providers": {
+                "codex": {
+                    "method": "oauth_poll",
+                    "auth_url_endpoint": "http://127.0.0.1:9000/auth-url",
+                    "status_endpoint": "http://127.0.0.1:9000/status",
+                }
+            }
+        }
+        data.pop("oauth", None)
+        path = self._write_config(data)
+        cfg = load_router_config(path)
+        self.assertIn("auth", cfg)
+        self.assertIn("codex", cfg["auth"]["providers"])
+
     def test_merge_dicts_deep(self):
         base = {
             "litellm_settings": {"num_retries": 1, "cooldown_time": 10},
