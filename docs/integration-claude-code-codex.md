@@ -23,7 +23,9 @@
 以下命令使用仓库内脚本（无需手动激活 venv）：
 
 ```bash
-export ROUTER_UPSTREAM_API_KEY="sk-local-test"
+mkdir -p .router/secrets
+printf '%s\n' "sk-local-test" > .router/secrets/upstream_cliproxyapi_api_key
+chmod 600 .router/secrets/upstream_cliproxyapi_api_key
 export CUSTOM_API_KEY="sk-dummy"
 
 ./scripts/xgate --config config/flowgate.yaml profile set balanced
@@ -130,6 +132,13 @@ ANTHROPIC_DEFAULT_HAIKU_MODEL=router-default
 
 ```json
 {
+  "credentials": {
+    "upstream": {
+      "cliproxy_default": {
+        "file": "../.router/secrets/upstream_cliproxyapi_api_key"
+      }
+    }
+  },
   "litellm_base": {
     "model_list": [
       {
@@ -144,8 +153,8 @@ ANTHROPIC_DEFAULT_HAIKU_MODEL=router-default
         "model_name": "router-gpt52-copilot-fallback",
         "litellm_params": {
           "model": "openai/gpt-5.2",
-          "api_base": "http://127.0.0.1:18317/v1",
-          "api_key": "os.environ/ROUTER_UPSTREAM_API_KEY"
+          "api_base": "http://127.0.0.1:8317/v1",
+          "api_key_ref": "cliproxy_default"
         }
       }
     ]
@@ -177,12 +186,14 @@ env_key = "OPENAI_API_KEY"
 wire_api = "responses"
 ```
 
-配套环境变量（示例）：
+配套密钥配置（示例）：
 
 ```bash
 export OPENAI_API_KEY="sk-gateway-token"
 export UPSTREAM_OPENAI_API_KEY="sk-openai-upstream"
-export ROUTER_UPSTREAM_API_KEY="sk-coproxy-local"
+mkdir -p .router/secrets
+printf '%s\n' "sk-coproxy-local" > .router/secrets/upstream_cliproxyapi_api_key
+chmod 600 .router/secrets/upstream_cliproxyapi_api_key
 ./scripts/xgate --config config/flowgate.yaml auth login copilot
 ```
 
@@ -192,14 +203,21 @@ export ROUTER_UPSTREAM_API_KEY="sk-coproxy-local"
 
 ```json
 {
+  "credentials": {
+    "upstream": {
+      "cliproxy_default": {
+        "file": "../.router/secrets/upstream_cliproxyapi_api_key"
+      }
+    }
+  },
   "litellm_base": {
     "model_list": [
       {
         "model_name": "router-claude-opus-4-6-copilot",
         "litellm_params": {
           "model": "openai/claude-opus-4.6",
-          "api_base": "http://127.0.0.1:18317/v1",
-          "api_key": "os.environ/ROUTER_UPSTREAM_API_KEY"
+          "api_base": "http://127.0.0.1:8317/v1",
+          "api_key_ref": "cliproxy_default"
         }
       },
       {

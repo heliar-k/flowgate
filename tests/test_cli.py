@@ -1,6 +1,7 @@
 import io
 import json
 import os
+import socket
 import tempfile
 import unittest
 from pathlib import Path
@@ -202,6 +203,60 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("litellm:stopped", out.getvalue())
         self.assertIn("cliproxyapi_plus:stopped", out.getvalue())
+
+    def test_service_start_reports_port_in_use(self):
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
+            occupied.bind((DEFAULT_SERVICE_HOST, 0))
+            occupied.listen(1)
+            data["services"]["cliproxyapi_plus"]["port"] = occupied.getsockname()[1]
+            self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+            out = io.StringIO()
+            err = io.StringIO()
+            with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
+                supervisor = supervisor_cls.return_value
+                supervisor.is_running.return_value = False
+                code = run_cli(
+                    ["--config", str(self.cfg), "service", "start", "cliproxyapi_plus"],
+                    stdout=out,
+                    stderr=err,
+                )
+
+        self.assertEqual(code, 1)
+        self.assertIn("port-in-use", err.getvalue())
+        self.assertIn("cliproxyapi_plus", err.getvalue())
+        supervisor.start.assert_not_called()
+
+    def test_service_restart_reports_port_in_use_when_service_not_running(self):
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
+            occupied.bind((DEFAULT_SERVICE_HOST, 0))
+            occupied.listen(1)
+            data["services"]["cliproxyapi_plus"]["port"] = occupied.getsockname()[1]
+            self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+            out = io.StringIO()
+            err = io.StringIO()
+            with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
+                supervisor = supervisor_cls.return_value
+                supervisor.is_running.return_value = False
+                code = run_cli(
+                    [
+                        "--config",
+                        str(self.cfg),
+                        "service",
+                        "restart",
+                        "cliproxyapi_plus",
+                    ],
+                    stdout=out,
+                    stderr=err,
+                )
+
+        self.assertEqual(code, 1)
+        self.assertIn("port-in-use", err.getvalue())
+        self.assertIn("cliproxyapi_plus", err.getvalue())
+        supervisor.restart.assert_not_called()
 
     def test_auth_login(self):
         out = io.StringIO()
@@ -596,6 +651,42 @@ class CLITests(unittest.TestCase):
         self.assertIn("doctor:runtime_binaries=pass", text)
         self.assertIn("doctor:secret_permissions=pass", text)
         self.assertIn("doctor:runtime_dependency=pass", text)
+
+    def test_doctor_fails_when_api_key_ref_credential_file_missing(self):
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        data["credentials"] = {
+            "upstream": {
+                "coproxy_local": {"file": str(self.root / "secrets" / "missing.key")}
+            }
+        }
+        data["litellm_base"]["model_list"] = [
+            {
+                "model_name": "router-default",
+                "litellm_params": {
+                    "model": "openai/router-default",
+                    "api_key_ref": "coproxy_local",
+                },
+            }
+        ]
+        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+        runtime_bin = self.root / "runtime" / "bin"
+        runtime_bin.mkdir(parents=True, exist_ok=True)
+        cliproxy = runtime_bin / "CLIProxyAPIPlus"
+        litellm = runtime_bin / "litellm"
+        cliproxy.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        litellm.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        os.chmod(cliproxy, 0o755)
+        os.chmod(litellm, 0o755)
+
+        out = io.StringIO()
+        with mock.patch(
+            "flowgate.cli._runtime_dependency_available", return_value=True
+        ):
+            code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
+        self.assertEqual(code, 1)
+        text = out.getvalue()
+        self.assertIn("doctor:upstream_credentials=fail", text)
 
 
 if __name__ == "__main__":

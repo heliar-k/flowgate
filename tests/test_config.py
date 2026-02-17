@@ -168,6 +168,29 @@ class ConfigTests(unittest.TestCase):
         )
         self.assertTrue(merged["router_settings"]["enable_pre_call_checks"])
 
+    def test_load_credentials_schema(self):
+        data = self._base_config()
+        data["credentials"] = {
+            "upstream": {
+                "coproxy_local": {"file": "/tmp/coproxy.key"},
+            }
+        }
+        path = self._write_config(data)
+        cfg = load_router_config(path)
+        self.assertIn("credentials", cfg)
+        self.assertEqual(
+            cfg["credentials"]["upstream"]["coproxy_local"]["file"],
+            "/tmp/coproxy.key",
+        )
+
+    def test_rejects_invalid_credentials_schema(self):
+        data = self._base_config()
+        data["credentials"] = {"upstream": {"coproxy_local": {"file": 123}}}
+        path = self._write_config(data)
+
+        with self.assertRaises(ConfigError):
+            load_router_config(path)
+
 
 if __name__ == "__main__":
     unittest.main()

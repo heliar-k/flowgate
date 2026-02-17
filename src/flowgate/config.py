@@ -13,6 +13,7 @@ _ALLOWED_TOP_LEVEL_KEYS = {
     "config_version",
     "paths",
     "services",
+    "credentials",
     "litellm_base",
     "profiles",
     "auth",
@@ -107,6 +108,38 @@ def _validate_auth_providers(providers: dict[str, Any]) -> None:
             raise ConfigError(f"auth.providers.{name} must be a mapping/object")
 
 
+def _normalize_credentials(credentials: dict[str, Any]) -> dict[str, Any]:
+    unknown = sorted(set(credentials.keys()) - {"upstream"})
+    if unknown:
+        raise ConfigError(f"credentials has unknown keys: {', '.join(unknown)}")
+
+    upstream_raw = credentials.get("upstream", {})
+    upstream = _ensure_mapping(upstream_raw, "credentials.upstream")
+
+    normalized_upstream: dict[str, dict[str, str]] = {}
+    for name, entry in upstream.items():
+        if not isinstance(name, str) or not name:
+            raise ConfigError("credentials.upstream keys must be non-empty strings")
+        if not isinstance(entry, dict):
+            raise ConfigError(f"credentials.upstream.{name} must be a mapping/object")
+
+        unknown_entry = sorted(set(entry.keys()) - {"file"})
+        if unknown_entry:
+            raise ConfigError(
+                f"credentials.upstream.{name} has unknown keys: {', '.join(unknown_entry)}"
+            )
+
+        file_path = entry.get("file")
+        if not isinstance(file_path, str) or not file_path.strip():
+            raise ConfigError(
+                f"credentials.upstream.{name}.file must be a non-empty string"
+            )
+
+        normalized_upstream[name] = {"file": file_path}
+
+    return {"upstream": normalized_upstream}
+
+
 def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(data)
 
@@ -167,6 +200,10 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     _validate_services(services)
     _validate_profiles(profiles)
 
+    credentials_raw = data.get("credentials", {})
+    credentials_map = _ensure_mapping(credentials_raw, "credentials")
+    credentials = _normalize_credentials(credentials_map)
+
     oauth = data.get("oauth", {})
     oauth_map = _ensure_mapping(oauth, "oauth")
     _validate_oauth(oauth_map)
@@ -187,6 +224,7 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
         "config_version": data["config_version"],
         "paths": paths,
         "services": services,
+        "credentials": credentials,
         "litellm_base": litellm_base,
         "profiles": profiles,
         "auth": {"providers": providers},

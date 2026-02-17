@@ -26,6 +26,13 @@
       }
     }
   },
+  "credentials": {
+    "upstream": {
+      "cliproxy_default": {
+        "file": "../.router/secrets/upstream_cliproxyapi_api_key"
+      }
+    }
+  },
   "litellm_base": {
     "model_list": [
       {
@@ -33,7 +40,7 @@
         "litellm_params": {
           "model": "openai/router-default",
           "api_base": "http://127.0.0.1:8317/v1",
-          "api_key": "os.environ/ROUTER_UPSTREAM_API_KEY"
+          "api_key_ref": "cliproxy_default"
         }
       },
       {

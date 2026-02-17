@@ -60,7 +60,9 @@ Generated runtime files are kept under `./.router/` (not inside `config/`).
 2. Set runtime secrets:
 
 ```bash
-export ROUTER_UPSTREAM_API_KEY="sk-..."
+mkdir -p .router/secrets
+printf '%s\n' "sk-..." > .router/secrets/upstream_cliproxyapi_api_key
+chmod 600 .router/secrets/upstream_cliproxyapi_api_key
 export CUSTOM_API_KEY="sk-..."
 ```
 

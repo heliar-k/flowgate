@@ -48,5 +48,5 @@
 
 ## Security & Configuration Tips
 - Never commit real credentials or local auth artifacts.
-- Keep local secrets in environment variables (`ROUTER_UPSTREAM_API_KEY`, `CUSTOM_API_KEY`) and ignored config files.
+- Keep local secrets in credential files under `.router/secrets/` and environment variables for non-file-backed providers (for example, `CUSTOM_API_KEY`).
 - Validate file permissions for sensitive auth files when troubleshooting status output.
