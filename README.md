@@ -22,6 +22,29 @@ export UV_CACHE_DIR=.uv-cache
 uv sync --group runtime --group test
 ```
 
+## Run without venv activation (uvx)
+
+Use project-local uv cache/tool dirs for stable local behavior:
+
+```bash
+export UV_CACHE_DIR=.uv-cache
+export UV_TOOL_DIR=.uv-tools
+```
+
+Direct one-shot commands:
+
+```bash
+uvx --from . flowgate --help
+uvx --from . python -m unittest discover -s tests -v
+```
+
+Wrapper scripts (same behavior):
+
+```bash
+./scripts/xgate --help
+./scripts/xtest
+```
+
 ## Quick start
 
 1. Copy sample config:

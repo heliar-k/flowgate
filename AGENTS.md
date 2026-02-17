@@ -11,10 +11,12 @@
 ## Build, Test, and Development Commands
 - Install deps: `export UV_CACHE_DIR=.uv-cache && uv sync --group runtime --group test`
 - Run CLI help: `uv run flowgate --help`
+- Run CLI help (uvx, no venv activation): `./scripts/xgate --help`
 - Bootstrap runtime binaries: `uv run flowgate --config config/flowgate.yaml bootstrap download`
 - Activate profile: `uv run flowgate --config config/flowgate.yaml profile set balanced`
 - Start/stop services: `uv run flowgate --config config/flowgate.yaml service start all` / `service stop all`
 - Run tests: `uv run python -m unittest discover -s tests -v`
+- Run tests (uvx, no venv activation): `./scripts/xtest`
 
 ## Coding Style & Naming Conventions
 - Python 3.12+ (`requires-python >=3.12,<3.14`), 4-space indentation, type hints for public functions.
