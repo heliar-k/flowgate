@@ -279,10 +279,8 @@ class CLITests(unittest.TestCase):
 
     def test_auth_import_headless_generic_provider_command(self):
         out = io.StringIO()
-        with mock.patch(
-            "llm_router.cli.import_codex_headless_auth",
-            return_value=Path("/tmp/auths/codex-headless-import.json"),
-        ) as importer:
+        handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
+        with mock.patch("llm_router.cli.get_headless_import_handler", return_value=handler) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -297,7 +295,34 @@ class CLITests(unittest.TestCase):
             )
         self.assertEqual(code, 0)
         self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
-        importer.assert_called_once_with("/tmp/codex-auth.json", str((self.root / "auths").resolve()))
+        resolver.assert_called_once_with("codex")
+        handler.assert_called_once_with("/tmp/codex-auth.json", str((self.root / "auths").resolve()))
+
+    def test_auth_import_dispatches_by_registered_method(self):
+        out = io.StringIO()
+        handler = mock.Mock(return_value=Path("/tmp/auths/custom-headless-import.json"))
+        with (
+            mock.patch("llm_router.cli.get_headless_import_handler", return_value=handler) as resolver,
+            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+        ):
+            code = run_cli(
+                [
+                    "--config",
+                    str(self.cfg),
+                    "auth",
+                    "import-headless",
+                    "custom",
+                    "--source",
+                    "/tmp/custom-auth.json",
+                ],
+                stdout=out,
+            )
+        self.assertEqual(code, 0)
+        self.assertIn("saved_auth=/tmp/auths/custom-headless-import.json", out.getvalue())
+        resolver.assert_called_once_with("custom")
+        handler.assert_called_once_with("/tmp/custom-auth.json", str((self.root / "auths").resolve()))
+        supervisor = supervisor_cls.return_value
+        supervisor.record_event.assert_called_once()
 
     def test_auth_login_generic_command_unknown_provider(self):
         out = io.StringIO()
@@ -325,10 +350,8 @@ class CLITests(unittest.TestCase):
 
     def test_auth_codex_import_headless(self):
         out = io.StringIO()
-        with mock.patch(
-            "llm_router.cli.import_codex_headless_auth",
-            return_value=Path("/tmp/auths/codex-headless-import.json"),
-        ) as importer:
+        handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
+        with mock.patch("llm_router.cli.get_headless_import_handler", return_value=handler) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -343,7 +366,8 @@ class CLITests(unittest.TestCase):
             )
         self.assertEqual(code, 0)
         self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
-        importer.assert_called_once()
+        resolver.assert_called_once_with("codex")
+        handler.assert_called_once()
 
     def test_auth_codex_import_headless_default_dest_follows_runtime_root(self):
         cfg_dir = self.root / "config"
@@ -358,10 +382,8 @@ class CLITests(unittest.TestCase):
         cfg_path.write_text(json.dumps(data), encoding="utf-8")
 
         out = io.StringIO()
-        with mock.patch(
-            "llm_router.cli.import_codex_headless_auth",
-            return_value=Path("/tmp/auths/codex-headless-import.json"),
-        ) as importer:
+        handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
+        with mock.patch("llm_router.cli.get_headless_import_handler", return_value=handler) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -378,7 +400,8 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
         expected_dest = str((self.root / ".router" / "auths").resolve())
-        importer.assert_called_once_with("/tmp/codex-auth.json", expected_dest)
+        resolver.assert_called_once_with("codex")
+        handler.assert_called_once_with("/tmp/codex-auth.json", expected_dest)
 
     def test_bootstrap_download(self):
         out = io.StringIO()

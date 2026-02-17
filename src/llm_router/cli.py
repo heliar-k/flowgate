@@ -5,8 +5,9 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Callable, Iterable, TextIO
+from typing import Any, Iterable, TextIO
 
+from .auth_methods import get_headless_import_handler, headless_import_handlers
 from .bootstrap import (
     DEFAULT_CLIPROXY_REPO,
     DEFAULT_CLIPROXY_VERSION,
@@ -17,7 +18,6 @@ from .bootstrap import (
 )
 from .config import ConfigError, load_router_config
 from .constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
-from .headless_import import import_codex_headless_auth
 from .health import check_http_health
 from .oauth import fetch_auth_url, poll_auth_status
 from .process import ProcessSupervisor
@@ -78,12 +78,6 @@ def _default_auth_dir(config: dict[str, Any]) -> str:
 
     config_dir = Path(config.get("_meta", {}).get("config_dir", os.getcwd()))
     return str((config_dir / "auths").resolve())
-
-
-def _headless_import_handlers() -> dict[str, Callable[[str, str], Path]]:
-    return {
-        "codex": import_codex_headless_auth,
-    }
 
 
 def _auth_providers(config: dict[str, Any]) -> dict[str, Any]:
@@ -274,7 +268,7 @@ def _cmd_auth_login(
 def _cmd_auth_list(config: dict[str, Any], *, stdout: TextIO) -> int:
     providers_map = _auth_providers(config)
     providers = sorted(str(name) for name in providers_map.keys())
-    handlers = _headless_import_handlers()
+    handlers = headless_import_handlers()
 
     if not providers:
         print("oauth_providers=none", file=stdout)
@@ -306,7 +300,7 @@ def _cmd_auth_list(config: dict[str, Any], *, stdout: TextIO) -> int:
 def _cmd_auth_status(config: dict[str, Any], *, stdout: TextIO) -> int:
     providers_map = _auth_providers(config)
     providers = sorted(str(name) for name in providers_map.keys())
-    handlers = _headless_import_handlers()
+    handlers = headless_import_handlers()
 
     print(f"default_auth_dir={_default_auth_dir(config)}", file=stdout)
     issues = check_secret_file_permissions(_effective_secret_files(config))
@@ -345,10 +339,9 @@ def _cmd_auth_import_headless(
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
-    handlers = _headless_import_handlers()
-    handler = handlers.get(provider)
+    handler = get_headless_import_handler(provider)
     if handler is None:
-        supported = ",".join(sorted(handlers.keys())) or "none"
+        supported = ",".join(sorted(headless_import_handlers().keys())) or "none"
         print(f"headless import not supported for provider={provider}; supported={supported}", file=stderr)
         return 2
 
