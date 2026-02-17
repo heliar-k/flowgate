@@ -117,3 +117,23 @@ Fix:
   - `ANTHROPIC_DEFAULT_OPUS_MODEL`
   - `ANTHROPIC_DEFAULT_SONNET_MODEL`
   - `ANTHROPIC_DEFAULT_HAIKU_MODEL`
+
+## 7) Model Alias Mismatch (`router-default` changed but not fully synced)
+
+Symptoms:
+- `Codex` 或 `Claude Code` 在调用时出现 `404 model not found`。
+- `/v1/models` 能看到模型名，但客户端仍请求旧别名。
+- fallback 行为异常（未触发或触发到错误模型）。
+
+Checks:
+```bash
+rg -n "router-default|router-main|fallbacks|model_name" config/flowgate.yaml
+uv run flowgate --config config/flowgate.yaml integration print codex
+uv run flowgate --config config/flowgate.yaml integration print claude-code
+curl --silent --show-error http://127.0.0.1:4000/v1/models
+```
+
+Fix:
+- 同步更新网关别名、fallback 引用、客户端模型字段。
+- 重新执行 `profile set <profile>` 与 `service restart all`。
+- 按 `docs/router-default-model.md` 的“推荐改名流程”做全链路校验。

@@ -122,6 +122,7 @@ uv run flowgate --config config/flowgate.yaml integration print claude-code
 
 - `codex`: outputs a `~/.codex/config.toml`-style provider snippet.
 - `claude-code`: outputs `ANTHROPIC_BASE_URL`/`ANTHROPIC_AUTH_TOKEN` and model-slot envs.
+- Model alias (`router-default`) detailed guide: `docs/router-default-model.md`.
 
 ## Directory layout
 
