@@ -16,9 +16,11 @@ from .bootstrap import (
     validate_cliproxy_binary,
     validate_litellm_runner,
 )
+from .client_apply import apply_claude_code_settings, apply_codex_config
 from .config import ConfigError, load_router_config
 from .constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from .health import check_http_health
+from .integration import build_integration_specs
 from .oauth import fetch_auth_url, poll_auth_status
 from .process import ProcessSupervisor
 from .profile import activate_profile
@@ -539,6 +541,114 @@ def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
     return 0 if all_ok else 1
 
 
+def _render_codex_integration(spec: dict[str, Any]) -> str:
+    base_url = str(spec.get("base_url", "")).strip()
+    model = str(spec.get("model", "router-default")).strip() or "router-default"
+    return "\n".join(
+        [
+            'model_provider = "flowgate"',
+            f'model = "{model}"',
+            "",
+            "[model_providers.flowgate]",
+            'name = "FlowGate Local"',
+            f'base_url = "{base_url}"',
+            'env_key = "OPENAI_API_KEY"',
+            'wire_api = "responses"',
+        ]
+    )
+
+
+def _render_claude_code_integration(spec: dict[str, Any]) -> str:
+    base_url = str(spec.get("base_url", "")).strip()
+    env = spec.get("env", {})
+    if not isinstance(env, dict):
+        env = {}
+
+    lines = [
+        f"ANTHROPIC_BASE_URL={base_url}",
+        "ANTHROPIC_AUTH_TOKEN=your-gateway-token",
+    ]
+    for key in (
+        "ANTHROPIC_MODEL",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    ):
+        value = str(env.get(key, "")).strip()
+        if value:
+            lines.append(f"{key}={value}")
+    return "\n".join(lines)
+
+
+def _cmd_integration_print(
+    config: dict[str, Any], client: str, *, stdout: TextIO, stderr: TextIO
+) -> int:
+    try:
+        specs = build_integration_specs(config)
+    except Exception as exc:  # noqa: BLE001
+        print(f"integration render failed: {exc}", file=stderr)
+        return 1
+
+    if client == "codex":
+        print(_render_codex_integration(specs.get("codex", {})), file=stdout)
+        return 0
+    if client == "claude-code":
+        print(
+            _render_claude_code_integration(specs.get("claude_code", {})), file=stdout
+        )
+        return 0
+
+    print(f"Unknown integration client: {client}", file=stderr)
+    return 2
+
+
+def _cmd_integration_apply(
+    config: dict[str, Any],
+    client: str,
+    *,
+    target: str | None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        specs = build_integration_specs(config)
+    except Exception as exc:  # noqa: BLE001
+        print(f"integration render failed: {exc}", file=stderr)
+        return 1
+
+    if client == "codex":
+        resolved_target = target or "~/.codex/config.toml"
+        spec = specs.get("codex", {})
+        if not isinstance(spec, dict):
+            print("integration spec missing codex block", file=stderr)
+            return 1
+        try:
+            result = apply_codex_config(resolved_target, spec)
+        except Exception as exc:  # noqa: BLE001
+            print(f"integration apply failed: {exc}", file=stderr)
+            return 1
+    elif client == "claude-code":
+        resolved_target = target or "~/.claude/settings.json"
+        spec = specs.get("claude_code", {})
+        if not isinstance(spec, dict):
+            print("integration spec missing claude_code block", file=stderr)
+            return 1
+        try:
+            result = apply_claude_code_settings(resolved_target, spec)
+        except Exception as exc:  # noqa: BLE001
+            print(f"integration apply failed: {exc}", file=stderr)
+            return 1
+    else:
+        print(f"Unknown integration client: {client}", file=stderr)
+        return 2
+
+    print(f"saved_path={result['path']}", file=stdout)
+    backup_path = result.get("backup_path")
+    if backup_path:
+        print(f"backup_path={backup_path}", file=stdout)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="flowgate")
     parser.add_argument("--config", default="config/flowgate.yaml")
@@ -554,6 +664,14 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("status")
     sub.add_parser("health")
     sub.add_parser("doctor")
+
+    integration = sub.add_parser("integration")
+    integration_sub = integration.add_subparsers(dest="integration_cmd", required=True)
+    integration_print = integration_sub.add_parser("print")
+    integration_print.add_argument("client", choices=["codex", "claude-code"])
+    integration_apply = integration_sub.add_parser("apply")
+    integration_apply.add_argument("client", choices=["codex", "claude-code"])
+    integration_apply.add_argument("--target", default="")
 
     auth = sub.add_parser("auth")
     auth_sub = auth.add_subparsers(dest="provider", required=True)
@@ -627,6 +745,23 @@ def run_cli(
 
     if args.command == "doctor":
         return _cmd_doctor(config, stdout=stdout)
+
+    if args.command == "integration":
+        if args.integration_cmd == "print":
+            return _cmd_integration_print(
+                config,
+                args.client,
+                stdout=stdout,
+                stderr=stderr,
+            )
+        if args.integration_cmd == "apply":
+            return _cmd_integration_apply(
+                config,
+                args.client,
+                target=args.target if args.target else None,
+                stdout=stdout,
+                stderr=stderr,
+            )
 
     if args.command == "auth":
         if args.provider == "list":

@@ -93,3 +93,27 @@ Expected:
 Fix:
 - Ensure active profile has been generated (`profile set ...`).
 - Check `.router/runtime/process-logs/*.log` for upstream error details.
+
+## 6) Claude Code Gateway Requests Fail (401/404)
+
+Symptoms:
+- Claude Code 使用代理时返回 `401 Unauthorized` / `403 Forbidden` / `404 Not Found`。
+
+Checks:
+```bash
+uv run flowgate --config config/flowgate.yaml integration print claude-code
+curl -i http://127.0.0.1:4000/v1/models
+curl -i http://127.0.0.1:4000/v1/messages/count_tokens \
+  -H "content-type: application/json" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "authorization: Bearer sk-local-test" \
+  -d '{"model":"router-default","messages":[{"role":"user","content":"ping"}]}'
+```
+
+Fix:
+- 确保 `ANTHROPIC_BASE_URL` 指向网关根地址（例如 `http://127.0.0.1:4000`），不是 `/v1` 子路径。
+- 确保 `ANTHROPIC_AUTH_TOKEN` 与网关鉴权策略匹配。
+- 若模型别名不稳定，显式设置：
+  - `ANTHROPIC_DEFAULT_OPUS_MODEL`
+  - `ANTHROPIC_DEFAULT_SONNET_MODEL`
+  - `ANTHROPIC_DEFAULT_HAIKU_MODEL`
