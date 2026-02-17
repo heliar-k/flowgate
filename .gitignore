@@ -49,3 +49,4 @@ config/flowgate.yaml
 config/cliproxyapi.yaml
 config/auths/
 config/static/
+.env
