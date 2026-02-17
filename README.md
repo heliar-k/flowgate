@@ -256,6 +256,7 @@ Coverage/acceptance baseline:
 ## Troubleshooting
 
 - See `docs/runbook-troubleshooting.md` for common issues and direct repair commands.
+- Client integration guide (Claude Code / Codex): `docs/integration-claude-code-codex.md`.
 - Start from:
   - `uv run flowgate --config config/flowgate.yaml status`
   - `uv run flowgate --config config/flowgate.yaml health`
