@@ -7,6 +7,7 @@
 
 - 本地双服务：`CLIProxyAPIPlus + LiteLLM`
 - 控制入口：`llm-router` CLI（配置、策略切换、服务管理、OAuth）
+- 认证入口：`auth list` / `auth login <provider>` / `auth import-headless <provider>`（兼容旧命令）
 - 运行产物：统一落在 `.router/`
 - 技术栈：Python 3.12+, uv, unittest
 
@@ -20,10 +21,12 @@
 - 测试分层文档：README 中补齐 unit/integration/smoke 与验收基线
 - 发布与回滚文档：`docs/release-and-rollback.md`
 - 安全基线：`scripts/security_check.sh` + `.gitignore` 敏感规则
+- 认证可用性增强：新增 `auth list/login/import-headless` 通用命令，支持从配置动态读取 provider
+- 认证安全补盲：`status/doctor` 将默认 `auths` 目录下的 JSON 认证文件纳入权限检查
 
 Latest verification:
 - Command: `UV_CACHE_DIR=.uv-cache uv run python -m unittest discover -s tests -v`
-- Result: `Ran 35 tests ... OK`
+- Result: `Ran 45 tests ... OK`
 - Command: `UV_CACHE_DIR=.uv-cache uv run llm-router --help`
 - Result: `usage: llm-router ...`
 
@@ -40,6 +43,21 @@ Latest verification:
 ### Task C: CLI Naming Consistency (P1) ✅
 
 **Implemented:** `argparse prog` 从 `routerctl` 统一为 `llm-router`，并添加回归测试。
+
+## Auth Scheme Review (New)
+
+已识别并处理的缺口：
+- `auth` 命令原先对 provider 写死（仅 codex/copilot），扩展新 provider 需要改代码。
+- 认证操作发现性弱，用户需要记忆 provider-first 命令路径。
+- 通过 headless 导入生成的新认证文件不在默认权限检查范围。
+
+仍需下一轮完成的缺口：
+- 配置语义仍偏 `oauth`，对非 OAuth 认证方式表达能力不足。
+- 缺少 `auth status` 类命令来展示 provider 能力、认证文件状态和迁移提示。
+- OAuth 轮询对瞬时网络异常的容错不足（当前失败偏“硬失败”）。
+
+执行计划：
+- 见 `docs/plans/2026-02-16-auth-usability-and-extensibility-implementation-plan.md`
 
 ## Risks and Notes
 

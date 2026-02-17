@@ -22,13 +22,14 @@ Fix:
 ## 2) OAuth Login Fails
 
 Symptoms:
-- `auth codex login` / `auth copilot login` exits non-zero.
+- `auth login codex` / `auth login copilot` exits non-zero.
 - `oauth_status` is never returned.
 
 Checks:
 ```bash
-uv run llm-router --config config/routertool.yaml auth codex login --timeout 30 --poll-interval 2
-uv run llm-router --config config/routertool.yaml auth copilot login --timeout 30 --poll-interval 2
+uv run llm-router --config config/routertool.yaml auth list
+uv run llm-router --config config/routertool.yaml auth login codex --timeout 30 --poll-interval 2
+uv run llm-router --config config/routertool.yaml auth login copilot --timeout 30 --poll-interval 2
 tail -n 50 .router/runtime/events.log
 ```
 

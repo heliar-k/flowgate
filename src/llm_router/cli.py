@@ -5,7 +5,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Iterable, TextIO
+from typing import Any, Callable, Iterable, TextIO
 
 from .bootstrap import (
     DEFAULT_CLIPROXY_REPO,
@@ -80,6 +80,26 @@ def _default_auth_dir(config: dict[str, Any]) -> str:
     return str((config_dir / "auths").resolve())
 
 
+def _headless_import_handlers() -> dict[str, Callable[[str, str], Path]]:
+    return {
+        "codex": import_codex_headless_auth,
+    }
+
+
+def _effective_secret_files(config: dict[str, Any]) -> list[str]:
+    paths: set[str] = set()
+    for value in config.get("secret_files", []):
+        if isinstance(value, str) and value.strip():
+            paths.add(str(Path(value).resolve()))
+
+    default_auth_dir = Path(_default_auth_dir(config))
+    if default_auth_dir.exists():
+        for item in default_auth_dir.glob("*.json"):
+            paths.add(str(item.resolve()))
+
+    return sorted(paths)
+
+
 def _service_names(config: dict[str, Any], target: str) -> list[str]:
     if target == "all":
         return list(config["services"].keys())
@@ -143,7 +163,7 @@ def _cmd_status(config: dict[str, Any], *, stdout: TextIO) -> int:
         running = supervisor.is_running(name)
         print(f"{name}_running={'yes' if running else 'no'}", file=stdout)
 
-    issues = check_secret_file_permissions(config.get("secret_files", []))
+    issues = check_secret_file_permissions(_effective_secret_files(config))
     if issues:
         print(f"secret_permission_issues={len(issues)}", file=stdout)
     else:
@@ -202,7 +222,8 @@ def _cmd_auth_login(
     oauth = config.get("oauth", {})
     if provider not in oauth:
         supervisor.record_event("oauth_login", provider=provider, result="failed", detail="provider-not-configured")
-        print(f"OAuth provider not configured: {provider}", file=stderr)
+        available = ",".join(sorted(str(k) for k in oauth.keys())) or "none"
+        print(f"OAuth provider not configured: {provider}; available={available}", file=stderr)
         return 2
 
     provider_cfg = oauth[provider]
@@ -230,6 +251,64 @@ def _cmd_auth_login(
         return 1
 
 
+def _cmd_auth_list(config: dict[str, Any], *, stdout: TextIO) -> int:
+    oauth = config.get("oauth", {})
+    providers = sorted(str(name) for name in oauth.keys())
+    handlers = _headless_import_handlers()
+
+    if not providers:
+        print("oauth_providers=none", file=stdout)
+        print("headless_import_providers=none", file=stdout)
+        return 0
+
+    for provider in providers:
+        headless = "yes" if provider in handlers else "no"
+        print(
+            f"provider={provider} oauth_login=yes headless_import={headless}",
+            file=stdout,
+        )
+
+    supported = sorted(provider for provider in providers if provider in handlers)
+    print(f"oauth_providers={','.join(providers)}", file=stdout)
+    print(
+        f"headless_import_providers={','.join(supported) if supported else 'none'}",
+        file=stdout,
+    )
+    return 0
+
+
+def _cmd_auth_import_headless(
+    config: dict[str, Any],
+    provider: str,
+    *,
+    source: str,
+    dest_dir: str | None,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    handlers = _headless_import_handlers()
+    handler = handlers.get(provider)
+    if handler is None:
+        supported = ",".join(sorted(handlers.keys())) or "none"
+        print(f"headless import not supported for provider={provider}; supported={supported}", file=stderr)
+        return 2
+
+    resolved_dest = dest_dir
+    if not resolved_dest:
+        resolved_dest = _default_auth_dir(config)
+
+    try:
+        saved = handler(source, resolved_dest)
+    except Exception as exc:  # noqa: BLE001
+        print(f"headless import failed: {exc}", file=stderr)
+        return 1
+
+    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
+    supervisor.record_event("auth_import", provider=provider, result="success", detail=f"method=headless path={saved}")
+    print(f"saved_auth={saved}", file=stdout)
+    return 0
+
+
 def _cmd_auth_codex_import_headless(
     config: dict[str, Any],
     *,
@@ -238,18 +317,14 @@ def _cmd_auth_codex_import_headless(
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
-    resolved_dest = dest_dir
-    if not resolved_dest:
-        resolved_dest = _default_auth_dir(config)
-
-    try:
-        saved = import_codex_headless_auth(source, resolved_dest)
-    except Exception as exc:  # noqa: BLE001
-        print(f"headless import failed: {exc}", file=stderr)
-        return 1
-
-    print(f"saved_auth={saved}", file=stdout)
-    return 0
+    return _cmd_auth_import_headless(
+        config,
+        "codex",
+        source=source,
+        dest_dir=dest_dir,
+        stdout=stdout,
+        stderr=stderr,
+    )
 
 
 def _cmd_service_action(config: dict[str, Any], action: str, target: str, *, stdout: TextIO, stderr: TextIO) -> int:
@@ -351,7 +426,7 @@ def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
     else:
         print(f"doctor:runtime_binaries=pass path={runtime_bin}", file=stdout)
 
-    issues = check_secret_file_permissions(config.get("secret_files", []))
+    issues = check_secret_file_permissions(_effective_secret_files(config))
     if issues:
         all_ok = False
         print(
@@ -395,6 +470,18 @@ def _build_parser() -> argparse.ArgumentParser:
 
     auth = sub.add_parser("auth")
     auth_sub = auth.add_subparsers(dest="provider", required=True)
+    auth_sub.add_parser("list")
+
+    login_any = auth_sub.add_parser("login")
+    login_any.add_argument("login_provider")
+    login_any.add_argument("--timeout", type=float, default=120)
+    login_any.add_argument("--poll-interval", type=float, default=2)
+
+    import_headless_any = auth_sub.add_parser("import-headless")
+    import_headless_any.add_argument("import_provider")
+    import_headless_any.add_argument("--source", default="~/.codex/auth.json")
+    import_headless_any.add_argument("--dest-dir", default="")
+
     for provider in ("codex", "copilot"):
         provider_parser = auth_sub.add_parser(provider)
         provider_sub = provider_parser.add_subparsers(dest="auth_cmd", required=True)
@@ -452,6 +539,26 @@ def run_cli(argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO
         return _cmd_doctor(config, stdout=stdout)
 
     if args.command == "auth":
+        if args.provider == "list":
+            return _cmd_auth_list(config, stdout=stdout)
+        if args.provider == "login":
+            return _cmd_auth_login(
+                config,
+                args.login_provider,
+                timeout=args.timeout,
+                poll_interval=args.poll_interval,
+                stdout=stdout,
+                stderr=stderr,
+            )
+        if args.provider == "import-headless":
+            return _cmd_auth_import_headless(
+                config,
+                args.import_provider,
+                source=args.source,
+                dest_dir=args.dest_dir if args.dest_dir else None,
+                stdout=stdout,
+                stderr=stderr,
+            )
         if args.auth_cmd == "login":
             return _cmd_auth_login(
                 config,

@@ -125,10 +125,16 @@ uv run llm-router --config config/routertool.yaml \
 
 ## OAuth login
 
+List configured providers and supported auth actions:
+
+```bash
+uv run llm-router --config config/routertool.yaml auth list
+```
+
 ### Codex OAuth
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth codex login --timeout 180 --poll-interval 2
+uv run llm-router --config config/routertool.yaml auth login codex --timeout 180 --poll-interval 2
 ```
 
 ### Codex headless import (device auth)
@@ -137,13 +143,13 @@ If you already authenticated with Codex CLI using device auth (`codex login --de
 import `~/.codex/auth.json` into CLIProxyAPI auth storage:
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth codex import-headless
+uv run llm-router --config config/routertool.yaml auth import-headless codex
 ```
 
 Custom source or destination:
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth codex import-headless \
+uv run llm-router --config config/routertool.yaml auth import-headless codex \
   --source ~/.codex/auth.json \
   --dest-dir ./.router/auths
 ```
@@ -153,8 +159,13 @@ If `--dest-dir` is omitted, the default is `<runtime_dir parent>/auths` (example
 ### GitHub Copilot OAuth
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth copilot login --timeout 180 --poll-interval 2
+uv run llm-router --config config/routertool.yaml auth login copilot --timeout 180 --poll-interval 2
 ```
+
+Legacy provider-first commands are still supported for compatibility:
+- `auth codex login`
+- `auth codex import-headless`
+- `auth copilot login`
 
 ## Strategy profiles
 

@@ -207,6 +207,98 @@ class CLITests(unittest.TestCase):
             result="success",
         )
 
+    def test_auth_list_reports_configured_providers_and_headless_support(self):
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        data["oauth"]["custom"] = {
+            "auth_url_endpoint": "http://example.local/custom/auth-url",
+            "status_endpoint": "http://example.local/custom/status",
+        }
+        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+        out = io.StringIO()
+        code = run_cli(["--config", str(self.cfg), "auth", "list"], stdout=out)
+        self.assertEqual(code, 0)
+        text = out.getvalue()
+        self.assertIn("provider=codex oauth_login=yes headless_import=yes", text)
+        self.assertIn("provider=copilot oauth_login=yes headless_import=no", text)
+        self.assertIn("provider=custom oauth_login=yes headless_import=no", text)
+
+    def test_auth_login_generic_provider_command(self):
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        data["oauth"]["custom"] = {
+            "auth_url_endpoint": "http://example.local/custom/auth-url",
+            "status_endpoint": "http://example.local/custom/status",
+        }
+        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+        out = io.StringIO()
+        with (
+            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("llm_router.cli.fetch_auth_url", return_value="https://example.com/custom-login") as f_url,
+            mock.patch("llm_router.cli.poll_auth_status", return_value="success") as p_status,
+        ):
+            code = run_cli(["--config", str(self.cfg), "auth", "login", "custom"], stdout=out)
+        self.assertEqual(code, 0)
+        self.assertIn("login_url=https://example.com/custom-login", out.getvalue())
+        f_url.assert_called_once_with("http://example.local/custom/auth-url", timeout=5)
+        p_status.assert_called_once_with(
+            "http://example.local/custom/status",
+            timeout_seconds=120,
+            poll_interval_seconds=2,
+        )
+        supervisor = supervisor_cls.return_value
+        supervisor.record_event.assert_called_once_with(
+            "oauth_login",
+            provider="custom",
+            result="success",
+        )
+
+    def test_auth_import_headless_generic_provider_command(self):
+        out = io.StringIO()
+        with mock.patch(
+            "llm_router.cli.import_codex_headless_auth",
+            return_value=Path("/tmp/auths/codex-headless-import.json"),
+        ) as importer:
+            code = run_cli(
+                [
+                    "--config",
+                    str(self.cfg),
+                    "auth",
+                    "import-headless",
+                    "codex",
+                    "--source",
+                    "/tmp/codex-auth.json",
+                ],
+                stdout=out,
+            )
+        self.assertEqual(code, 0)
+        self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
+        importer.assert_called_once_with("/tmp/codex-auth.json", str((self.root / "auths").resolve()))
+
+    def test_auth_login_generic_command_unknown_provider(self):
+        out = io.StringIO()
+        err = io.StringIO()
+        code = run_cli(
+            ["--config", str(self.cfg), "auth", "login", "unknown-provider"],
+            stdout=out,
+            stderr=err,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("OAuth provider not configured: unknown-provider", err.getvalue())
+        self.assertIn("available=", err.getvalue())
+
+    def test_status_detects_default_auth_dir_permission_issues(self):
+        auth_dir = self.root / "auths"
+        auth_dir.mkdir(parents=True, exist_ok=True)
+        imported_auth = auth_dir / "codex-headless-import.json"
+        imported_auth.write_text("{}", encoding="utf-8")
+        os.chmod(imported_auth, 0o644)
+
+        out = io.StringIO()
+        code = run_cli(["--config", str(self.cfg), "status"], stdout=out)
+        self.assertEqual(code, 0)
+        self.assertIn("secret_permission_issues=1", out.getvalue())
+
     def test_auth_codex_import_headless(self):
         out = io.StringIO()
         with mock.patch(
