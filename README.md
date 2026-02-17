@@ -296,3 +296,7 @@ Coverage/acceptance baseline:
   - top-level `oauth` -> `auth.providers`
 - As of February 17, 2026, `auth.providers` is the preferred schema for new configurations.
 - `oauth` input remains backward-compatible for existing local setups and is normalized internally.
+
+## License
+
+MIT. See `LICENSE`.
