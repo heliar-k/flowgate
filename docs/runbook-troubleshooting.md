@@ -28,6 +28,7 @@ Symptoms:
 Checks:
 ```bash
 uv run llm-router --config config/routertool.yaml auth list
+uv run llm-router --config config/routertool.yaml auth status
 uv run llm-router --config config/routertool.yaml auth login codex --timeout 30 --poll-interval 2
 uv run llm-router --config config/routertool.yaml auth login copilot --timeout 30 --poll-interval 2
 tail -n 50 .router/runtime/events.log
@@ -38,7 +39,9 @@ Expected:
 
 Fix:
 - Verify OAuth endpoint paths in config.
+- Prefer `auth.providers` in config. Legacy `oauth` is still accepted but no longer preferred.
 - Re-run `bootstrap download` if CLIProxyAPIPlus binary is missing.
+- If stderr includes timeout `hint=...`, increase `--timeout` and re-check `auth status`.
 
 ## 3) Secret/Auth Permission Issues
 

@@ -132,6 +132,12 @@ uv run llm-router --config config/routertool.yaml auth list
 uv run llm-router --config config/routertool.yaml auth status
 ```
 
+Command migration quick map:
+- `auth login <provider>` -> preferred command shape
+- `auth import-headless <provider>` -> preferred command shape
+- `auth <provider> login` -> legacy-compatible
+- `auth codex import-headless` -> legacy-compatible
+
 ### Codex OAuth
 
 ```bash
@@ -167,6 +173,14 @@ Legacy provider-first commands are still supported for compatibility:
 - `auth codex login`
 - `auth codex import-headless`
 - `auth copilot login`
+
+## Add auth provider/method
+
+Minimal extension path:
+1. Add provider config under `auth.providers.<provider>` in `config/routertool.yaml` with required endpoints for OAuth polling (`auth_url_endpoint`, `status_endpoint`) when needed.
+2. For headless/device import support, register handler in `src/llm_router/auth_methods.py` via `headless_import_handlers()`.
+3. Run `uv run llm-router --config config/routertool.yaml auth list` and `auth status` to verify capability exposure.
+4. Add/adjust CLI and config tests in `tests/test_cli.py` and `tests/test_config.py`.
 
 ## Strategy profiles
 
@@ -255,3 +269,6 @@ Coverage/acceptance baseline:
 - Compatibility migration is built in for common legacy keys:
   - top-level `secrets` -> `secret_files`
   - `services.cliproxyapi` -> `services.cliproxyapi_plus`
+  - top-level `oauth` -> `auth.providers`
+- As of February 17, 2026, `auth.providers` is the preferred schema for new configurations.
+- `oauth` input remains backward-compatible for existing local setups and is normalized internally.
