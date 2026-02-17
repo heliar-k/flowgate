@@ -223,6 +223,14 @@ class CLITests(unittest.TestCase):
         self.assertIn("provider=copilot oauth_login=yes headless_import=no", text)
         self.assertIn("provider=custom oauth_login=yes headless_import=no", text)
 
+    def test_auth_status_reports_provider_capabilities(self):
+        out = io.StringIO()
+        code = run_cli(["--config", str(self.cfg), "auth", "status"], stdout=out)
+        self.assertEqual(code, 0)
+        text = out.getvalue()
+        self.assertIn("provider=codex", text)
+        self.assertIn("default_auth_dir=", text)
+
     def test_auth_login_generic_provider_command(self):
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
         data["oauth"]["custom"] = {

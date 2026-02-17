@@ -86,6 +86,20 @@ def _headless_import_handlers() -> dict[str, Callable[[str, str], Path]]:
     }
 
 
+def _auth_providers(config: dict[str, Any]) -> dict[str, Any]:
+    auth = config.get("auth", {})
+    if isinstance(auth, dict):
+        providers_raw = auth.get("providers", {})
+        if isinstance(providers_raw, dict):
+            return providers_raw
+
+    oauth = config.get("oauth", {})
+    if isinstance(oauth, dict):
+        return oauth
+
+    return {}
+
+
 def _effective_secret_files(config: dict[str, Any]) -> list[str]:
     paths: set[str] = set()
     for value in config.get("secret_files", []):
@@ -219,14 +233,14 @@ def _cmd_auth_login(
     stderr: TextIO,
 ) -> int:
     supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
-    oauth = config.get("oauth", {})
-    if provider not in oauth:
+    providers = _auth_providers(config)
+    if provider not in providers:
         supervisor.record_event("oauth_login", provider=provider, result="failed", detail="provider-not-configured")
-        available = ",".join(sorted(str(k) for k in oauth.keys())) or "none"
+        available = ",".join(sorted(str(k) for k in providers.keys())) or "none"
         print(f"OAuth provider not configured: {provider}; available={available}", file=stderr)
         return 2
 
-    provider_cfg = oauth[provider]
+    provider_cfg = providers[provider]
     auth_url_endpoint = provider_cfg.get("auth_url_endpoint")
     status_endpoint = provider_cfg.get("status_endpoint")
     if not auth_url_endpoint or not status_endpoint:
@@ -252,8 +266,8 @@ def _cmd_auth_login(
 
 
 def _cmd_auth_list(config: dict[str, Any], *, stdout: TextIO) -> int:
-    oauth = config.get("oauth", {})
-    providers = sorted(str(name) for name in oauth.keys())
+    providers_map = _auth_providers(config)
+    providers = sorted(str(name) for name in providers_map.keys())
     handlers = _headless_import_handlers()
 
     if not providers:
@@ -262,9 +276,15 @@ def _cmd_auth_list(config: dict[str, Any], *, stdout: TextIO) -> int:
         return 0
 
     for provider in providers:
+        provider_cfg = providers_map.get(provider, {})
+        oauth_supported = bool(
+            isinstance(provider_cfg, dict)
+            and provider_cfg.get("auth_url_endpoint")
+            and provider_cfg.get("status_endpoint")
+        )
         headless = "yes" if provider in handlers else "no"
         print(
-            f"provider={provider} oauth_login=yes headless_import={headless}",
+            f"provider={provider} oauth_login={'yes' if oauth_supported else 'no'} headless_import={headless}",
             file=stdout,
         )
 
@@ -274,6 +294,39 @@ def _cmd_auth_list(config: dict[str, Any], *, stdout: TextIO) -> int:
         f"headless_import_providers={','.join(supported) if supported else 'none'}",
         file=stdout,
     )
+    return 0
+
+
+def _cmd_auth_status(config: dict[str, Any], *, stdout: TextIO) -> int:
+    providers_map = _auth_providers(config)
+    providers = sorted(str(name) for name in providers_map.keys())
+    handlers = _headless_import_handlers()
+
+    print(f"default_auth_dir={_default_auth_dir(config)}", file=stdout)
+    issues = check_secret_file_permissions(_effective_secret_files(config))
+    print(f"secret_permission_issues={len(issues)}", file=stdout)
+
+    if not providers:
+        print("providers=none", file=stdout)
+        return 0
+
+    for provider in providers:
+        provider_cfg = providers_map.get(provider, {})
+        method = "unknown"
+        oauth_supported = False
+        if isinstance(provider_cfg, dict):
+            method = str(provider_cfg.get("method", "oauth_poll"))
+            oauth_supported = bool(provider_cfg.get("auth_url_endpoint") and provider_cfg.get("status_endpoint"))
+        print(
+            (
+                f"provider={provider} "
+                f"method={method} "
+                f"oauth_login={'yes' if oauth_supported else 'no'} "
+                f"headless_import={'yes' if provider in handlers else 'no'}"
+            ),
+            file=stdout,
+        )
+
     return 0
 
 
@@ -471,6 +524,7 @@ def _build_parser() -> argparse.ArgumentParser:
     auth = sub.add_parser("auth")
     auth_sub = auth.add_subparsers(dest="provider", required=True)
     auth_sub.add_parser("list")
+    auth_sub.add_parser("status")
 
     login_any = auth_sub.add_parser("login")
     login_any.add_argument("login_provider")
@@ -541,6 +595,8 @@ def run_cli(argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO
     if args.command == "auth":
         if args.provider == "list":
             return _cmd_auth_list(config, stdout=stdout)
+        if args.provider == "status":
+            return _cmd_auth_status(config, stdout=stdout)
         if args.provider == "login":
             return _cmd_auth_login(
                 config,

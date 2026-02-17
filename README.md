@@ -129,6 +129,7 @@ List configured providers and supported auth actions:
 
 ```bash
 uv run llm-router --config config/routertool.yaml auth list
+uv run llm-router --config config/routertool.yaml auth status
 ```
 
 ### Codex OAuth
