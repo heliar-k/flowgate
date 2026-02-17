@@ -75,8 +75,14 @@ def _validate_services(services: dict[str, Any]) -> None:
         if "command" not in svc or not isinstance(svc["command"], dict):
             raise ConfigError(f"services.{name}.command must be provided")
         args = svc["command"].get("args")
-        if not isinstance(args, list) or not all(isinstance(i, str) for i in args) or not args:
-            raise ConfigError(f"services.{name}.command.args must be a non-empty string list")
+        if (
+            not isinstance(args, list)
+            or not all(isinstance(i, str) for i in args)
+            or not args
+        ):
+            raise ConfigError(
+                f"services.{name}.command.args must be a non-empty string list"
+            )
 
 
 def _validate_profiles(profiles: dict[str, Any]) -> None:
@@ -109,7 +115,9 @@ def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
         raise ConfigError("config_version must be an integer")
     if version_raw not in _SUPPORTED_CONFIG_VERSIONS:
         versions = ", ".join(str(v) for v in sorted(_SUPPORTED_CONFIG_VERSIONS))
-        raise ConfigError(f"Unsupported config_version={version_raw}; supported versions: {versions}")
+        raise ConfigError(
+            f"Unsupported config_version={version_raw}; supported versions: {versions}"
+        )
     normalized["config_version"] = version_raw
 
     if "secret_files" not in normalized and "secrets" in normalized:
@@ -170,7 +178,9 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     _validate_auth_providers(providers)
 
     secret_files = data.get("secret_files", [])
-    if not isinstance(secret_files, list) or not all(isinstance(p, str) for p in secret_files):
+    if not isinstance(secret_files, list) or not all(
+        isinstance(p, str) for p in secret_files
+    ):
         raise ConfigError("secret_files must be a list of string paths")
 
     return {

@@ -61,12 +61,20 @@ def pick_release_asset(assets: list[dict], *, os_name: str, arch: str) -> dict:
     candidates.sort(key=lambda x: x[0], reverse=True)
     best_score, best = candidates[0]
     if best_score < 4:
-        raise RuntimeError("Release assets found but none look compatible with current platform")
+        raise RuntimeError(
+            "Release assets found but none look compatible with current platform"
+        )
     return best
 
 
 def _http_get_json(url: str) -> dict:
-    req = Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "flowgate-bootstrap"})
+    req = Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "flowgate-bootstrap",
+        },
+    )
     with urlopen(req, timeout=30) as resp:  # nosec B310
         payload = resp.read().decode("utf-8")
     data = json.loads(payload)
@@ -163,7 +171,9 @@ def download_cliproxyapi_plus(
     return target
 
 
-def prepare_litellm_runner(bin_dir: str | Path, *, version: str = DEFAULT_LITELLM_VERSION) -> Path:
+def prepare_litellm_runner(
+    bin_dir: str | Path, *, version: str = DEFAULT_LITELLM_VERSION
+) -> Path:
     bin_path = Path(bin_dir)
     bin_path.mkdir(parents=True, exist_ok=True)
 
@@ -171,8 +181,8 @@ def prepare_litellm_runner(bin_dir: str | Path, *, version: str = DEFAULT_LITELL
     script = (
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
-        "project_root=\"$(cd \"$(dirname \"$0\")/../../..\" && pwd)\"\n"
-        "exec uv run --project \"$project_root\" --group runtime litellm \"$@\"\n"
+        'project_root="$(cd "$(dirname "$0")/../../.." && pwd)"\n'
+        'exec uv run --project "$project_root" --group runtime litellm "$@"\n'
     )
     runner.write_text(script, encoding="utf-8")
     runner.chmod(0o755)
@@ -190,7 +200,9 @@ def validate_cliproxy_binary(path: str | Path) -> bool:
     return True
 
 
-def validate_litellm_runner(path: str | Path, *, version: str = DEFAULT_LITELLM_VERSION) -> bool:
+def validate_litellm_runner(
+    path: str | Path, *, version: str = DEFAULT_LITELLM_VERSION
+) -> bool:
     target = Path(path)
     if not target.exists() or not target.is_file():
         return False

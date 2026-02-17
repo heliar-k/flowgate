@@ -5,7 +5,11 @@ import unittest
 from pathlib import Path
 
 from flowgate.cli import run_cli
-from flowgate.constants import DEFAULT_SERVICE_HOST, DEFAULT_SERVICE_PORTS, DEFAULT_SERVICE_READINESS_PATHS
+from flowgate.constants import (
+    DEFAULT_SERVICE_HOST,
+    DEFAULT_SERVICE_PORTS,
+    DEFAULT_SERVICE_READINESS_PATHS,
+)
 
 
 class ProfileSwitchIntegrationTests(unittest.TestCase):
@@ -24,13 +28,19 @@ class ProfileSwitchIntegrationTests(unittest.TestCase):
                     "host": DEFAULT_SERVICE_HOST,
                     "port": DEFAULT_SERVICE_PORTS["litellm"],
                     "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["litellm"],
-                    "command": {"args": ["python", "-c", "import time; time.sleep(60)"]},
+                    "command": {
+                        "args": ["python", "-c", "import time; time.sleep(60)"]
+                    },
                 },
                 "cliproxyapi_plus": {
                     "host": DEFAULT_SERVICE_HOST,
                     "port": DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
-                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["cliproxyapi_plus"],
-                    "command": {"args": ["python", "-c", "import time; time.sleep(60)"]},
+                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS[
+                        "cliproxyapi_plus"
+                    ],
+                    "command": {
+                        "args": ["python", "-c", "import time; time.sleep(60)"]
+                    },
                 },
             },
             "litellm_base": {
@@ -55,7 +65,10 @@ class ProfileSwitchIntegrationTests(unittest.TestCase):
 
     def test_switch_profile_updates_active_config(self):
         out = io.StringIO()
-        code = run_cli(["--config", str(self.cfg_path), "profile", "set", "reliability"], stdout=out)
+        code = run_cli(
+            ["--config", str(self.cfg_path), "profile", "set", "reliability"],
+            stdout=out,
+        )
         self.assertEqual(code, 0)
 
         active = json.loads((self.root / "runtime" / "litellm.active.yaml").read_text())
@@ -63,7 +76,9 @@ class ProfileSwitchIntegrationTests(unittest.TestCase):
         self.assertEqual(active["litellm_settings"]["cooldown_time"], 60)
 
         out = io.StringIO()
-        code = run_cli(["--config", str(self.cfg_path), "profile", "set", "cost"], stdout=out)
+        code = run_cli(
+            ["--config", str(self.cfg_path), "profile", "set", "cost"], stdout=out
+        )
         self.assertEqual(code, 0)
 
         active = json.loads((self.root / "runtime" / "litellm.active.yaml").read_text())

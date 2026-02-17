@@ -98,4 +98,3 @@ codex exec --profile flowgate --skip-git-repo-check "say hello"
 ./scripts/xgate --help
 ./scripts/xgate --config config/flowgate.yaml profile list
 ```
-

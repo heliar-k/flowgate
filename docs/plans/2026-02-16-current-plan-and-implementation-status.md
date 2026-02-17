@@ -1,6 +1,6 @@
 # LLM Router Current Plan and Implementation Status
 
-**Date:** 2026-02-16  
+**Date:** 2026-02-16
 **Goal:** 固化当前实现状态，并明确下一阶段可直接执行的任务。
 
 ## Current Architecture

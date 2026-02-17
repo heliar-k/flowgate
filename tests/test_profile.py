@@ -16,7 +16,12 @@ class ProfileActivationTests(unittest.TestCase):
                 "log_file": str(root / "logs" / "routerctl.log"),
             },
             "litellm_base": {
-                "model_list": [{"model_name": "router-default", "litellm_params": {"model": "openai/gpt-4o"}}],
+                "model_list": [
+                    {
+                        "model_name": "router-default",
+                        "litellm_params": {"model": "openai/gpt-4o"},
+                    }
+                ],
                 "litellm_settings": {"num_retries": 1},
             },
             "profiles": {
@@ -31,7 +36,9 @@ class ProfileActivationTests(unittest.TestCase):
         root = Path(tempfile.mkdtemp())
         cfg = self._config(root)
 
-        active_path, state_path = activate_profile(cfg, "balanced", now_iso="2026-02-16T00:00:00Z")
+        active_path, state_path = activate_profile(
+            cfg, "balanced", now_iso="2026-02-16T00:00:00Z"
+        )
 
         self.assertTrue(active_path.exists())
         self.assertTrue(state_path.exists())

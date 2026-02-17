@@ -1,5 +1,4 @@
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -29,7 +28,11 @@ class ProcessSupervisorTests(unittest.TestCase):
 
         events_file = runtime_dir / "events.log"
         self.assertTrue(events_file.exists())
-        events = [json.loads(line) for line in events_file.read_text(encoding="utf-8").splitlines() if line.strip()]
+        events = [
+            json.loads(line)
+            for line in events_file.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
         self.assertTrue(any(event["event"] == "service_start" for event in events))
         self.assertTrue(any(event["event"] == "service_stop" for event in events))
         for event in events:

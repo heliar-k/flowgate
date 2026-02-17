@@ -90,7 +90,12 @@ class ProcessSupervisor:
             pid = self._read_pid(name)
             if pid is None:
                 raise RuntimeError(f"{name} appears running but no pid is available")
-            self.record_event("service_start", service=name, result="already-running", detail=f"pid={pid}")
+            self.record_event(
+                "service_start",
+                service=name,
+                result="already-running",
+                detail=f"pid={pid}",
+            )
             return pid
 
         log_path = self.log_dir / f"{name}.log"
@@ -110,14 +115,18 @@ class ProcessSupervisor:
                 start_new_session=True,
             )
         except Exception as exc:  # noqa: BLE001
-            self.record_event("service_start", service=name, result="failed", detail=str(exc))
+            self.record_event(
+                "service_start", service=name, result="failed", detail=str(exc)
+            )
             log_file.close()
             raise
 
         self._pid_path(name).write_text(str(process.pid), encoding="utf-8")
         self._children[name] = process
         log_file.close()
-        self.record_event("service_start", service=name, result="success", detail=f"pid={process.pid}")
+        self.record_event(
+            "service_start", service=name, result="success", detail=f"pid={process.pid}"
+        )
         return process.pid
 
     def stop(self, name: str, *, timeout: float = 5.0) -> bool:
@@ -142,21 +151,30 @@ class ProcessSupervisor:
 
         if not self._is_pid_running(pid):
             self._pid_path(name).unlink(missing_ok=True)
-            self.record_event("service_stop", service=name, result="stale-pid", detail=f"pid={pid}")
+            self.record_event(
+                "service_stop", service=name, result="stale-pid", detail=f"pid={pid}"
+            )
             return True
 
         try:
             os.kill(pid, signal.SIGTERM)
         except ProcessLookupError:
             self._pid_path(name).unlink(missing_ok=True)
-            self.record_event("service_stop", service=name, result="already-exited", detail=f"pid={pid}")
+            self.record_event(
+                "service_stop",
+                service=name,
+                result="already-exited",
+                detail=f"pid={pid}",
+            )
             return True
 
         deadline = time.time() + timeout
         while time.time() < deadline:
             if not self._is_pid_running(pid):
                 self._pid_path(name).unlink(missing_ok=True)
-                self.record_event("service_stop", service=name, result="success", detail=f"pid={pid}")
+                self.record_event(
+                    "service_stop", service=name, result="success", detail=f"pid={pid}"
+                )
                 return True
             time.sleep(0.1)
 
@@ -168,11 +186,18 @@ class ProcessSupervisor:
         for _ in range(10):
             if not self._is_pid_running(pid):
                 self._pid_path(name).unlink(missing_ok=True)
-                self.record_event("service_stop", service=name, result="success-after-kill", detail=f"pid={pid}")
+                self.record_event(
+                    "service_stop",
+                    service=name,
+                    result="success-after-kill",
+                    detail=f"pid={pid}",
+                )
                 return True
             time.sleep(0.1)
 
-        self.record_event("service_stop", service=name, result="timeout", detail=f"pid={pid}")
+        self.record_event(
+            "service_stop", service=name, result="timeout", detail=f"pid={pid}"
+        )
         return False
 
     def restart(
@@ -185,8 +210,12 @@ class ProcessSupervisor:
     ) -> int:
         stopped = self.stop(name)
         if not stopped:
-            self.record_event("service_restart", service=name, result="failed", detail="stop-timeout")
+            self.record_event(
+                "service_restart", service=name, result="failed", detail="stop-timeout"
+            )
             raise RuntimeError(f"Failed to stop service before restart: {name}")
         pid = self.start(name, command, cwd=cwd, env=env)
-        self.record_event("service_restart", service=name, result="success", detail=f"pid={pid}")
+        self.record_event(
+            "service_restart", service=name, result="success", detail=f"pid={pid}"
+        )
         return pid

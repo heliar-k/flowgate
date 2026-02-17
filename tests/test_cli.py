@@ -71,7 +71,9 @@ class CLITests(unittest.TestCase):
         self.assertIn("balanced", out.getvalue())
 
         out = io.StringIO()
-        code = run_cli(["--config", str(self.cfg), "profile", "set", "balanced"], stdout=out)
+        code = run_cli(
+            ["--config", str(self.cfg), "profile", "set", "balanced"], stdout=out
+        )
         self.assertEqual(code, 0)
 
         state_file = self.root / "runtime" / "state.json"
@@ -80,7 +82,10 @@ class CLITests(unittest.TestCase):
         self.assertEqual(state["current_profile"], "balanced")
 
     def test_status_command(self):
-        run_cli(["--config", str(self.cfg), "profile", "set", "reliability"], stdout=io.StringIO())
+        run_cli(
+            ["--config", str(self.cfg), "profile", "set", "reliability"],
+            stdout=io.StringIO(),
+        )
 
         out = io.StringIO()
         code = run_cli(["--config", str(self.cfg), "status"], stdout=out)
@@ -95,12 +100,16 @@ class CLITests(unittest.TestCase):
             supervisor.is_running.return_value = True
             supervisor.restart.return_value = 4321
 
-            code = run_cli(["--config", str(self.cfg), "profile", "set", "balanced"], stdout=out)
+            code = run_cli(
+                ["--config", str(self.cfg), "profile", "set", "balanced"], stdout=out
+            )
 
         self.assertEqual(code, 0)
         supervisor.is_running.assert_called_once_with("litellm")
         supervisor.restart.assert_called_once()
-        supervisor.record_event.assert_called_once_with("profile_switch", profile="balanced", result="success")
+        supervisor.record_event.assert_called_once_with(
+            "profile_switch", profile="balanced", result="success"
+        )
         self.assertIn("litellm:restarted pid=4321", out.getvalue())
 
     def test_health_command(self):
@@ -111,7 +120,9 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.check_http_health",
                 side_effect=lambda url, timeout=1.0: {
                     "ok": str(DEFAULT_SERVICE_PORTS["litellm"]) in url,
-                    "status_code": 200 if str(DEFAULT_SERVICE_PORTS["litellm"]) in url else 503,
+                    "status_code": 200
+                    if str(DEFAULT_SERVICE_PORTS["litellm"]) in url
+                    else 503,
                     "error": None,
                 },
             ),
@@ -174,7 +185,9 @@ class CLITests(unittest.TestCase):
         with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.start.side_effect = [111, 222]
-            code = run_cli(["--config", str(self.cfg), "service", "start", "all"], stdout=out)
+            code = run_cli(
+                ["--config", str(self.cfg), "service", "start", "all"], stdout=out
+            )
         self.assertEqual(code, 0)
         self.assertIn("litellm:started pid=111", out.getvalue())
         self.assertIn("cliproxyapi_plus:started pid=222", out.getvalue())
@@ -183,7 +196,9 @@ class CLITests(unittest.TestCase):
         with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.stop.side_effect = [True, True]
-            code = run_cli(["--config", str(self.cfg), "service", "stop", "all"], stdout=out)
+            code = run_cli(
+                ["--config", str(self.cfg), "service", "stop", "all"], stdout=out
+            )
         self.assertEqual(code, 0)
         self.assertIn("litellm:stopped", out.getvalue())
         self.assertIn("cliproxyapi_plus:stopped", out.getvalue())
@@ -192,10 +207,16 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
-            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/login") as f_url,
-            mock.patch("flowgate.cli.poll_auth_status", return_value="success") as p_status,
+            mock.patch(
+                "flowgate.cli.fetch_auth_url", return_value="https://example.com/login"
+            ) as f_url,
+            mock.patch(
+                "flowgate.cli.poll_auth_status", return_value="success"
+            ) as p_status,
         ):
-            code = run_cli(["--config", str(self.cfg), "auth", "codex", "login"], stdout=out)
+            code = run_cli(
+                ["--config", str(self.cfg), "auth", "codex", "login"], stdout=out
+            )
         self.assertEqual(code, 0)
         self.assertIn("https://example.com/login", out.getvalue())
         f_url.assert_called_once()
@@ -212,13 +233,19 @@ class CLITests(unittest.TestCase):
         err = io.StringIO()
         with (
             mock.patch("flowgate.cli.ProcessSupervisor"),
-            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch(
+                "flowgate.cli.fetch_auth_url", return_value="https://example.com/login"
+            ),
             mock.patch(
                 "flowgate.cli.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out; last status=pending"),
             ),
         ):
-            code = run_cli(["--config", str(self.cfg), "auth", "login", "codex"], stdout=out, stderr=err)
+            code = run_cli(
+                ["--config", str(self.cfg), "auth", "login", "codex"],
+                stdout=out,
+                stderr=err,
+            )
         self.assertEqual(code, 1)
         self.assertIn("last status=pending", err.getvalue())
         self.assertIn("hint=", err.getvalue())
@@ -258,10 +285,17 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
-            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/custom-login") as f_url,
-            mock.patch("flowgate.cli.poll_auth_status", return_value="success") as p_status,
+            mock.patch(
+                "flowgate.cli.fetch_auth_url",
+                return_value="https://example.com/custom-login",
+            ) as f_url,
+            mock.patch(
+                "flowgate.cli.poll_auth_status", return_value="success"
+            ) as p_status,
         ):
-            code = run_cli(["--config", str(self.cfg), "auth", "login", "custom"], stdout=out)
+            code = run_cli(
+                ["--config", str(self.cfg), "auth", "login", "custom"], stdout=out
+            )
         self.assertEqual(code, 0)
         self.assertIn("login_url=https://example.com/custom-login", out.getvalue())
         f_url.assert_called_once_with("http://example.local/custom/auth-url", timeout=5)
@@ -280,7 +314,9 @@ class CLITests(unittest.TestCase):
     def test_auth_import_headless_generic_provider_command(self):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-        with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler) as resolver:
+        with mock.patch(
+            "flowgate.cli.get_headless_import_handler", return_value=handler
+        ) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -294,15 +330,21 @@ class CLITests(unittest.TestCase):
                 stdout=out,
             )
         self.assertEqual(code, 0)
-        self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
+        self.assertIn(
+            "saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue()
+        )
         resolver.assert_called_once_with("codex")
-        handler.assert_called_once_with("/tmp/codex-auth.json", str((self.root / "auths").resolve()))
+        handler.assert_called_once_with(
+            "/tmp/codex-auth.json", str((self.root / "auths").resolve())
+        )
 
     def test_auth_import_dispatches_by_registered_method(self):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/custom-headless-import.json"))
         with (
-            mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler) as resolver,
+            mock.patch(
+                "flowgate.cli.get_headless_import_handler", return_value=handler
+            ) as resolver,
             mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
         ):
             code = run_cli(
@@ -318,9 +360,13 @@ class CLITests(unittest.TestCase):
                 stdout=out,
             )
         self.assertEqual(code, 0)
-        self.assertIn("saved_auth=/tmp/auths/custom-headless-import.json", out.getvalue())
+        self.assertIn(
+            "saved_auth=/tmp/auths/custom-headless-import.json", out.getvalue()
+        )
         resolver.assert_called_once_with("custom")
-        handler.assert_called_once_with("/tmp/custom-auth.json", str((self.root / "auths").resolve()))
+        handler.assert_called_once_with(
+            "/tmp/custom-auth.json", str((self.root / "auths").resolve())
+        )
         supervisor = supervisor_cls.return_value
         supervisor.record_event.assert_called_once()
 
@@ -351,7 +397,9 @@ class CLITests(unittest.TestCase):
     def test_auth_codex_import_headless(self):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-        with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler) as resolver:
+        with mock.patch(
+            "flowgate.cli.get_headless_import_handler", return_value=handler
+        ) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -365,7 +413,9 @@ class CLITests(unittest.TestCase):
                 stdout=out,
             )
         self.assertEqual(code, 0)
-        self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
+        self.assertIn(
+            "saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue()
+        )
         resolver.assert_called_once_with("codex")
         handler.assert_called_once()
 
@@ -383,7 +433,9 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-        with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler) as resolver:
+        with mock.patch(
+            "flowgate.cli.get_headless_import_handler", return_value=handler
+        ) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -398,7 +450,9 @@ class CLITests(unittest.TestCase):
             )
 
         self.assertEqual(code, 0)
-        self.assertIn("saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue())
+        self.assertIn(
+            "saved_auth=/tmp/auths/codex-headless-import.json", out.getvalue()
+        )
         expected_dest = str((self.root / ".router" / "auths").resolve())
         resolver.assert_called_once_with("codex")
         handler.assert_called_once_with("/tmp/codex-auth.json", expected_dest)
@@ -414,12 +468,20 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.prepare_litellm_runner",
                 return_value=Path("/tmp/runtime/bin/litellm"),
             ) as litellm_prepare,
-            mock.patch("flowgate.cli.validate_cliproxy_binary", return_value=True) as cliproxy_validate,
-            mock.patch("flowgate.cli.validate_litellm_runner", return_value=True) as litellm_validate,
+            mock.patch(
+                "flowgate.cli.validate_cliproxy_binary", return_value=True
+            ) as cliproxy_validate,
+            mock.patch(
+                "flowgate.cli.validate_litellm_runner", return_value=True
+            ) as litellm_validate,
         ):
-            code = run_cli(["--config", str(self.cfg), "bootstrap", "download"], stdout=out)
+            code = run_cli(
+                ["--config", str(self.cfg), "bootstrap", "download"], stdout=out
+            )
         self.assertEqual(code, 0)
-        self.assertIn("cliproxyapi_plus=/tmp/runtime/bin/CLIProxyAPIPlus", out.getvalue())
+        self.assertIn(
+            "cliproxyapi_plus=/tmp/runtime/bin/CLIProxyAPIPlus", out.getvalue()
+        )
         self.assertIn("litellm=/tmp/runtime/bin/litellm", out.getvalue())
         cliproxy_download.assert_called_once()
         litellm_prepare.assert_called_once()
@@ -438,7 +500,9 @@ class CLITests(unittest.TestCase):
 
     def test_doctor_reports_missing_runtime_artifacts(self):
         out = io.StringIO()
-        with mock.patch("flowgate.cli._runtime_dependency_available", return_value=True):
+        with mock.patch(
+            "flowgate.cli._runtime_dependency_available", return_value=True
+        ):
             code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
         self.assertEqual(code, 1)
         text = out.getvalue()
@@ -465,7 +529,9 @@ class CLITests(unittest.TestCase):
         os.chmod(litellm, 0o755)
 
         out = io.StringIO()
-        with mock.patch("flowgate.cli._runtime_dependency_available", return_value=True):
+        with mock.patch(
+            "flowgate.cli._runtime_dependency_available", return_value=True
+        ):
             code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
         self.assertEqual(code, 0)
         text = out.getvalue()

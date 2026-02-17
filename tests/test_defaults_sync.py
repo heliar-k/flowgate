@@ -17,7 +17,9 @@ class DefaultsSyncTests(unittest.TestCase):
 
         for service_name, port in DEFAULT_SERVICE_PORTS.items():
             self.assertEqual(services[service_name]["port"], port)
-            path = services[service_name].get("readiness_path") or services[service_name].get("health_path")
+            path = services[service_name].get("readiness_path") or services[
+                service_name
+            ].get("health_path")
             self.assertEqual(path, DEFAULT_SERVICE_READINESS_PATHS[service_name])
 
     def test_example_cliproxyapi_port_matches_constants(self):
@@ -35,7 +37,9 @@ class DefaultsSyncTests(unittest.TestCase):
         cliproxy_port = DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]
 
         model_list = cfg.get("litellm_base", {}).get("model_list", [])
-        default_model = next(model for model in model_list if model.get("model_name") == "router-default")
+        default_model = next(
+            model for model in model_list if model.get("model_name") == "router-default"
+        )
         api_base = default_model.get("litellm_params", {}).get("api_base")
         self.assertEqual(api_base, f"http://{DEFAULT_SERVICE_HOST}:{cliproxy_port}/v1")
 

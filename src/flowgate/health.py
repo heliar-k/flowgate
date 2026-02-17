@@ -14,7 +14,11 @@ class HttpHealthResult(TypedDict):
 def check_http_health(url: str, *, timeout: float = 1.0) -> HttpHealthResult:
     try:
         with urlopen(url, timeout=timeout) as response:  # nosec B310
-            return {"ok": 200 <= response.status < 300, "status_code": response.status, "error": None}
+            return {
+                "ok": 200 <= response.status < 300,
+                "status_code": response.status,
+                "error": None,
+            }
     except HTTPError as exc:
         return {"ok": False, "status_code": exc.code, "error": None}
     except (TimeoutError, URLError, OSError) as exc:

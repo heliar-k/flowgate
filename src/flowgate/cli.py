@@ -40,7 +40,9 @@ def _resolve_config_paths(config: dict[str, Any], config_path: Path) -> dict[str
         if isinstance(value, str):
             cfg["paths"][key] = _resolve_path(base_dir, value)
 
-    cfg["secret_files"] = [_resolve_path(base_dir, p) for p in cfg.get("secret_files", [])]
+    cfg["secret_files"] = [
+        _resolve_path(base_dir, p) for p in cfg.get("secret_files", [])
+    ]
 
     for service in cfg.get("services", {}).values():
         command = service.get("command", {})
@@ -134,7 +136,9 @@ def _cmd_profile_list(config: dict[str, Any], *, stdout: TextIO) -> int:
     return 0
 
 
-def _cmd_profile_set(config: dict[str, Any], profile: str, *, stdout: TextIO, stderr: TextIO) -> int:
+def _cmd_profile_set(
+    config: dict[str, Any], profile: str, *, stdout: TextIO, stderr: TextIO
+) -> int:
     try:
         active_path, state_path = activate_profile(config, profile)
     except KeyError as exc:
@@ -189,7 +193,11 @@ def _cmd_health(config: dict[str, Any], *, stdout: TextIO) -> int:
 
         host = service.get("host", DEFAULT_SERVICE_HOST)
         port = service.get("port")
-        readiness_path = service.get("readiness_path") or service.get("health_path") or DEFAULT_READINESS_PATH
+        readiness_path = (
+            service.get("readiness_path")
+            or service.get("health_path")
+            or DEFAULT_READINESS_PATH
+        )
 
         if isinstance(port, int):
             readiness_url = f"http://{host}:{port}{readiness_path}"
@@ -229,16 +237,26 @@ def _cmd_auth_login(
     supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
     providers = _auth_providers(config)
     if provider not in providers:
-        supervisor.record_event("oauth_login", provider=provider, result="failed", detail="provider-not-configured")
+        supervisor.record_event(
+            "oauth_login",
+            provider=provider,
+            result="failed",
+            detail="provider-not-configured",
+        )
         available = ",".join(sorted(str(k) for k in providers.keys())) or "none"
-        print(f"OAuth provider not configured: {provider}; available={available}", file=stderr)
+        print(
+            f"OAuth provider not configured: {provider}; available={available}",
+            file=stderr,
+        )
         return 2
 
     provider_cfg = providers[provider]
     auth_url_endpoint = provider_cfg.get("auth_url_endpoint")
     status_endpoint = provider_cfg.get("status_endpoint")
     if not auth_url_endpoint or not status_endpoint:
-        supervisor.record_event("oauth_login", provider=provider, result="failed", detail="endpoint-missing")
+        supervisor.record_event(
+            "oauth_login", provider=provider, result="failed", detail="endpoint-missing"
+        )
         print(f"OAuth endpoints not complete for provider={provider}", file=stderr)
         return 2
 
@@ -254,7 +272,9 @@ def _cmd_auth_login(
         print(f"oauth_status={status}", file=stdout)
         return 0
     except Exception as exc:  # noqa: BLE001
-        supervisor.record_event("oauth_login", provider=provider, result="failed", detail=str(exc))
+        supervisor.record_event(
+            "oauth_login", provider=provider, result="failed", detail=str(exc)
+        )
         print(
             (
                 f"OAuth login failed: {exc} "
@@ -316,7 +336,10 @@ def _cmd_auth_status(config: dict[str, Any], *, stdout: TextIO) -> int:
         oauth_supported = False
         if isinstance(provider_cfg, dict):
             method = str(provider_cfg.get("method", "oauth_poll"))
-            oauth_supported = bool(provider_cfg.get("auth_url_endpoint") and provider_cfg.get("status_endpoint"))
+            oauth_supported = bool(
+                provider_cfg.get("auth_url_endpoint")
+                and provider_cfg.get("status_endpoint")
+            )
         print(
             (
                 f"provider={provider} "
@@ -342,7 +365,10 @@ def _cmd_auth_import_headless(
     handler = get_headless_import_handler(provider)
     if handler is None:
         supported = ",".join(sorted(headless_import_handlers().keys())) or "none"
-        print(f"headless import not supported for provider={provider}; supported={supported}", file=stderr)
+        print(
+            f"headless import not supported for provider={provider}; supported={supported}",
+            file=stderr,
+        )
         return 2
 
     resolved_dest = dest_dir
@@ -356,7 +382,12 @@ def _cmd_auth_import_headless(
         return 1
 
     supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
-    supervisor.record_event("auth_import", provider=provider, result="success", detail=f"method=headless path={saved}")
+    supervisor.record_event(
+        "auth_import",
+        provider=provider,
+        result="success",
+        detail=f"method=headless path={saved}",
+    )
     print(f"saved_auth={saved}", file=stdout)
     return 0
 
@@ -379,7 +410,9 @@ def _cmd_auth_codex_import_headless(
     )
 
 
-def _cmd_service_action(config: dict[str, Any], action: str, target: str, *, stdout: TextIO, stderr: TextIO) -> int:
+def _cmd_service_action(
+    config: dict[str, Any], action: str, target: str, *, stdout: TextIO, stderr: TextIO
+) -> int:
     supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
     try:
         names = _service_names(config, target)
@@ -465,7 +498,9 @@ def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
         "litellm": runtime_bin / "litellm",
     }
     missing_or_non_exec = [
-        name for name, binary_path in required_bins.items() if not _is_executable_file(binary_path)
+        name
+        for name, binary_path in required_bins.items()
+        if not _is_executable_file(binary_path)
     ]
     if missing_or_non_exec:
         all_ok = False
@@ -561,7 +596,9 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def run_cli(argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO | None = None) -> int:
+def run_cli(
+    argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO | None = None
+) -> int:
     stdout = stdout or sys.stdout
     stderr = stderr or sys.stderr
     parser = _build_parser()

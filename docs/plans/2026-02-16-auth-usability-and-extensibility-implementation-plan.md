@@ -36,7 +36,7 @@ def test_load_auth_providers_new_schema(self):
 
 **Step 2: Run test to verify it fails**
 
-Run: `uv run python -m unittest tests.test_config.ConfigTests.test_load_auth_providers_new_schema -v`  
+Run: `uv run python -m unittest tests.test_config.ConfigTests.test_load_auth_providers_new_schema -v`
 Expected: FAIL with unknown top-level key `auth` or missing schema mapping.
 
 **Step 3: Write minimal implementation**
@@ -47,7 +47,7 @@ Expected: FAIL with unknown top-level key `auth` or missing schema mapping.
 
 **Step 4: Run test to verify it passes**
 
-Run: `uv run python -m unittest tests.test_config.ConfigTests.test_load_auth_providers_new_schema -v`  
+Run: `uv run python -m unittest tests.test_config.ConfigTests.test_load_auth_providers_new_schema -v`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -76,7 +76,7 @@ def test_auth_status_reports_provider_capabilities(self):
 
 **Step 2: Run test to verify it fails**
 
-Run: `uv run python -m unittest tests.test_cli.CLITests.test_auth_status_reports_provider_capabilities -v`  
+Run: `uv run python -m unittest tests.test_cli.CLITests.test_auth_status_reports_provider_capabilities -v`
 Expected: FAIL with argparse invalid choice.
 
 **Step 3: Write minimal implementation**
@@ -86,7 +86,7 @@ Expected: FAIL with argparse invalid choice.
 
 **Step 4: Run test to verify it passes**
 
-Run: `uv run python -m unittest tests.test_cli.CLITests.test_auth_status_reports_provider_capabilities -v`  
+Run: `uv run python -m unittest tests.test_cli.CLITests.test_auth_status_reports_provider_capabilities -v`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -116,7 +116,7 @@ def test_poll_auth_status_tolerates_transient_network_error(self):
 
 **Step 2: Run test to verify it fails**
 
-Run: `uv run python -m unittest tests.test_oauth.OAuthTests.test_poll_auth_status_tolerates_transient_network_error -v`  
+Run: `uv run python -m unittest tests.test_oauth.OAuthTests.test_poll_auth_status_tolerates_transient_network_error -v`
 Expected: FAIL with immediate exception.
 
 **Step 3: Write minimal implementation**
@@ -126,7 +126,7 @@ Expected: FAIL with immediate exception.
 
 **Step 4: Run test to verify it passes**
 
-Run: `uv run python -m unittest tests.test_oauth.OAuthTests.test_poll_auth_status_tolerates_transient_network_error -v`  
+Run: `uv run python -m unittest tests.test_oauth.OAuthTests.test_poll_auth_status_tolerates_transient_network_error -v`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -152,7 +152,7 @@ def test_auth_import_dispatches_by_registered_method(self):
 
 **Step 2: Run test to verify it fails**
 
-Run: `uv run python -m unittest tests.test_cli.CLITests.test_auth_import_dispatches_by_registered_method -v`  
+Run: `uv run python -m unittest tests.test_cli.CLITests.test_auth_import_dispatches_by_registered_method -v`
 Expected: FAIL because registry abstraction does not exist.
 
 **Step 3: Write minimal implementation**
@@ -162,7 +162,7 @@ Expected: FAIL because registry abstraction does not exist.
 
 **Step 4: Run test to verify it passes**
 
-Run: `uv run python -m unittest tests.test_cli.CLITests.test_auth_import_dispatches_by_registered_method -v`  
+Run: `uv run python -m unittest tests.test_cli.CLITests.test_auth_import_dispatches_by_registered_method -v`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -187,9 +187,9 @@ git commit -m "refactor(auth): extract auth method registry and dispatch layer"
 
 **Step 2: Run verification commands**
 
-Run: `uv run flowgate --help`  
-Run: `uv run flowgate auth --help`  
-Run: `uv run python -m unittest discover -s tests -v`  
+Run: `uv run flowgate --help`
+Run: `uv run flowgate auth --help`
+Run: `uv run python -m unittest discover -s tests -v`
 Expected: all pass.
 
 **Step 3: Update docs**

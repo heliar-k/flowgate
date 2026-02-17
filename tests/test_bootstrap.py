@@ -37,8 +37,14 @@ class BootstrapTests(unittest.TestCase):
 
     def test_pick_release_asset_prefers_platform_match(self):
         assets = [
-            {"name": "CLIProxyAPIPlus_linux_amd64.tar.gz", "browser_download_url": "https://example/linux"},
-            {"name": "CLIProxyAPIPlus_darwin_arm64.tar.gz", "browser_download_url": "https://example/darwin"},
+            {
+                "name": "CLIProxyAPIPlus_linux_amd64.tar.gz",
+                "browser_download_url": "https://example/linux",
+            },
+            {
+                "name": "CLIProxyAPIPlus_darwin_arm64.tar.gz",
+                "browser_download_url": "https://example/darwin",
+            },
         ]
         picked = pick_release_asset(assets, os_name="darwin", arch="arm64")
         self.assertEqual(picked["browser_download_url"], "https://example/darwin")
@@ -70,7 +76,9 @@ class BootstrapTests(unittest.TestCase):
             exe.mode = 0o755
             tf.addfile(exe, io.BytesIO(exe_data))
 
-        extracted = _extract_binary_from_bytes(buf.getvalue(), "CLIProxyAPIPlus_6.8.16-0_linux_amd64.tar.gz")
+        extracted = _extract_binary_from_bytes(
+            buf.getvalue(), "CLIProxyAPIPlus_6.8.16-0_linux_amd64.tar.gz"
+        )
         self.assertEqual(extracted, b"ELF_BINARY_PLACEHOLDER")
 
     def test_validate_cliproxy_binary(self):

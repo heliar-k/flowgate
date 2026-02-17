@@ -44,7 +44,9 @@ class ConfigTests(unittest.TestCase):
                 "cliproxyapi_plus": {
                     "host": DEFAULT_SERVICE_HOST,
                     "port": DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
-                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["cliproxyapi_plus"],
+                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS[
+                        "cliproxyapi_plus"
+                    ],
                     "command": {
                         "args": [
                             "python",
@@ -56,11 +58,20 @@ class ConfigTests(unittest.TestCase):
                 },
             },
             "litellm_base": {
-                "model_list": [{"model_name": "router-default", "litellm_params": {"model": "openai/gpt-4o"}}]
+                "model_list": [
+                    {
+                        "model_name": "router-default",
+                        "litellm_params": {"model": "openai/gpt-4o"},
+                    }
+                ]
             },
             "profiles": {
-                "reliability": {"litellm_settings": {"num_retries": 3, "cooldown_time": 60}},
-                "balanced": {"litellm_settings": {"num_retries": 2, "cooldown_time": 30}},
+                "reliability": {
+                    "litellm_settings": {"num_retries": 3, "cooldown_time": 60}
+                },
+                "balanced": {
+                    "litellm_settings": {"num_retries": 2, "cooldown_time": 30}
+                },
                 "cost": {"litellm_settings": {"num_retries": 1, "cooldown_time": 10}},
             },
             "oauth": {
@@ -81,7 +92,9 @@ class ConfigTests(unittest.TestCase):
         cfg = load_router_config(path)
 
         self.assertIn("services", cfg)
-        self.assertEqual(cfg["services"]["litellm"]["port"], DEFAULT_SERVICE_PORTS["litellm"])
+        self.assertEqual(
+            cfg["services"]["litellm"]["port"], DEFAULT_SERVICE_PORTS["litellm"]
+        )
         self.assertIn("balanced", cfg["profiles"])
 
     def test_reject_unknown_top_level_key(self):
@@ -150,7 +163,9 @@ class ConfigTests(unittest.TestCase):
 
         self.assertEqual(merged["litellm_settings"]["num_retries"], 3)
         self.assertEqual(merged["litellm_settings"]["cooldown_time"], 10)
-        self.assertEqual(merged["router_settings"]["routing_strategy"], "simple-shuffle")
+        self.assertEqual(
+            merged["router_settings"]["routing_strategy"], "simple-shuffle"
+        )
         self.assertTrue(merged["router_settings"]["enable_pre_call_checks"])
 
 
