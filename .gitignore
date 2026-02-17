@@ -23,6 +23,7 @@ htmlcov/
 # Virtual environments / tool cache
 .venv/
 .uv-cache/
+.worktrees/
 
 # Local runtime artifacts
 .router/
