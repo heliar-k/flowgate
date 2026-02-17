@@ -111,6 +111,18 @@ Optional controls:
 - `PROFILE=reliability ./scripts/smoke_local.sh config/flowgate.yaml`
 - `STARTUP_TIMEOUT=60 ./scripts/smoke_local.sh config/flowgate.yaml`
 
+## Client integration snippets
+
+Generate ready-to-use client integration snippets directly from your runtime config:
+
+```bash
+uv run flowgate --config config/flowgate.yaml integration print codex
+uv run flowgate --config config/flowgate.yaml integration print claude-code
+```
+
+- `codex`: outputs a `~/.codex/config.toml`-style provider snippet.
+- `claude-code`: outputs `ANTHROPIC_BASE_URL`/`ANTHROPIC_AUTH_TOKEN` and model-slot envs.
+
 ## Directory layout
 
 - `src/flowgate/`: CLI and core modules

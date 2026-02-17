@@ -1,22 +1,22 @@
-# FlowGate 接入指南（Claude Code / Codex）
+# FlowGate 接入指南（Codex + Claude Code）
 
-本文面向把 `FlowGate` 作为本地统一网关的场景，重点覆盖：
-- `Codex CLI` 如何直接接入
-- `Claude Code` 当前可接入边界
-- 一组可复现的本地验收命令
+本文面向把 `FlowGate` 作为本地统一网关的场景，覆盖：
+- `Codex CLI` 接入（OpenAI-compatible）
+- `Claude Code` 接入（Anthropic Messages-compatible）
+- 可复现的本地验收命令与排障路径
 
 ## 1. 兼容性结论（先看）
 
-- `FlowGate` 北向接口是 **OpenAI-compatible**（默认 `http://127.0.0.1:4000/v1`）。
-- `Codex CLI` 支持自定义 `model_providers`，可直接接入该接口。
-- `Claude Code` 官方设置文档当前未提供“通用 OpenAI-compatible Base URL”开关。
-  - 结论：`Claude Code` 不能直接指向 `FlowGate /v1`。
-  - 如果必须走 Claude Code，需要额外提供 **Anthropic-compatible 适配层**（不在本仓库默认能力内）。
+- `FlowGate` 北向由 LiteLLM 提供，默认入口是 `http://127.0.0.1:4000`。
+- `Codex CLI` 可通过 OpenAI-compatible `.../v1` 入口接入。
+- `Claude Code` 可通过 `ANTHROPIC_BASE_URL` 指向同一网关入口接入（要求网关支持 Anthropic Messages API）。
+- `Claude Code 可通过` FlowGate 接入，不再需要额外的独立适配层。
 
 参考：
-- Codex config: <https://developers.openai.com/codex/config>
-- Codex auth: <https://developers.openai.com/codex/auth>
-- Claude Code settings: <https://docs.anthropic.com/zh-CN/docs/claude-code/settings>
+- Codex config: <https://developers.openai.com/codex/config-advanced/>
+- Codex auth: <https://developers.openai.com/codex/auth/>
+- Claude Code LLM gateway: <https://docs.anthropic.com/en/docs/claude-code/llm-gateway>
+- LiteLLM Anthropic unified endpoint: <https://docs.litellm.ai/docs/anthropic_unified/>
 
 ## 2. 启动并验证 FlowGate
 
@@ -34,43 +34,46 @@ curl --silent --show-error http://127.0.0.1:4000/v1/models
 ```
 
 说明：
-- `status` 能确认进程是否在跑。
-- `/v1/models` 能确认北向 OpenAI-compatible 入口是否可访问。
-- `health` 会做更严格的上游探测；当上游模型不可用或超时时，`health` 可能失败，但这不一定代表网关进程没启动。
+- `status` 用于确认进程是否运行。
+- `/v1/models` 用于确认 OpenAI-compatible 北向入口是否可达。
 
-## 3. Codex CLI 接入（推荐路径）
+## 3. 使用 FlowGate 自动生成客户端配置片段
 
-### 3.1 配置 `~/.codex/config.toml`
+FlowGate 提供统一生成命令：
 
-追加示例（按需调整模型名和端口）：
+```bash
+./scripts/xgate --config config/flowgate.yaml integration print codex
+./scripts/xgate --config config/flowgate.yaml integration print claude-code
+```
+
+其中：
+- `integration print codex` 输出 `~/.codex/config.toml` 可用的 TOML 片段。
+- `integration print claude-code` 输出 Claude Code 需要的 env 变量（含 `ANTHROPIC_BASE_URL`、`ANTHROPIC_DEFAULT_*_MODEL`）。
+
+## 4. Codex CLI 接入
+
+推荐直接使用 `integration print codex` 的输出，核心字段如下：
 
 ```toml
+model_provider = "flowgate"
+model = "router-default"
+
 [model_providers.flowgate]
 name = "FlowGate Local"
 base_url = "http://127.0.0.1:4000/v1"
-env_key = "FLOWGATE_API_KEY"
-wire_api = "chat"
-
-[profiles.flowgate]
-model_provider = "flowgate"
-model = "router-default"
+env_key = "OPENAI_API_KEY"
+wire_api = "responses"
 ```
 
-### 3.2 运行 Codex
+运行示例：
 
 ```bash
-export FLOWGATE_API_KEY="sk-local-test"
-
-# 交互模式
+export OPENAI_API_KEY="sk-local-test"
 codex --profile flowgate
-
-# 非交互模式
-codex exec --profile flowgate --skip-git-repo-check "say hello"
 ```
 
-### 3.3 上游鉴权提醒
-
-如果你的 `router-default` 走的是 `CLIProxyAPIPlus` 的 Codex provider，仍需先完成 provider 侧授权：
+上游鉴权提醒：
+- 若 `router-default` 走 `CLIProxyAPIPlus` 的 Codex provider，仍需先完成 provider 侧授权：
 
 ```bash
 ./scripts/xgate --config config/flowgate.yaml auth login codex
@@ -78,23 +81,31 @@ codex exec --profile flowgate --skip-git-repo-check "say hello"
 ./scripts/xgate --config config/flowgate.yaml auth import-headless codex --source ~/.codex/auth.json
 ```
 
-未授权时通常表现为：`/v1/models` 可访问，但真实对话请求返回上游鉴权/provider 错误。
+## 5. Claude Code 接入
 
-## 4. Claude Code 接入说明
+推荐使用 `integration print claude-code` 输出的环境变量，核心字段如下：
 
-截至 2026-02-17，本仓库默认产出的北向接口是 OpenAI-compatible；
-而 Claude Code 官方配置路径主要围绕 `ANTHROPIC_AUTH_TOKEN` 与 Claude 模型配置。
+```bash
+ANTHROPIC_BASE_URL=http://127.0.0.1:4000
+ANTHROPIC_AUTH_TOKEN=your-gateway-token
+ANTHROPIC_MODEL=router-default
+ANTHROPIC_DEFAULT_OPUS_MODEL=router-default
+ANTHROPIC_DEFAULT_SONNET_MODEL=router-default
+ANTHROPIC_DEFAULT_HAIKU_MODEL=router-default
+```
 
-因此建议：
-- 若目标是“今天就稳定可用”，优先走 `Codex + FlowGate`。
-- 若必须接入 `Claude Code`，请先在 FlowGate 前增加 Anthropic-compatible 适配层，再让 Claude Code 指向该适配层。
+说明：
+- `ANTHROPIC_BASE_URL` 指向 FlowGate/LiteLLM 网关入口。
+- `ANTHROPIC_AUTH_TOKEN` 用于网关鉴权（可静态 token，也可配合 Claude `apiKeyHelper`）。
+- `ANTHROPIC_DEFAULT_*_MODEL` 用于映射 Claude Code 的模型槽位，避免别名解析漂移。
 
-## 5. 本地验收清单
+## 6. 本地验收清单
 
-建议在每次改动后执行：
+建议每次改动后执行：
 
 ```bash
 ./scripts/xtest
 ./scripts/xgate --help
-./scripts/xgate --config config/flowgate.yaml profile list
+./scripts/xgate --config config/flowgate.yaml integration print codex
+./scripts/xgate --config config/flowgate.yaml integration print claude-code
 ```
