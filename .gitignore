@@ -45,7 +45,7 @@ auths/
 *.token
 secrets/
 private/
-config/routertool.yaml
+config/flowgate.yaml
 config/cliproxyapi.yaml
 config/auths/
 config/static/

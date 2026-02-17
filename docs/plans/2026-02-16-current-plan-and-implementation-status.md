@@ -6,7 +6,7 @@
 ## Current Architecture
 
 - 本地双服务：`CLIProxyAPIPlus + LiteLLM`
-- 控制入口：`llm-router` CLI（配置、策略切换、服务管理、OAuth）
+- 控制入口：`flowgate` CLI（配置、策略切换、服务管理、OAuth）
 - 认证入口：`auth list` / `auth login <provider>` / `auth import-headless <provider>`（兼容旧命令）
 - 认证状态：`auth status` 提供 provider 能力、默认认证目录与权限问题摘要
 - 运行产物：统一落在 `.router/`
@@ -31,8 +31,8 @@
 Latest verification:
 - Command: `UV_CACHE_DIR=.uv-cache uv run python -m unittest discover -s tests -v`
 - Result: `Ran 46 tests ... OK`
-- Command: `UV_CACHE_DIR=.uv-cache uv run llm-router --help`
-- Result: `usage: llm-router ...`
+- Command: `UV_CACHE_DIR=.uv-cache uv run flowgate --help`
+- Result: `usage: flowgate ...`
 
 ## Next Iteration Items (Completed)
 
@@ -46,7 +46,7 @@ Latest verification:
 
 ### Task C: CLI Naming Consistency (P1) ✅
 
-**Implemented:** `argparse prog` 从 `routerctl` 统一为 `llm-router`，并添加回归测试。
+**Implemented:** `argparse prog` 从 `routerctl` 统一为 `flowgate`，并添加回归测试。
 
 ## Auth Scheme Review (Updated)
 

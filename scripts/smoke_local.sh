@@ -1,21 +1,21 @@
 #!/usr/bin/env sh
 set -eu
 
-CONFIG_PATH="${1:-config/routertool.yaml}"
+CONFIG_PATH="${1:-config/flowgate.yaml}"
 PROFILE="${PROFILE:-balanced}"
 STARTUP_TIMEOUT="${STARTUP_TIMEOUT:-45}"
 POLL_INTERVAL="${POLL_INTERVAL:-2}"
 export UV_CACHE_DIR="${UV_CACHE_DIR:-.uv-cache}"
 
 run_router() {
-  uv run llm-router --config "$CONFIG_PATH" "$@"
+  uv run flowgate --config "$CONFIG_PATH" "$@"
 }
 
 list_service_ports() {
   uv run python - "$CONFIG_PATH" <<'PY'
 from pathlib import Path
 
-from llm_router.config import load_router_config
+from flowgate.config import load_router_config
 
 cfg = load_router_config(Path(__import__("sys").argv[1]))
 ports: set[int] = set()
@@ -32,8 +32,8 @@ list_readiness_endpoints() {
   uv run python - "$CONFIG_PATH" <<'PY'
 from pathlib import Path
 
-from llm_router.config import load_router_config
-from llm_router.constants import DEFAULT_SERVICE_HOST, DEFAULT_READINESS_PATH
+from flowgate.config import load_router_config
+from flowgate.constants import DEFAULT_SERVICE_HOST, DEFAULT_READINESS_PATH
 
 cfg = load_router_config(Path(__import__("sys").argv[1]))
 for service in cfg.get("services", {}).values():

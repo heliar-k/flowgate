@@ -6,7 +6,7 @@ import tarfile
 from pathlib import Path
 from unittest import mock
 
-from llm_router.bootstrap import (
+from flowgate.bootstrap import (
     _extract_binary_from_bytes,
     detect_platform,
     pick_release_asset,
@@ -19,8 +19,8 @@ from llm_router.bootstrap import (
 class BootstrapTests(unittest.TestCase):
     def test_detect_platform_darwin_arm64(self):
         with (
-            mock.patch("llm_router.bootstrap.platform.system", return_value="Darwin"),
-            mock.patch("llm_router.bootstrap.platform.machine", return_value="arm64"),
+            mock.patch("flowgate.bootstrap.platform.system", return_value="Darwin"),
+            mock.patch("flowgate.bootstrap.platform.machine", return_value="arm64"),
         ):
             os_name, arch = detect_platform()
         self.assertEqual(os_name, "darwin")
@@ -28,8 +28,8 @@ class BootstrapTests(unittest.TestCase):
 
     def test_detect_platform_linux_amd64(self):
         with (
-            mock.patch("llm_router.bootstrap.platform.system", return_value="Linux"),
-            mock.patch("llm_router.bootstrap.platform.machine", return_value="x86_64"),
+            mock.patch("flowgate.bootstrap.platform.system", return_value="Linux"),
+            mock.patch("flowgate.bootstrap.platform.machine", return_value="x86_64"),
         ):
             os_name, arch = detect_platform()
         self.assertEqual(os_name, "linux")

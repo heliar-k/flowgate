@@ -2,8 +2,8 @@ import re
 import unittest
 from pathlib import Path
 
-from llm_router.config import load_router_config
-from llm_router.constants import (
+from flowgate.config import load_router_config
+from flowgate.constants import (
     DEFAULT_SERVICE_HOST,
     DEFAULT_SERVICE_PORTS,
     DEFAULT_SERVICE_READINESS_PATHS,
@@ -11,8 +11,8 @@ from llm_router.constants import (
 
 
 class DefaultsSyncTests(unittest.TestCase):
-    def test_example_routertool_services_match_constants(self):
-        cfg = load_router_config(Path("config/examples/routertool.yaml"))
+    def test_example_flowgate_services_match_constants(self):
+        cfg = load_router_config(Path("config/examples/flowgate.yaml"))
         services = cfg["services"]
 
         for service_name, port in DEFAULT_SERVICE_PORTS.items():
@@ -30,8 +30,8 @@ class DefaultsSyncTests(unittest.TestCase):
         self.assertIsNotNone(match)
         self.assertEqual(int(match.group(1)), DEFAULT_SERVICE_PORTS["cliproxyapi_plus"])
 
-    def test_example_routertool_urls_use_cliproxy_port(self):
-        cfg = load_router_config(Path("config/examples/routertool.yaml"))
+    def test_example_flowgate_urls_use_cliproxy_port(self):
+        cfg = load_router_config(Path("config/examples/flowgate.yaml"))
         cliproxy_port = DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]
 
         model_list = cfg.get("litellm_base", {}).get("model_list", [])

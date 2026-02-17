@@ -13,8 +13,8 @@
 ### Task 1: 统一认证配置契约（兼容旧字段）
 
 **Files:**
-- Modify: `src/llm_router/config.py`
-- Modify: `config/examples/routertool.yaml`
+- Modify: `src/flowgate/config.py`
+- Modify: `config/examples/flowgate.yaml`
 - Test: `tests/test_config.py`
 
 **Step 1: Write the failing test**
@@ -53,14 +53,14 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add src/llm_router/config.py config/examples/routertool.yaml tests/test_config.py
+git add src/flowgate/config.py config/examples/flowgate.yaml tests/test_config.py
 git commit -m "feat(auth): add unified auth.providers schema with oauth compatibility"
 ```
 
 ### Task 2: 增加认证状态可观测命令
 
 **Files:**
-- Modify: `src/llm_router/cli.py`
+- Modify: `src/flowgate/cli.py`
 - Modify: `README.md`
 - Test: `tests/test_cli.py`
 
@@ -92,15 +92,15 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add src/llm_router/cli.py tests/test_cli.py README.md
+git add src/flowgate/cli.py tests/test_cli.py README.md
 git commit -m "feat(auth): add auth status command for operator visibility"
 ```
 
 ### Task 3: OAuth 登录容错与用户体验补齐
 
 **Files:**
-- Modify: `src/llm_router/oauth.py`
-- Modify: `src/llm_router/cli.py`
+- Modify: `src/flowgate/oauth.py`
+- Modify: `src/flowgate/cli.py`
 - Test: `tests/test_oauth.py`
 - Test: `tests/test_cli.py`
 
@@ -109,7 +109,7 @@ git commit -m "feat(auth): add auth status command for operator visibility"
 ```python
 def test_poll_auth_status_tolerates_transient_network_error(self):
     responses = [TimeoutError("x"), {"status": "pending"}, {"status": "success"}]
-    with mock.patch("llm_router.oauth._get_json", side_effect=responses):
+    with mock.patch("flowgate.oauth._get_json", side_effect=responses):
         status = poll_auth_status("http://example.local/status", timeout_seconds=3, poll_interval_seconds=0.01)
     self.assertEqual(status, "success")
 ```
@@ -132,15 +132,15 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add src/llm_router/oauth.py src/llm_router/cli.py tests/test_oauth.py tests/test_cli.py
+git add src/flowgate/oauth.py src/flowgate/cli.py tests/test_oauth.py tests/test_cli.py
 git commit -m "fix(auth): add transient error tolerance for oauth polling"
 ```
 
 ### Task 4: 认证方法插件化最小闭环
 
 **Files:**
-- Create: `src/llm_router/auth_methods.py`
-- Modify: `src/llm_router/cli.py`
+- Create: `src/flowgate/auth_methods.py`
+- Modify: `src/flowgate/cli.py`
 - Test: `tests/test_cli.py`
 
 **Step 1: Write the failing test**
@@ -168,7 +168,7 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add src/llm_router/auth_methods.py src/llm_router/cli.py tests/test_cli.py
+git add src/flowgate/auth_methods.py src/flowgate/cli.py tests/test_cli.py
 git commit -m "refactor(auth): extract auth method registry and dispatch layer"
 ```
 
@@ -187,8 +187,8 @@ git commit -m "refactor(auth): extract auth method registry and dispatch layer"
 
 **Step 2: Run verification commands**
 
-Run: `uv run llm-router --help`  
-Run: `uv run llm-router auth --help`  
+Run: `uv run flowgate --help`  
+Run: `uv run flowgate auth --help`  
 Run: `uv run python -m unittest discover -s tests -v`  
 Expected: all pass.
 

@@ -1,6 +1,6 @@
 # Troubleshooting Runbook
 
-This runbook focuses on common local issues for `llm-router` + `CLIProxyAPIPlus` + `LiteLLM`.
+This runbook focuses on common local issues for `flowgate` + `CLIProxyAPIPlus` + `LiteLLM`.
 
 ## 1) Port Conflict
 
@@ -12,12 +12,12 @@ Checks:
 ```bash
 lsof -nP -iTCP:4000 -sTCP:LISTEN
 lsof -nP -iTCP:8317 -sTCP:LISTEN
-uv run llm-router --config config/routertool.yaml status
+uv run flowgate --config config/flowgate.yaml status
 ```
 
 Fix:
-- Stop conflicting process or change `services.<name>.port` in `config/routertool.yaml`.
-- Run `uv run llm-router --config config/routertool.yaml service restart all`.
+- Stop conflicting process or change `services.<name>.port` in `config/flowgate.yaml`.
+- Run `uv run flowgate --config config/flowgate.yaml service restart all`.
 
 ## 2) OAuth Login Fails
 
@@ -27,10 +27,10 @@ Symptoms:
 
 Checks:
 ```bash
-uv run llm-router --config config/routertool.yaml auth list
-uv run llm-router --config config/routertool.yaml auth status
-uv run llm-router --config config/routertool.yaml auth login codex --timeout 30 --poll-interval 2
-uv run llm-router --config config/routertool.yaml auth login copilot --timeout 30 --poll-interval 2
+uv run flowgate --config config/flowgate.yaml auth list
+uv run flowgate --config config/flowgate.yaml auth status
+uv run flowgate --config config/flowgate.yaml auth login codex --timeout 30 --poll-interval 2
+uv run flowgate --config config/flowgate.yaml auth login copilot --timeout 30 --poll-interval 2
 tail -n 50 .router/runtime/events.log
 ```
 
@@ -50,7 +50,7 @@ Symptoms:
 
 Checks:
 ```bash
-uv run llm-router --config config/routertool.yaml status
+uv run flowgate --config config/flowgate.yaml status
 ls -l .router/auths
 ```
 
@@ -67,7 +67,7 @@ Symptoms:
 Checks:
 ```bash
 uv sync --group runtime --group test
-uv run llm-router --config config/routertool.yaml bootstrap download
+uv run flowgate --config config/flowgate.yaml bootstrap download
 ls -l .router/runtime/bin
 ```
 
@@ -82,7 +82,7 @@ Symptoms:
 
 Checks:
 ```bash
-uv run llm-router --config config/routertool.yaml health
+uv run flowgate --config config/flowgate.yaml health
 curl -i http://127.0.0.1:4000/v1/models
 curl -i http://127.0.0.1:8317/v1/models
 ```

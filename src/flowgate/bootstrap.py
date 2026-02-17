@@ -66,7 +66,7 @@ def pick_release_asset(assets: list[dict], *, os_name: str, arch: str) -> dict:
 
 
 def _http_get_json(url: str) -> dict:
-    req = Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "llm-router-bootstrap"})
+    req = Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "flowgate-bootstrap"})
     with urlopen(req, timeout=30) as resp:  # nosec B310
         payload = resp.read().decode("utf-8")
     data = json.loads(payload)
@@ -76,7 +76,7 @@ def _http_get_json(url: str) -> dict:
 
 
 def _http_get_bytes(url: str) -> bytes:
-    req = Request(url, headers={"User-Agent": "llm-router-bootstrap"})
+    req = Request(url, headers={"User-Agent": "flowgate-bootstrap"})
     with urlopen(req, timeout=120) as resp:  # nosec B310
         return resp.read()
 

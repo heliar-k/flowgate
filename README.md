@@ -1,4 +1,4 @@
-# LLM Router Tool
+# FlowGate
 
 A local control tool built for `CLIProxyAPIPlus + LiteLLM` stacks.
 
@@ -28,7 +28,7 @@ uv sync --group runtime --group test
 
 ```bash
 mkdir -p config
-cp config/examples/routertool.yaml config/routertool.yaml
+cp config/examples/flowgate.yaml config/flowgate.yaml
 cp config/examples/cliproxyapi.yaml config/cliproxyapi.yaml
 ```
 
@@ -44,26 +44,26 @@ export CUSTOM_API_KEY="sk-..."
 3. Bootstrap runtime binaries (auto download):
 
 ```bash
-uv run llm-router --config config/routertool.yaml bootstrap download
+uv run flowgate --config config/flowgate.yaml bootstrap download
 ```
 
 4. Generate active profile config:
 
 ```bash
-uv run llm-router --config config/routertool.yaml profile set balanced
+uv run flowgate --config config/flowgate.yaml profile set balanced
 ```
 
 5. Start services:
 
 ```bash
-uv run llm-router --config config/routertool.yaml service start all
+uv run flowgate --config config/flowgate.yaml service start all
 ```
 
 6. Check status and health:
 
 ```bash
-uv run llm-router --config config/routertool.yaml status
-uv run llm-router --config config/routertool.yaml health
+uv run flowgate --config config/flowgate.yaml status
+uv run flowgate --config config/flowgate.yaml health
 ```
 
 `health` command semantics:
@@ -73,27 +73,27 @@ uv run llm-router --config config/routertool.yaml health
 7. Run preflight checks:
 
 ```bash
-uv run llm-router --config config/routertool.yaml doctor
+uv run flowgate --config config/flowgate.yaml doctor
 # or
-./scripts/doctor.sh config/routertool.yaml
+./scripts/doctor.sh config/flowgate.yaml
 ```
 
 8. Run minimal smoke validation:
 
 ```bash
-./scripts/smoke_local.sh config/routertool.yaml
+./scripts/smoke_local.sh config/flowgate.yaml
 ```
 
 Optional controls:
-- `PROFILE=reliability ./scripts/smoke_local.sh config/routertool.yaml`
-- `STARTUP_TIMEOUT=60 ./scripts/smoke_local.sh config/routertool.yaml`
+- `PROFILE=reliability ./scripts/smoke_local.sh config/flowgate.yaml`
+- `STARTUP_TIMEOUT=60 ./scripts/smoke_local.sh config/flowgate.yaml`
 
 ## Directory layout
 
-- `src/llm_router/`: CLI and core modules
+- `src/flowgate/`: CLI and core modules
 - `tests/`: unit/integration tests
 - `config/examples/`: tracked templates
-- `config/routertool.yaml`, `config/cliproxyapi.yaml`: local runtime config (ignored)
+- `config/flowgate.yaml`, `config/cliproxyapi.yaml`: local runtime config (ignored)
 - `.router/`: runtime binaries, active profile, pids, logs, auth artifacts (ignored)
 
 ## Observability
@@ -118,7 +118,7 @@ tail -n 50 .router/runtime/events.log
 Custom CLIProxyAPIPlus version:
 
 ```bash
-uv run llm-router --config config/routertool.yaml \
+uv run flowgate --config config/flowgate.yaml \
   bootstrap download \
   --cliproxy-version v6.8.16-0
 ```
@@ -128,8 +128,8 @@ uv run llm-router --config config/routertool.yaml \
 List configured providers and supported auth actions:
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth list
-uv run llm-router --config config/routertool.yaml auth status
+uv run flowgate --config config/flowgate.yaml auth list
+uv run flowgate --config config/flowgate.yaml auth status
 ```
 
 Command migration quick map:
@@ -141,7 +141,7 @@ Command migration quick map:
 ### Codex OAuth
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth login codex --timeout 180 --poll-interval 2
+uv run flowgate --config config/flowgate.yaml auth login codex --timeout 180 --poll-interval 2
 ```
 
 ### Codex headless import (device auth)
@@ -150,13 +150,13 @@ If you already authenticated with Codex CLI using device auth (`codex login --de
 import `~/.codex/auth.json` into CLIProxyAPI auth storage:
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth import-headless codex
+uv run flowgate --config config/flowgate.yaml auth import-headless codex
 ```
 
 Custom source or destination:
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth import-headless codex \
+uv run flowgate --config config/flowgate.yaml auth import-headless codex \
   --source ~/.codex/auth.json \
   --dest-dir ./.router/auths
 ```
@@ -166,7 +166,7 @@ If `--dest-dir` is omitted, the default is `<runtime_dir parent>/auths` (example
 ### GitHub Copilot OAuth
 
 ```bash
-uv run llm-router --config config/routertool.yaml auth login copilot --timeout 180 --poll-interval 2
+uv run flowgate --config config/flowgate.yaml auth login copilot --timeout 180 --poll-interval 2
 ```
 
 Legacy provider-first commands are still supported for compatibility:
@@ -177,9 +177,9 @@ Legacy provider-first commands are still supported for compatibility:
 ## Add auth provider/method
 
 Minimal extension path:
-1. Add provider config under `auth.providers.<provider>` in `config/routertool.yaml` with required endpoints for OAuth polling (`auth_url_endpoint`, `status_endpoint`) when needed.
-2. For headless/device import support, register handler in `src/llm_router/auth_methods.py` via `headless_import_handlers()`.
-3. Run `uv run llm-router --config config/routertool.yaml auth list` and `auth status` to verify capability exposure.
+1. Add provider config under `auth.providers.<provider>` in `config/flowgate.yaml` with required endpoints for OAuth polling (`auth_url_endpoint`, `status_endpoint`) when needed.
+2. For headless/device import support, register handler in `src/flowgate/auth_methods.py` via `headless_import_handlers()`.
+3. Run `uv run flowgate --config config/flowgate.yaml auth list` and `auth status` to verify capability exposure.
 4. Add/adjust CLI and config tests in `tests/test_cli.py` and `tests/test_config.py`.
 
 ## Strategy profiles
@@ -191,7 +191,7 @@ Minimal extension path:
 Switch with:
 
 ```bash
-uv run llm-router --config config/routertool.yaml profile set reliability
+uv run flowgate --config config/flowgate.yaml profile set reliability
 ```
 
 ## Run tests
@@ -213,7 +213,7 @@ Recommended commands:
 uv run python -m unittest discover -s tests -v
 
 # optional coverage report (local quality gate)
-uv run pytest --cov=src/llm_router --cov-report=term-missing
+uv run pytest --cov=src/flowgate --cov-report=term-missing
 ```
 
 Coverage/acceptance baseline:
@@ -234,8 +234,8 @@ Coverage/acceptance baseline:
 
 - See `docs/runbook-troubleshooting.md` for common issues and direct repair commands.
 - Start from:
-  - `uv run llm-router --config config/routertool.yaml status`
-  - `uv run llm-router --config config/routertool.yaml health`
+  - `uv run flowgate --config config/flowgate.yaml status`
+  - `uv run flowgate --config config/flowgate.yaml health`
   - `tail -n 50 .router/runtime/events.log`
 
 ## Release and rollback

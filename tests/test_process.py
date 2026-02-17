@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from llm_router.process import ProcessSupervisor
-from llm_router.health import check_health_url
+from flowgate.process import ProcessSupervisor
+from flowgate.health import check_health_url
 
 
 class ProcessSupervisorTests(unittest.TestCase):
@@ -39,7 +39,7 @@ class ProcessSupervisorTests(unittest.TestCase):
             self.assertIn("result", event)
 
     def test_health_check_handles_network_error(self):
-        with mock.patch("llm_router.health.urlopen", side_effect=OSError("boom")):
+        with mock.patch("flowgate.health.urlopen", side_effect=OSError("boom")):
             self.assertFalse(check_health_url("http://127.0.0.1:1/", timeout=0.1))
 
 

@@ -841,7 +841,7 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/69/49/fb73d71b7cbe981ca6ca07ebcb3bfa714c6a20d1bea327546a2f4a5a8865/litellm_proxy_extras-0.2.17.tar.gz", hash = "sha256:96428ba537d440a40a7db85e615284a4fd89bada24a7fc8737ef0189932cb1ed", size = 15227, upload-time = "2025-08-14T00:43:27.795Z" }
 
 [[package]]
-name = "llm-router"
+name = "flowgate"
 version = "0.1.0"
 source = { editable = "." }
 

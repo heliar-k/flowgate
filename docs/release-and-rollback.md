@@ -1,6 +1,6 @@
 # Release and Rollback Guide
 
-This guide standardizes local release and emergency rollback for `llm-router`.
+This guide standardizes local release and emergency rollback for `flowgate`.
 
 ## Release Flow
 
@@ -9,7 +9,7 @@ This guide standardizes local release and emergency rollback for `llm-router`.
 ```bash
 uv sync --group runtime --group test
 uv run python -m unittest discover -s tests -v
-uv run llm-router --config config/routertool.yaml doctor
+uv run flowgate --config config/flowgate.yaml doctor
 ```
 
 Required before release:
@@ -28,7 +28,7 @@ Required before release:
 ```bash
 git add pyproject.toml README.md docs/
 git commit -m "chore(release): prepare vX.Y.Z" -m "Why this change was needed:\n...\n\nWhat changed:\n...\n\nProblem solved:\n..."
-git tag -a vX.Y.Z -m "llm-router vX.Y.Z"
+git tag -a vX.Y.Z -m "flowgate vX.Y.Z"
 git push origin main --follow-tags
 ```
 
@@ -45,20 +45,20 @@ git checkout v<last-good>
 
 ### 2) Restore runtime/config state
 
-- Restore known-good `config/routertool.yaml` and `config/cliproxyapi.yaml`.
+- Restore known-good `config/flowgate.yaml` and `config/cliproxyapi.yaml`.
 - Re-bootstrap runtime binaries from the known-good revision:
 
 ```bash
-uv run llm-router --config config/routertool.yaml bootstrap download
-uv run llm-router --config config/routertool.yaml profile set balanced
-uv run llm-router --config config/routertool.yaml service restart all
+uv run flowgate --config config/flowgate.yaml bootstrap download
+uv run flowgate --config config/flowgate.yaml profile set balanced
+uv run flowgate --config config/flowgate.yaml service restart all
 ```
 
 ### 3) Verify recovery
 
 ```bash
-uv run llm-router --config config/routertool.yaml status
-uv run llm-router --config config/routertool.yaml health
+uv run flowgate --config config/flowgate.yaml status
+uv run flowgate --config config/flowgate.yaml health
 ```
 
 Expected:

@@ -27,7 +27,7 @@ TRACKED_ALLOWLIST_PREFIX = (
 REQUIRED_GITIGNORE_TOKENS = [
     ".env",
     ".env.*",
-    "config/routertool.yaml",
+    "config/flowgate.yaml",
     "config/cliproxyapi.yaml",
     "config/auths/",
     "*.pem",

@@ -3,8 +3,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from llm_router.config import ConfigError, load_router_config, merge_dicts
-from llm_router.constants import (
+from flowgate.config import ConfigError, load_router_config, merge_dicts
+from flowgate.constants import (
     DEFAULT_SERVICE_HOST,
     DEFAULT_SERVICE_PORTS,
     DEFAULT_SERVICE_READINESS_PATHS,

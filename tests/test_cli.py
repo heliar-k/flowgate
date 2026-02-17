@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from llm_router.cli import _build_parser, run_cli
-from llm_router.constants import (
+from flowgate.cli import _build_parser, run_cli
+from flowgate.constants import (
     DEFAULT_READINESS_PATH,
     DEFAULT_SERVICE_HOST,
     DEFAULT_SERVICE_PORTS,
@@ -61,7 +61,7 @@ def write_config(path: Path) -> None:
 class CLITests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
-        self.cfg = self.root / "routertool.yaml"
+        self.cfg = self.root / "flowgate.yaml"
         write_config(self.cfg)
 
     def test_profile_list_and_set(self):
@@ -90,7 +90,7 @@ class CLITests(unittest.TestCase):
 
     def test_profile_set_restarts_litellm_when_running(self):
         out = io.StringIO()
-        with mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls:
+        with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = True
             supervisor.restart.return_value = 4321
@@ -106,9 +106,9 @@ class CLITests(unittest.TestCase):
     def test_health_command(self):
         out = io.StringIO()
         with (
-            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "llm_router.cli.check_http_health",
+                "flowgate.cli.check_http_health",
                 side_effect=lambda url, timeout=1.0: {
                     "ok": str(DEFAULT_SERVICE_PORTS["litellm"]) in url,
                     "status_code": 200 if str(DEFAULT_SERVICE_PORTS["litellm"]) in url else 503,
@@ -134,9 +134,9 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "llm_router.cli.check_http_health",
+                "flowgate.cli.check_http_health",
                 return_value={"ok": True, "status_code": 200, "error": None},
             ) as checker,
         ):
@@ -157,9 +157,9 @@ class CLITests(unittest.TestCase):
     def test_health_command_fails_when_service_not_running(self):
         out = io.StringIO()
         with (
-            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "llm_router.cli.check_http_health",
+                "flowgate.cli.check_http_health",
                 return_value={"ok": True, "status_code": 200, "error": None},
             ),
         ):
@@ -171,7 +171,7 @@ class CLITests(unittest.TestCase):
 
     def test_service_start_stop_all(self):
         out = io.StringIO()
-        with mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls:
+        with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.start.side_effect = [111, 222]
             code = run_cli(["--config", str(self.cfg), "service", "start", "all"], stdout=out)
@@ -180,7 +180,7 @@ class CLITests(unittest.TestCase):
         self.assertIn("cliproxyapi_plus:started pid=222", out.getvalue())
 
         out = io.StringIO()
-        with mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls:
+        with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.stop.side_effect = [True, True]
             code = run_cli(["--config", str(self.cfg), "service", "stop", "all"], stdout=out)
@@ -191,9 +191,9 @@ class CLITests(unittest.TestCase):
     def test_auth_login(self):
         out = io.StringIO()
         with (
-            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
-            mock.patch("llm_router.cli.fetch_auth_url", return_value="https://example.com/login") as f_url,
-            mock.patch("llm_router.cli.poll_auth_status", return_value="success") as p_status,
+            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/login") as f_url,
+            mock.patch("flowgate.cli.poll_auth_status", return_value="success") as p_status,
         ):
             code = run_cli(["--config", str(self.cfg), "auth", "codex", "login"], stdout=out)
         self.assertEqual(code, 0)
@@ -211,10 +211,10 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         err = io.StringIO()
         with (
-            mock.patch("llm_router.cli.ProcessSupervisor"),
-            mock.patch("llm_router.cli.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch("flowgate.cli.ProcessSupervisor"),
+            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/login"),
             mock.patch(
-                "llm_router.cli.poll_auth_status",
+                "flowgate.cli.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out; last status=pending"),
             ),
         ):
@@ -257,9 +257,9 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
-            mock.patch("llm_router.cli.fetch_auth_url", return_value="https://example.com/custom-login") as f_url,
-            mock.patch("llm_router.cli.poll_auth_status", return_value="success") as p_status,
+            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/custom-login") as f_url,
+            mock.patch("flowgate.cli.poll_auth_status", return_value="success") as p_status,
         ):
             code = run_cli(["--config", str(self.cfg), "auth", "login", "custom"], stdout=out)
         self.assertEqual(code, 0)
@@ -280,7 +280,7 @@ class CLITests(unittest.TestCase):
     def test_auth_import_headless_generic_provider_command(self):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-        with mock.patch("llm_router.cli.get_headless_import_handler", return_value=handler) as resolver:
+        with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -302,8 +302,8 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/custom-headless-import.json"))
         with (
-            mock.patch("llm_router.cli.get_headless_import_handler", return_value=handler) as resolver,
-            mock.patch("llm_router.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler) as resolver,
+            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
         ):
             code = run_cli(
                 [
@@ -351,7 +351,7 @@ class CLITests(unittest.TestCase):
     def test_auth_codex_import_headless(self):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-        with mock.patch("llm_router.cli.get_headless_import_handler", return_value=handler) as resolver:
+        with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -372,7 +372,7 @@ class CLITests(unittest.TestCase):
     def test_auth_codex_import_headless_default_dest_follows_runtime_root(self):
         cfg_dir = self.root / "config"
         cfg_dir.mkdir(parents=True, exist_ok=True)
-        cfg_path = cfg_dir / "routertool.yaml"
+        cfg_path = cfg_dir / "flowgate.yaml"
 
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
         data["paths"]["runtime_dir"] = "../.router/runtime"
@@ -383,7 +383,7 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-        with mock.patch("llm_router.cli.get_headless_import_handler", return_value=handler) as resolver:
+        with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler) as resolver:
             code = run_cli(
                 [
                     "--config",
@@ -407,15 +407,15 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch(
-                "llm_router.cli.download_cliproxyapi_plus",
+                "flowgate.cli.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ) as cliproxy_download,
             mock.patch(
-                "llm_router.cli.prepare_litellm_runner",
+                "flowgate.cli.prepare_litellm_runner",
                 return_value=Path("/tmp/runtime/bin/litellm"),
             ) as litellm_prepare,
-            mock.patch("llm_router.cli.validate_cliproxy_binary", return_value=True) as cliproxy_validate,
-            mock.patch("llm_router.cli.validate_litellm_runner", return_value=True) as litellm_validate,
+            mock.patch("flowgate.cli.validate_cliproxy_binary", return_value=True) as cliproxy_validate,
+            mock.patch("flowgate.cli.validate_litellm_runner", return_value=True) as litellm_validate,
         ):
             code = run_cli(["--config", str(self.cfg), "bootstrap", "download"], stdout=out)
         self.assertEqual(code, 0)
@@ -432,13 +432,13 @@ class CLITests(unittest.TestCase):
             parser.parse_args(["bootstrap", "download", "--litellm-version", "1.2.3"])
         self.assertNotEqual(ctx.exception.code, 0)
 
-    def test_parser_prog_name_is_llm_router(self):
+    def test_parser_prog_name_is_flowgate(self):
         parser = _build_parser()
-        self.assertIn("llm-router", parser.format_usage())
+        self.assertIn("flowgate", parser.format_usage())
 
     def test_doctor_reports_missing_runtime_artifacts(self):
         out = io.StringIO()
-        with mock.patch("llm_router.cli._runtime_dependency_available", return_value=True):
+        with mock.patch("flowgate.cli._runtime_dependency_available", return_value=True):
             code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
         self.assertEqual(code, 1)
         text = out.getvalue()
@@ -465,7 +465,7 @@ class CLITests(unittest.TestCase):
         os.chmod(litellm, 0o755)
 
         out = io.StringIO()
-        with mock.patch("llm_router.cli._runtime_dependency_available", return_value=True):
+        with mock.patch("flowgate.cli._runtime_dependency_available", return_value=True):
             code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
         self.assertEqual(code, 0)
         text = out.getvalue()

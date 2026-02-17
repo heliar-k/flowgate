@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from llm_router.headless_import import import_codex_headless_auth
+from flowgate.headless_import import import_codex_headless_auth
 
 
 class HeadlessImportTests(unittest.TestCase):

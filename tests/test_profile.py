@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from llm_router.profile import activate_profile
+from flowgate.profile import activate_profile
 
 
 class ProfileActivationTests(unittest.TestCase):

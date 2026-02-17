@@ -1,19 +1,19 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `src/llm_router/`: main Python package and CLI entrypoint (`llm_router:main`).
-- `src/llm_router/cli.py`: command routing for profile, auth, service, health, and bootstrap workflows.
-- `src/llm_router/bootstrap.py`: runtime artifact setup (`CLIProxyAPIPlus` download + LiteLLM runner generation).
+- `src/flowgate/`: main Python package and CLI entrypoint (`flowgate:main`).
+- `src/flowgate/cli.py`: command routing for profile, auth, service, health, and bootstrap workflows.
+- `src/flowgate/bootstrap.py`: runtime artifact setup (`CLIProxyAPIPlus` download + LiteLLM runner generation).
 - `tests/`: `unittest`-based test suite (`test_*.py`), including integration-style profile switching coverage.
-- `config/examples/`: tracked sample configs. Copy these to `config/routertool.yaml` and `config/cliproxyapi.yaml` for local runs.
+- `config/examples/`: tracked sample configs. Copy these to `config/flowgate.yaml` and `config/cliproxyapi.yaml` for local runs.
 - Runtime output is intentionally untracked under `.router/` (pids, logs, generated binaries, auth artifacts).
 
 ## Build, Test, and Development Commands
 - Install deps: `export UV_CACHE_DIR=.uv-cache && uv sync --group runtime --group test`
-- Run CLI help: `uv run llm-router --help`
-- Bootstrap runtime binaries: `uv run llm-router --config config/routertool.yaml bootstrap download`
-- Activate profile: `uv run llm-router --config config/routertool.yaml profile set balanced`
-- Start/stop services: `uv run llm-router --config config/routertool.yaml service start all` / `service stop all`
+- Run CLI help: `uv run flowgate --help`
+- Bootstrap runtime binaries: `uv run flowgate --config config/flowgate.yaml bootstrap download`
+- Activate profile: `uv run flowgate --config config/flowgate.yaml profile set balanced`
+- Start/stop services: `uv run flowgate --config config/flowgate.yaml service start all` / `service stop all`
 - Run tests: `uv run python -m unittest discover -s tests -v`
 
 ## Coding Style & Naming Conventions

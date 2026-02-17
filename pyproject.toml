@@ -1,5 +1,5 @@
 [project]
-name = "llm-router"
+name = "flowgate"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -7,7 +7,7 @@ requires-python = ">=3.12,<3.14"
 dependencies = []
 
 [project.scripts]
-llm-router = "llm_router:main"
+flowgate = "flowgate:main"
 
 [dependency-groups]
 runtime = [

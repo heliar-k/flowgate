@@ -28,6 +28,6 @@ jobs:
 
       - name: CLI static checks
         run: |
-          uv run llm-router --help
-          uv run llm-router bootstrap --help
-          uv run llm-router auth codex --help
+          uv run flowgate --help
+          uv run flowgate bootstrap --help
+          uv run flowgate auth codex --help

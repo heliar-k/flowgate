@@ -4,14 +4,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from llm_router.cli import run_cli
-from llm_router.constants import DEFAULT_SERVICE_HOST, DEFAULT_SERVICE_PORTS, DEFAULT_SERVICE_READINESS_PATHS
+from flowgate.cli import run_cli
+from flowgate.constants import DEFAULT_SERVICE_HOST, DEFAULT_SERVICE_PORTS, DEFAULT_SERVICE_READINESS_PATHS
 
 
 class ProfileSwitchIntegrationTests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
-        self.cfg_path = self.root / "routertool.yaml"
+        self.cfg_path = self.root / "flowgate.yaml"
         cfg = {
             "paths": {
                 "runtime_dir": str(self.root / "runtime"),

@@ -472,7 +472,7 @@ def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
         print(
             "doctor:runtime_binaries=fail "
             f"missing={','.join(missing_or_non_exec)} "
-            "suggestion='uv run llm-router --config config/routertool.yaml bootstrap download'",
+            "suggestion='uv run flowgate --config config/flowgate.yaml bootstrap download'",
             file=stdout,
         )
     else:
@@ -505,8 +505,8 @@ def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="llm-router")
-    parser.add_argument("--config", default="config/routertool.yaml")
+    parser = argparse.ArgumentParser(prog="flowgate")
+    parser.add_argument("--config", default="config/flowgate.yaml")
 
     sub = parser.add_subparsers(dest="command", required=True)
 

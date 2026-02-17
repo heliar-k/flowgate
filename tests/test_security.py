@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from llm_router.security import check_secret_file_permissions
+from flowgate.security import check_secret_file_permissions
 
 
 class SecurityTests(unittest.TestCase):
