@@ -1,6 +1,6 @@
-"""CLI 回归测试 - auth 命令组
+"""CLI regression tests - auth command group
 
-验证 auth 命令的退出码和输出格式保持一致性。
+Verifies that auth commands maintain consistent exit codes and output formats.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from flowgate.cli import run_cli
 
 
 def write_minimal_config(path: Path) -> None:
-    """创建最小化的测试配置文件"""
+    """Create a minimal test configuration file"""
     data = {
         "paths": {
             "runtime_dir": str(path.parent / "runtime"),
@@ -58,25 +58,25 @@ def write_minimal_config(path: Path) -> None:
 
 
 class TestAuthCommandExitCodes(unittest.TestCase):
-    """auth 命令退出码回归测试"""
+    """Regression tests for auth command exit codes"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.root = Path(tempfile.mkdtemp())
         self.cfg = self.root / "flowgate.yaml"
         write_minimal_config(self.cfg)
 
-    def test_auth_list_success_exit_code(self):
-        """auth list 成功时退出码为 0"""
+    def test_auth_list_success_exit_code(self) -> None:
+        """auth list returns exit code 0 on success"""
         out = io.StringIO()
         result = run_cli(["--config", str(self.cfg), "auth", "list"], stdout=out)
         self.assertEqual(
             result,
             0,
-            f"期望退出码 0，实际 {result}\nstdout: {out.getvalue()}",
+            f"Expected exit code 0, got {result}\nstdout: {out.getvalue()}",
         )
 
-    def test_auth_list_missing_config_exit_code(self):
-        """auth list 缺少配置文件时退出码非 0"""
+    def test_auth_list_missing_config_exit_code(self) -> None:
+        """auth list returns non-zero exit code when config file is missing"""
         out = io.StringIO()
         err = io.StringIO()
         result = run_cli(
@@ -84,17 +84,21 @@ class TestAuthCommandExitCodes(unittest.TestCase):
             stdout=out,
             stderr=err,
         )
-        self.assertNotEqual(result, 0, "期望非零退出码")
-        self.assertTrue(err.getvalue() or "error" in out.getvalue().lower(), "期望有错误输出")
+        self.assertNotEqual(result, 0, "Expected non-zero exit code")
+        error_output = err.getvalue() + out.getvalue()
+        self.assertTrue(
+            "does not exist" in error_output.lower() or "not found" in error_output.lower(),
+            f"Expected config file error message, got: {error_output}",
+        )
 
-    def test_auth_status_success_exit_code(self):
-        """auth status 成功时退出码为 0（即使没有认证）"""
+    def test_auth_status_success_exit_code(self) -> None:
+        """auth status returns exit code 0 on success (even when no auth exists)"""
         out = io.StringIO()
         result = run_cli(["--config", str(self.cfg), "auth", "status"], stdout=out)
         self.assertEqual(result, 0, f"stdout: {out.getvalue()}")
 
-    def test_auth_login_invalid_provider_exit_code(self):
-        """auth login 无效 provider 时退出码为 2"""
+    def test_auth_login_invalid_provider_exit_code(self) -> None:
+        """auth login returns exit code 2 when provider is invalid"""
         out = io.StringIO()
         err = io.StringIO()
         result = run_cli(
@@ -102,15 +106,15 @@ class TestAuthCommandExitCodes(unittest.TestCase):
             stdout=out,
             stderr=err,
         )
-        self.assertEqual(result, 2, "期望退出码为 2（配置错误）")
+        self.assertEqual(result, 2, "Expected exit code 2 (config error)")
         error_output = err.getvalue() + out.getvalue()
         self.assertTrue(
             "not configured" in error_output.lower() or "available=" in error_output,
-            f"期望包含 provider 错误信息，实际输出: {error_output}",
+            f"Expected provider error message, got: {error_output}",
         )
 
-    def test_auth_login_timeout_exit_code(self):
-        """auth login 超时时退出码为 1"""
+    def test_auth_login_timeout_exit_code(self) -> None:
+        """auth login returns exit code 1 on timeout"""
         out = io.StringIO()
         err = io.StringIO()
         with (
@@ -125,11 +129,11 @@ class TestAuthCommandExitCodes(unittest.TestCase):
                 stdout=out,
                 stderr=err,
             )
-        self.assertEqual(result, 1, "期望退出码为 1（运行时错误）")
+        self.assertEqual(result, 1, "Expected exit code 1 (runtime error)")
         self.assertIn("OAuth login failed", err.getvalue())
 
-    def test_auth_import_headless_missing_source_exit_code(self):
-        """auth import-headless 缺少 source 文件时退出码为 1"""
+    def test_auth_import_headless_missing_source_exit_code(self) -> None:
+        """auth import-headless returns exit code 1 when source file is missing"""
         out = io.StringIO()
         err = io.StringIO()
         result = run_cli(
@@ -145,109 +149,107 @@ class TestAuthCommandExitCodes(unittest.TestCase):
             stdout=out,
             stderr=err,
         )
-        self.assertEqual(result, 1, "期望退出码为 1（文件不存在）")
+        self.assertEqual(result, 1, "Expected exit code 1 (file not found)")
+        error_output = err.getvalue() + out.getvalue()
         self.assertTrue(
-            err.getvalue() or "failed" in out.getvalue().lower(),
-            "期望有错误输出",
+            "does not exist" in error_output.lower() or "not found" in error_output.lower(),
+            f"Expected file not found error, got: {error_output}",
         )
 
-    def test_auth_import_headless_invalid_json_exit_code(self):
-        """auth import-headless 无效 JSON 文件时退出码为 1"""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            f.write("invalid json{")
-            invalid_json_path = f.name
+    def test_auth_import_headless_invalid_json_exit_code(self) -> None:
+        """auth import-headless returns exit code 1 when JSON file is invalid"""
+        invalid_json_path = self.root / "invalid.json"
+        invalid_json_path.write_text("invalid json{", encoding="utf-8")
 
-        try:
-            out = io.StringIO()
-            err = io.StringIO()
-            result = run_cli(
-                [
-                    "--config",
-                    str(self.cfg),
-                    "auth",
-                    "import-headless",
-                    "codex",
-                    "--source",
-                    invalid_json_path,
-                ],
-                stdout=out,
-                stderr=err,
-            )
-            self.assertEqual(result, 1, "期望退出码为 1（JSON 解析错误）")
-            self.assertTrue(err.getvalue(), "期望有错误输出")
-        finally:
-            Path(invalid_json_path).unlink(missing_ok=True)
+        out = io.StringIO()
+        err = io.StringIO()
+        result = run_cli(
+            [
+                "--config",
+                str(self.cfg),
+                "auth",
+                "import-headless",
+                "codex",
+                "--source",
+                str(invalid_json_path),
+            ],
+            stdout=out,
+            stderr=err,
+        )
+        self.assertEqual(result, 1, "Expected exit code 1 (JSON parse error)")
+        error_output = err.getvalue()
+        self.assertTrue(error_output, "Expected error output")
+        self.assertTrue(
+            "json" in error_output.lower() or "parse" in error_output.lower(),
+            f"Expected JSON parsing error message, got: {error_output}",
+        )
 
-    def test_auth_import_headless_unsupported_provider_exit_code(self):
-        """auth import-headless 不支持的 provider 时退出码为 2"""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            f.write("{}")
-            valid_json_path = f.name
+    def test_auth_import_headless_unsupported_provider_exit_code(self) -> None:
+        """auth import-headless returns exit code 2 when provider is unsupported"""
+        valid_json_path = self.root / "valid.json"
+        valid_json_path.write_text("{}", encoding="utf-8")
 
-        try:
-            out = io.StringIO()
-            err = io.StringIO()
-            result = run_cli(
-                [
-                    "--config",
-                    str(self.cfg),
-                    "auth",
-                    "import-headless",
-                    "copilot",  # copilot 不支持 headless import
-                    "--source",
-                    valid_json_path,
-                ],
-                stdout=out,
-                stderr=err,
-            )
-            self.assertEqual(result, 2, "期望退出码为 2（不支持的功能）")
-            self.assertIn("not supported", err.getvalue())
-        finally:
-            Path(valid_json_path).unlink(missing_ok=True)
+        out = io.StringIO()
+        err = io.StringIO()
+        result = run_cli(
+            [
+                "--config",
+                str(self.cfg),
+                "auth",
+                "import-headless",
+                "copilot",  # copilot does not support headless import
+                "--source",
+                str(valid_json_path),
+            ],
+            stdout=out,
+            stderr=err,
+        )
+        self.assertEqual(result, 2, "Expected exit code 2 (unsupported feature)")
+        self.assertIn("not supported", err.getvalue())
 
 
 class TestAuthCommandOutput(unittest.TestCase):
-    """auth 命令输出格式回归测试"""
+    """Regression tests for auth command output formats"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.root = Path(tempfile.mkdtemp())
         self.cfg = self.root / "flowgate.yaml"
         write_minimal_config(self.cfg)
 
-    def test_auth_list_output_format(self):
-        """auth list 输出包含 providers 和能力信息"""
+    def test_auth_list_output_format(self) -> None:
+        """auth list output includes providers and capability information"""
         out = io.StringIO()
         result = run_cli(["--config", str(self.cfg), "auth", "list"], stdout=out)
         self.assertEqual(result, 0)
 
         output = out.getvalue()
-        # 验证输出包含已配置的 providers
-        self.assertIn("provider=codex", output, "输出应包含 codex provider")
-        self.assertIn("provider=copilot", output, "输出应包含 copilot provider")
+        # Verify output contains configured providers
+        self.assertIn("provider=codex", output, "Output should include codex provider")
+        self.assertIn("provider=copilot", output, "Output should include copilot provider")
 
-        # 验证输出包含能力信息
-        self.assertIn("oauth_login=", output, "输出应包含 oauth_login 能力")
-        self.assertIn("headless_import=", output, "输出应包含 headless_import 能力")
+        # Verify output contains capability information
+        self.assertIn("oauth_login=", output, "Output should include oauth_login capability")
+        self.assertIn("headless_import=", output, "Output should include headless_import capability")
 
-        # 验证汇总行
-        self.assertIn("oauth_providers=", output, "输出应包含 oauth_providers 汇总")
-        self.assertIn("headless_import_providers=", output, "输出应包含 headless_import_providers 汇总")
+        # Verify summary line
+        self.assertIn("oauth_providers=", output, "Output should include oauth_providers summary")
+        self.assertIn("headless_import_providers=", output, "Output should include headless_import_providers summary")
 
-    def test_auth_status_output_format(self):
-        """auth status 输出包含 default_auth_dir 和 provider 信息"""
+    def test_auth_status_output_format(self) -> None:
+        """auth status output includes default_auth_dir and provider information"""
         out = io.StringIO()
         result = run_cli(["--config", str(self.cfg), "auth", "status"], stdout=out)
         self.assertEqual(result, 0)
 
         output = out.getvalue()
-        # 验证输出包含关键字段
-        self.assertIn("default_auth_dir=", output, "输出应包含 default_auth_dir")
-        self.assertIn("secret_permission_issues=", output, "输出应包含 secret_permission_issues")
-        self.assertIn("provider=codex", output, "输出应包含 codex provider")
-        self.assertIn("method=", output, "输出应包含认证方法")
+        # Verify output contains key fields
+        self.assertIn("default_auth_dir=", output, "Output should include default_auth_dir")
+        self.assertIn("secret_permission_issues=", output, "Output should include secret_permission_issues")
+        self.assertIn("provider=codex", output, "Output should include codex provider")
+        self.assertIn("method=", output, "Output should include authentication method")
 
-    def test_auth_login_success_output_format(self):
-        """auth login 成功时输出包含 login_url 和 oauth_status"""
+    def test_auth_login_success_output_format(self) -> None:
+        """auth login success output includes login_url and oauth_status"""
         out = io.StringIO()
         with (
             mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/login"),
@@ -260,42 +262,41 @@ class TestAuthCommandOutput(unittest.TestCase):
         self.assertEqual(result, 0)
 
         output = out.getvalue()
-        self.assertIn("login_url=", output, "输出应包含 login_url")
-        self.assertIn("https://example.com/login", output, "输出应包含实际的登录 URL")
-        self.assertIn("oauth_status=", output, "输出应包含 oauth_status")
+        self.assertIn("login_url=", output, "Output should include login_url")
+        self.assertIn("https://example.com/login", output, "Output should include actual login URL")
+        self.assertIn("oauth_status=", output, "Output should include oauth_status")
 
-    def test_auth_import_headless_success_output_format(self):
-        """auth import-headless 成功时输出包含 saved_auth 路径"""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            json.dump({"token": "test-token", "expires_at": 9999999999}, f)
-            valid_auth_path = f.name
+    def test_auth_import_headless_success_output_format(self) -> None:
+        """auth import-headless success output includes saved_auth path"""
+        valid_auth_path = self.root / "valid_auth.json"
+        valid_auth_path.write_text(
+            json.dumps({"token": "test-token", "expires_at": 9999999999}),
+            encoding="utf-8",
+        )
 
-        try:
-            out = io.StringIO()
-            handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-            with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler):
-                result = run_cli(
-                    [
-                        "--config",
-                        str(self.cfg),
-                        "auth",
-                        "import-headless",
-                        "codex",
-                        "--source",
-                        valid_auth_path,
-                    ],
-                    stdout=out,
-                )
-            self.assertEqual(result, 0)
+        out = io.StringIO()
+        handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
+        with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler):
+            result = run_cli(
+                [
+                    "--config",
+                    str(self.cfg),
+                    "auth",
+                    "import-headless",
+                    "codex",
+                    "--source",
+                    str(valid_auth_path),
+                ],
+                stdout=out,
+            )
+        self.assertEqual(result, 0)
 
-            output = out.getvalue()
-            self.assertIn("saved_auth=", output, "输出应包含 saved_auth")
-            self.assertIn("/tmp/auths/codex-headless-import.json", output, "输出应包含实际保存路径")
-        finally:
-            Path(valid_auth_path).unlink(missing_ok=True)
+        output = out.getvalue()
+        self.assertIn("saved_auth=", output, "Output should include saved_auth")
+        self.assertIn("/tmp/auths/codex-headless-import.json", output, "Output should include actual save path")
 
-    def test_auth_login_error_output_contains_hint(self):
-        """auth login 错误时输出包含调试提示"""
+    def test_auth_login_error_output_contains_hint(self) -> None:
+        """auth login error output includes debugging hint"""
         out = io.StringIO()
         err = io.StringIO()
         with (
@@ -313,12 +314,12 @@ class TestAuthCommandOutput(unittest.TestCase):
         self.assertNotEqual(result, 0)
 
         error_output = err.getvalue()
-        self.assertIn("hint=", error_output, "错误输出应包含调试提示")
-        self.assertIn("auth status", error_output, "提示应建议运行 auth status")
+        self.assertIn("hint=", error_output, "Error output should include debugging hint")
+        self.assertIn("auth status", error_output, "Hint should suggest running auth status")
 
-    def test_auth_list_empty_providers_output(self):
-        """auth list 没有配置 providers 时的输出格式"""
-        # 创建没有 auth providers 的配置
+    def test_auth_list_empty_providers_output(self) -> None:
+        """auth list output format when no providers are configured"""
+        # Create config without auth providers
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
         data["auth"]["providers"] = {}
         self.cfg.write_text(json.dumps(data), encoding="utf-8")
@@ -328,8 +329,8 @@ class TestAuthCommandOutput(unittest.TestCase):
         self.assertEqual(result, 0)
 
         output = out.getvalue()
-        self.assertIn("oauth_providers=none", output, "没有 providers 时应输出 none")
-        self.assertIn("headless_import_providers=none", output, "没有 headless providers 时应输出 none")
+        self.assertIn("oauth_providers=none", output, "Should output 'none' when no providers configured")
+        self.assertIn("headless_import_providers=none", output, "Should output 'none' when no headless providers configured")
 
 
 if __name__ == "__main__":
