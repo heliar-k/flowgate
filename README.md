@@ -84,6 +84,17 @@ uv run flowgate --config config/flowgate.yaml profile set balanced
 uv run flowgate --config config/flowgate.yaml service start all
 ```
 
+Start only `cliproxyapi_plus` for local debugging:
+
+```bash
+./scripts/debug_cliproxyapi.sh start
+./scripts/debug_cliproxyapi.sh stop
+# default action is start
+./scripts/debug_cliproxyapi.sh
+# custom config path
+./scripts/debug_cliproxyapi.sh start config/flowgate.yaml
+```
+
 6. Check status and health:
 
 ```bash
