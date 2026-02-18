@@ -22,6 +22,9 @@ if parent_module:
     sys.modules['flowgate._cli_legacy'] = _cli_module
     _spec.loader.exec_module(_cli_module)
 
+    # Store reference to legacy module for mock patching
+    _legacy_module = _cli_module
+
     # Export main CLI function
     run_cli = _cli_module.run_cli
 
@@ -32,13 +35,23 @@ if parent_module:
     _is_executable_file = _cli_module._is_executable_file
     _runtime_dependency_available = _cli_module._runtime_dependency_available
 
+    # Export command functions for testing
+    _cmd_profile_list = _cli_module._cmd_profile_list
+    _cmd_profile_set = _cli_module._cmd_profile_set
+
     # Export public functions that tests mock
+    # When these are mocked, we need to update the legacy module's references too
     ProcessSupervisor = _cli_module.ProcessSupervisor
     check_http_health = _cli_module.check_http_health
     check_secret_file_permissions = _cli_module.check_secret_file_permissions
     fetch_auth_url = _cli_module.fetch_auth_url
     get_headless_import_handler = _cli_module.get_headless_import_handler
     poll_auth_status = _cli_module.poll_auth_status
+
+    # Provide a way for tests to update legacy module references when mocking
+    def _update_legacy_mock(attr_name, mock_value):
+        """Update a mocked attribute in the legacy module."""
+        setattr(_legacy_module, attr_name, mock_value)
 else:
     # Fallback if flowgate package not loaded yet
     def run_cli(*args, **kwargs):

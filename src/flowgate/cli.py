@@ -17,6 +17,7 @@ from .bootstrap import (
     validate_cliproxy_binary,
     validate_litellm_runner,
 )
+from .cli.commands.health import DoctorCommand, HealthCommand, StatusCommand
 from .cli.parser import build_parser
 from .cli.utils import (
     _default_auth_dir,
@@ -57,20 +58,6 @@ def _auth_providers(config: dict[str, Any]) -> dict[str, Any]:
         return oauth
 
     return {}
-
-
-def _effective_secret_files(config: dict[str, Any]) -> list[str]:
-    paths: set[str] = set()
-    for value in config.get("secret_files", []):
-        if isinstance(value, str) and value.strip():
-            paths.add(str(Path(value).resolve()))
-
-    default_auth_dir = Path(_default_auth_dir(config))
-    if default_auth_dir.exists():
-        for item in default_auth_dir.glob("*.json"):
-            paths.add(str(item.resolve()))
-
-    return sorted(paths)
 
 
 def _service_names(config: dict[str, Any], target: str) -> list[str]:
@@ -215,67 +202,6 @@ def _cmd_profile_set(
     return 0
 
 
-def _cmd_status(config: dict[str, Any], *, stdout: TextIO) -> int:
-    state = _read_state_file(Path(config["paths"]["state_file"]))
-    profile = state.get("current_profile", "unknown")
-    updated_at = state.get("updated_at", "unknown")
-
-    print(f"current_profile={profile}", file=stdout)
-    print(f"updated_at={updated_at}", file=stdout)
-
-    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
-    for name in sorted(config["services"].keys()):
-        running = supervisor.is_running(name)
-        print(f"{name}_running={'yes' if running else 'no'}", file=stdout)
-
-    issues = check_secret_file_permissions(_effective_secret_files(config))
-    if issues:
-        print(f"secret_permission_issues={len(issues)}", file=stdout)
-    else:
-        print("secret_permission_issues=0", file=stdout)
-
-    return 0
-
-
-def _cmd_health(config: dict[str, Any], *, stdout: TextIO) -> int:
-    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
-    all_ok = True
-    for name, service in sorted(config["services"].items()):
-        running = supervisor.is_running(name)
-        liveness_ok = running
-
-        host = service.get("host", DEFAULT_SERVICE_HOST)
-        port = service.get("port")
-        readiness_path = (
-            service.get("readiness_path")
-            or service.get("health_path")
-            or DEFAULT_READINESS_PATH
-        )
-
-        if isinstance(port, int):
-            readiness_url = f"http://{host}:{port}{readiness_path}"
-            readiness = check_http_health(readiness_url, timeout=1.0)
-        else:
-            readiness_url = "n/a"
-            readiness = {"ok": False, "status_code": None, "error": "missing-port"}
-
-        readiness_ok = bool(readiness["ok"])
-        code = readiness["status_code"]
-        error = readiness["error"]
-        print(
-            (
-                f"{name}:liveness={'ok' if liveness_ok else 'fail'} "
-                f"readiness={'ok' if readiness_ok else 'fail'} "
-                f"running={'yes' if running else 'no'} "
-                f"readiness_code={code if code is not None else 'n/a'} "
-                f"readiness_error={error or 'none'} "
-                f"readiness_url={readiness_url}"
-            ),
-            file=stdout,
-        )
-
-        all_ok = all_ok and liveness_ok and readiness_ok
-    return 0 if all_ok else 1
 
 
 def _cmd_auth_login(
@@ -552,80 +478,6 @@ def _cmd_bootstrap_download(
     return 0
 
 
-def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
-    all_ok = True
-
-    config_path = config.get("_meta", {}).get("config_path", "unknown")
-    print(f"doctor:config=pass path={config_path}", file=stdout)
-
-    runtime_dir = Path(config["paths"]["runtime_dir"])
-    if runtime_dir.exists():
-        print(f"doctor:runtime_dir=pass path={runtime_dir}", file=stdout)
-    else:
-        all_ok = False
-        print(
-            "doctor:runtime_dir=fail "
-            f"path={runtime_dir} "
-            "suggestion='run bootstrap download to create runtime artifacts'",
-            file=stdout,
-        )
-
-    runtime_bin = runtime_dir / "bin"
-    required_bins = {
-        "CLIProxyAPIPlus": runtime_bin / "CLIProxyAPIPlus",
-        "litellm": runtime_bin / "litellm",
-    }
-    missing_or_non_exec = [
-        name
-        for name, binary_path in required_bins.items()
-        if not _is_executable_file(binary_path)
-    ]
-    if missing_or_non_exec:
-        all_ok = False
-        print(
-            "doctor:runtime_binaries=fail "
-            f"missing={','.join(missing_or_non_exec)} "
-            "suggestion='uv run flowgate --config config/flowgate.yaml bootstrap download'",
-            file=stdout,
-        )
-    else:
-        print(f"doctor:runtime_binaries=pass path={runtime_bin}", file=stdout)
-
-    issues = check_secret_file_permissions(_effective_secret_files(config))
-    if issues:
-        all_ok = False
-        print(
-            "doctor:secret_permissions=fail "
-            f"issues={len(issues)} "
-            "suggestion='chmod 600 <secret-file>'",
-            file=stdout,
-        )
-    else:
-        print("doctor:secret_permissions=pass issues=0", file=stdout)
-
-    upstream_issues = _upstream_credential_issues(config)
-    if upstream_issues:
-        all_ok = False
-        print(
-            "doctor:upstream_credentials=fail "
-            f"issues={len(upstream_issues)} "
-            "suggestion='define credentials.upstream entries and ensure each api_key_ref file exists with non-empty content'",
-            file=stdout,
-        )
-    else:
-        print("doctor:upstream_credentials=pass issues=0", file=stdout)
-
-    if _runtime_dependency_available("litellm"):
-        print("doctor:runtime_dependency=pass module=litellm", file=stdout)
-    else:
-        all_ok = False
-        print(
-            "doctor:runtime_dependency=fail " "module=litellm " "suggestion='uv sync'",
-            file=stdout,
-        )
-
-    _maybe_print_cliproxyapiplus_update(config, stdout=stdout)
-    return 0 if all_ok else 1
 
 
 def _maybe_print_cliproxyapiplus_update(
@@ -782,6 +634,14 @@ def _cmd_integration_apply(
     return 0
 
 
+# Command routing map for new command structure
+COMMAND_MAP = {
+    "status": StatusCommand,
+    "health": HealthCommand,
+    "doctor": DoctorCommand,
+}
+
+
 def run_cli(
     argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO | None = None
 ) -> int:
@@ -799,20 +659,20 @@ def run_cli(
         print(f"Config file not found: {exc}", file=stderr)
         return 2
 
+    # Route to new command structure if available
+    if args.command in COMMAND_MAP:
+        # Inject stdout/stderr into args for command access
+        args.stdout = stdout
+        args.stderr = stderr
+        command_class = COMMAND_MAP[args.command]
+        command = command_class(args, config)
+        return command.execute()
+
     if args.command == "profile":
         if args.profile_cmd == "list":
             return _cmd_profile_list(config, stdout=stdout)
         if args.profile_cmd == "set":
             return _cmd_profile_set(config, args.name, stdout=stdout, stderr=stderr)
-
-    if args.command == "status":
-        return _cmd_status(config, stdout=stdout)
-
-    if args.command == "health":
-        return _cmd_health(config, stdout=stdout)
-
-    if args.command == "doctor":
-        return _cmd_doctor(config, stdout=stdout)
 
     if args.command == "integration":
         if args.integration_cmd == "print":

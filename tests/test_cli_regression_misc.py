@@ -146,13 +146,15 @@ class TestProfileCommandRegression(unittest.TestCase):
         error_output = stderr.getvalue()
         self.assertIn("nonexistent", error_output)
 
+    @mock.patch("flowgate._cli_legacy.ProcessSupervisor")
     @mock.patch("flowgate.cli.ProcessSupervisor")
     def test_profile_set_with_litellm_running_restarts_service(
-        self, mock_supervisor_cls: mock.Mock
+        self, mock_supervisor_cls: mock.Mock, mock_legacy_supervisor_cls: mock.Mock
     ) -> None:
         """profile set restarts LiteLLM if it's already running"""
         mock_supervisor = mock.Mock()
         mock_supervisor_cls.return_value = mock_supervisor
+        mock_legacy_supervisor_cls.return_value = mock_supervisor
         mock_supervisor.is_running.return_value = True
         mock_supervisor.restart.return_value = 12345
 
