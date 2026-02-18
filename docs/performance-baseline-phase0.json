@@ -1,0 +1,105 @@
+{
+  "date": "2026-02-18",
+  "phase": "Phase 0: Preparation",
+  "baseline_metrics": {
+    "test_suite": {
+      "total_tests": 110,
+      "passed": 110,
+      "failed": 0,
+      "execution_time_seconds": 2.551,
+      "pass_rate_percent": 100.0
+    },
+    "configuration_loading": {
+      "command": "flowgate profile list",
+      "runs": [
+        {
+          "run": 1,
+          "type": "warmup",
+          "total_seconds": 0.624,
+          "cpu_percent": 47
+        },
+        {
+          "run": 2,
+          "type": "measurement",
+          "total_seconds": 0.270,
+          "cpu_percent": 80
+        },
+        {
+          "run": 3,
+          "type": "measurement",
+          "total_seconds": 0.163,
+          "cpu_percent": 92
+        },
+        {
+          "run": 4,
+          "type": "measurement",
+          "total_seconds": 0.122,
+          "cpu_percent": 93
+        },
+        {
+          "run": 5,
+          "type": "measurement",
+          "total_seconds": 0.130,
+          "cpu_percent": 93
+        }
+      ],
+      "average_seconds_excluding_warmup": 0.171,
+      "baseline_requirement_seconds": 2.0,
+      "status": "PASS"
+    },
+    "doctor_checks": {
+      "config": "pass",
+      "runtime_dir": "pass",
+      "runtime_binaries": "pass",
+      "secret_permissions": "pass",
+      "upstream_credentials": "pass",
+      "runtime_dependency": "pass"
+    },
+    "test_categories": {
+      "bootstrap": 7,
+      "cli": 38,
+      "cli_regression_auth": 14,
+      "cli_regression_misc": 10,
+      "cli_regression_service": 12,
+      "client_apply": 2,
+      "cliproxy_debug": 2,
+      "config": 10,
+      "defaults_sync": 3,
+      "dev_scripts": 3,
+      "docs_integration": 1,
+      "headless_import": 2,
+      "integration": 2,
+      "integration_profile_switch": 1,
+      "oauth": 3,
+      "precommit_config": 1,
+      "process": 2,
+      "profile": 3,
+      "security": 1
+    }
+  },
+  "optimization_targets": {
+    "phase_1a": {
+      "target": "Configuration loading",
+      "baseline_seconds": 0.171,
+      "goal_seconds": 0.10,
+      "improvement_target_percent": 41.5
+    },
+    "phase_1b": {
+      "target": "CLI startup",
+      "baseline_seconds": 0.171,
+      "goal_seconds": 0.08,
+      "improvement_target_percent": 53.2
+    },
+    "phase_1c": {
+      "target": "Health check overhead",
+      "baseline_note": "To be measured in Phase 1c"
+    }
+  },
+  "notes": [
+    "All tests passing with 100% pass rate",
+    "Performance well under 2-second baseline requirement",
+    "No performance regressions detected",
+    "Comprehensive regression test coverage established",
+    "Ready for optimization work"
+  ]
+}
