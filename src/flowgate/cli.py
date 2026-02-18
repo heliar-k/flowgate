@@ -23,6 +23,7 @@ from .cli.commands.auth import (
     AuthStatusCommand,
 )
 from .cli.commands.health import DoctorCommand, HealthCommand, StatusCommand
+from .cli.commands.profile import ProfileListCommand, ProfileSetCommand
 from .cli.parser import build_parser
 from .cli.utils import (
     _load_and_resolve_config,
@@ -45,7 +46,6 @@ from .constants import (
 from .health import check_http_health
 from .integration import build_integration_specs
 from .process import ProcessSupervisor
-from .profile import activate_profile
 from .security import check_secret_file_permissions
 
 
@@ -157,38 +157,6 @@ def _upstream_credential_issues(config: dict[str, Any]) -> list[str]:
 
 def _is_executable_file(path: Path) -> bool:
     return path.exists() and path.is_file() and os.access(path, os.X_OK)
-
-
-def _cmd_profile_list(config: dict[str, Any], *, stdout: TextIO) -> int:
-    for name in sorted(config["profiles"].keys()):
-        print(name, file=stdout)
-    return 0
-
-
-def _cmd_profile_set(
-    config: dict[str, Any], profile: str, *, stdout: TextIO, stderr: TextIO
-) -> int:
-    try:
-        active_path, state_path = activate_profile(config, profile)
-    except KeyError as exc:
-        print(str(exc), file=stderr)
-        return 2
-
-    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
-    supervisor.record_event("profile_switch", profile=profile, result="success")
-
-    print(f"profile={profile}", file=stdout)
-    print(f"active_config={active_path}", file=stdout)
-    print(f"state_file={state_path}", file=stdout)
-
-    # If LiteLLM is already running, apply the profile switch immediately by restart.
-    if "litellm" in config["services"] and supervisor.is_running("litellm"):
-        service = config["services"]["litellm"]
-        command = service["command"]["args"]
-        cwd = service["command"].get("cwd") or os.getcwd()
-        pid = supervisor.restart("litellm", command, cwd=cwd)
-        print(f"litellm:restarted pid={pid}", file=stdout)
-    return 0
 
 
 def _cmd_service_action(
@@ -445,6 +413,8 @@ COMMAND_MAP = {
     "auth_status": AuthStatusCommand,
     "auth_login": AuthLoginCommand,
     "auth_import": AuthImportCommand,
+    "profile_list": ProfileListCommand,
+    "profile_set": ProfileSetCommand,
 }
 
 
@@ -510,10 +480,21 @@ def run_cli(
                 return command.execute()
 
     if args.command == "profile":
-        if args.profile_cmd == "list":
-            return _cmd_profile_list(config, stdout=stdout)
-        if args.profile_cmd == "set":
-            return _cmd_profile_set(config, args.name, stdout=stdout, stderr=stderr)
+        # Inject stdout/stderr into args for command access
+        args.stdout = stdout
+        args.stderr = stderr
+
+        # Map profile subcommand to command class
+        profile_command_map = {
+            "list": ProfileListCommand,
+            "set": ProfileSetCommand,
+        }
+
+        profile_cmd = getattr(args, "profile_cmd", None)
+        if profile_cmd in profile_command_map:
+            command_class = profile_command_map[profile_cmd]
+            command = command_class(args, config)
+            return command.execute()
 
     if args.command == "integration":
         if args.integration_cmd == "print":

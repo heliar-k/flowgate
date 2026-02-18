@@ -35,10 +35,6 @@ if parent_module:
     _is_executable_file = _cli_module._is_executable_file
     _runtime_dependency_available = _cli_module._runtime_dependency_available
 
-    # Export command functions for testing
-    _cmd_profile_list = _cli_module._cmd_profile_list
-    _cmd_profile_set = _cli_module._cmd_profile_set
-
     # Export public functions that tests mock
     # When these are mocked, we need to update the legacy module's references too
     ProcessSupervisor = _cli_module.ProcessSupervisor
