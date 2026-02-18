@@ -182,7 +182,10 @@ def prepare_litellm_runner(
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
         'project_root="$(cd "$(dirname "$0")/../../.." && pwd)"\n'
-        'exec uv run --project "$project_root" --group runtime litellm "$@"\n'
+        "if grep -Eq '^[[:space:]]*runtime[[:space:]]*=[[:space:]]*\\[' \"$project_root/pyproject.toml\"; then\n"
+        '  exec uv run --project "$project_root" --group runtime litellm "$@"\n'
+        "fi\n"
+        'exec uv run --project "$project_root" litellm "$@"\n'
     )
     runner.write_text(script, encoding="utf-8")
     runner.chmod(0o755)
@@ -212,8 +215,10 @@ def validate_litellm_runner(
     content = target.read_text(encoding="utf-8")
     if "uv run --project" not in content:
         return False
-    if "--group runtime litellm" not in content:
-        return False
     if 'litellm "$@"' not in content:
+        return False
+    has_runtime_group_variant = "--group runtime litellm" in content
+    has_default_variant = 'uv run --project "$project_root" litellm "$@"' in content
+    if not has_runtime_group_variant and not has_default_variant:
         return False
     return True

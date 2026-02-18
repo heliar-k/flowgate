@@ -680,9 +680,7 @@ def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
     else:
         all_ok = False
         print(
-            "doctor:runtime_dependency=fail "
-            "module=litellm "
-            "suggestion='uv sync --group runtime'",
+            "doctor:runtime_dependency=fail " "module=litellm " "suggestion='uv sync'",
             file=stdout,
         )
 

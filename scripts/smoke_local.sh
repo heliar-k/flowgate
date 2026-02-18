@@ -11,6 +11,40 @@ run_router() {
   uv run flowgate --config "$CONFIG_PATH" "$@"
 }
 
+upstream_api_key_file() {
+  uv run python - "$CONFIG_PATH" <<'PY'
+from pathlib import Path
+
+from flowgate.cli import _load_and_resolve_config
+
+cfg = _load_and_resolve_config(__import__("sys").argv[1])
+credentials = cfg.get("credentials", {})
+upstream = credentials.get("upstream", {}) if isinstance(credentials, dict) else {}
+entry = upstream.get("cliproxy_default", {}) if isinstance(upstream, dict) else {}
+path = entry.get("file") if isinstance(entry, dict) else None
+if isinstance(path, str) and path.strip():
+    print(path)
+PY
+}
+
+ensure_upstream_api_key_file() {
+  key_file="$(upstream_api_key_file | awk 'NF' | head -n 1)"
+  if [ -z "$key_file" ]; then
+    echo "smoke: upstream credential path unresolved, skip api-key file auto-create"
+    return
+  fi
+
+  if [ -s "$key_file" ]; then
+    return
+  fi
+
+  key_value="${SMOKE_UPSTREAM_CLIPROXY_API_KEY:-sk-local-test}"
+  mkdir -p "$(dirname "$key_file")"
+  printf '%s\n' "$key_value" > "$key_file"
+  chmod 600 "$key_file" || true
+  echo "smoke: seeded upstream api key file: $key_file"
+}
+
 list_service_ports() {
   uv run python - "$CONFIG_PATH" <<'PY'
 from pathlib import Path
@@ -86,6 +120,8 @@ trap cleanup EXIT INT TERM
 
 echo "smoke: [1/5] bootstrap runtime"
 run_router bootstrap download
+
+ensure_upstream_api_key_file
 
 echo "smoke: [2/5] generate active profile ($PROFILE)"
 run_router profile set "$PROFILE"

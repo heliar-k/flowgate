@@ -30,6 +30,8 @@ class DevScriptTests(unittest.TestCase):
         text = path.read_text(encoding="utf-8")
         self.assertIn("/v1/messages/count_tokens", text)
         self.assertIn("anthropic-version: 2023-06-01", text)
+        self.assertIn("SMOKE_UPSTREAM_CLIPROXY_API_KEY", text)
+        self.assertIn("ensure_upstream_api_key_file", text)
 
 
 if __name__ == "__main__":

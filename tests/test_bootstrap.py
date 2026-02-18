@@ -56,9 +56,26 @@ class BootstrapTests(unittest.TestCase):
         self.assertTrue(runner.exists())
         text = runner.read_text(encoding="utf-8")
         self.assertIn("uv run --project", text)
-        self.assertIn("--group runtime litellm", text)
+        self.assertIn('litellm "$@"', text)
+        self.assertIn("runtime", text)
         mode = stat.S_IMODE(runner.stat().st_mode)
         self.assertEqual(mode, 0o755)
+        self.assertTrue(validate_litellm_runner(runner))
+
+    def test_validate_litellm_runner_accepts_no_runtime_group_script(self):
+        root = Path(tempfile.mkdtemp())
+        runner = root / "litellm"
+        runner.write_text(
+            (
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                'project_root="$(cd "$(dirname "$0")/../../.." && pwd)"\n'
+                'exec uv run --project "$project_root" litellm "$@"\n'
+            ),
+            encoding="utf-8",
+        )
+        runner.chmod(0o755)
+
         self.assertTrue(validate_litellm_runner(runner))
 
     def test_extract_binary_prefers_cli_proxy_executable(self):
