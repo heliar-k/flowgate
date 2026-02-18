@@ -26,7 +26,8 @@ if parent_module:
     run_cli = _cli_module.run_cli
 
     # Export internal functions that tests need to mock or import
-    _build_parser = _cli_module._build_parser
+    from .parser import build_parser
+    _build_parser = build_parser  # Backward compatibility alias
     _is_service_port_available = _cli_module._is_service_port_available
     _is_executable_file = _cli_module._is_executable_file
     _runtime_dependency_available = _cli_module._runtime_dependency_available
