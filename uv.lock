@@ -480,6 +480,29 @@ wheels = [
 ]
 
 [[package]]
+name = "flowgate"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "litellm", extra = ["proxy"] },
+]
+
+[package.dev-dependencies]
+test = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "litellm", extras = ["proxy"], specifier = "==1.75.8" }]
+
+[package.metadata.requires-dev]
+test = [
+    { name = "pytest", specifier = ">=8.3.0,<9" },
+    { name = "pytest-cov", specifier = ">=5.0.0,<6" },
+]
+
+[[package]]
 name = "frozenlist"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -839,29 +862,6 @@ name = "litellm-proxy-extras"
 version = "0.2.17"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/69/49/fb73d71b7cbe981ca6ca07ebcb3bfa714c6a20d1bea327546a2f4a5a8865/litellm_proxy_extras-0.2.17.tar.gz", hash = "sha256:96428ba537d440a40a7db85e615284a4fd89bada24a7fc8737ef0189932cb1ed", size = 15227, upload-time = "2025-08-14T00:43:27.795Z" }
-
-[[package]]
-name = "flowgate"
-version = "0.1.0"
-source = { editable = "." }
-
-[package.dev-dependencies]
-runtime = [
-    { name = "litellm", extra = ["proxy"] },
-]
-test = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-runtime = [{ name = "litellm", extras = ["proxy"], specifier = "==1.75.8" }]
-test = [
-    { name = "pytest", specifier = ">=8.3.0,<9" },
-    { name = "pytest-cov", specifier = ">=5.0.0,<6" },
-]
 
 [[package]]
 name = "markdown-it-py"
