@@ -8,20 +8,13 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, TextIO
 
-from .bootstrap import (
-    DEFAULT_CLIPROXY_REPO,
-    DEFAULT_CLIPROXY_VERSION,
-    download_cliproxyapi_plus,
-    prepare_litellm_runner,
-    validate_cliproxy_binary,
-    validate_litellm_runner,
-)
 from .cli.commands.auth import (
     AuthImportCommand,
     AuthListCommand,
     AuthLoginCommand,
     AuthStatusCommand,
 )
+from .cli.commands.bootstrap import BootstrapDownloadCommand
 from .cli.commands.health import DoctorCommand, HealthCommand, StatusCommand
 from .cli.commands.profile import ProfileListCommand, ProfileSetCommand
 from .cli.commands.service import (
@@ -36,13 +29,11 @@ from .cli.utils import (
     _resolve_config_paths,
     _resolve_path,
 )
-from .cliproxyapiplus_update_check import (
-    write_cliproxyapiplus_installed_version,
-)
 from .client_apply import apply_claude_code_settings, apply_codex_config
 from .config import ConfigError, load_router_config
 from .health import check_http_health
 from .integration import build_integration_specs
+from .process import ProcessSupervisor
 from .security import check_secret_file_permissions
 
 
@@ -147,40 +138,6 @@ def _upstream_credential_issues(config: dict[str, Any]) -> list[str]:
 
 def _is_executable_file(path: Path) -> bool:
     return path.exists() and path.is_file() and os.access(path, os.X_OK)
-
-
-def _cmd_bootstrap_download(
-    config: dict[str, Any],
-    *,
-    cliproxy_version: str,
-    cliproxy_repo: str,
-    stdout: TextIO,
-    stderr: TextIO,
-) -> int:
-    runtime_bin_dir = Path(config["paths"]["runtime_dir"]) / "bin"
-    try:
-        cliproxy = download_cliproxyapi_plus(
-            runtime_bin_dir,
-            version=cliproxy_version,
-            repo=cliproxy_repo,
-        )
-        litellm = prepare_litellm_runner(runtime_bin_dir)
-        if not validate_cliproxy_binary(cliproxy):
-            raise RuntimeError(f"Invalid CLIProxyAPIPlus binary downloaded: {cliproxy}")
-        if not validate_litellm_runner(litellm):
-            raise RuntimeError(f"Invalid litellm runner generated: {litellm}")
-    except Exception as exc:  # noqa: BLE001
-        print(f"bootstrap failed: {exc}", file=stderr)
-        return 1
-
-    write_cliproxyapiplus_installed_version(
-        config["paths"]["runtime_dir"], cliproxy_version
-    )
-    print(f"cliproxyapi_plus={cliproxy}", file=stdout)
-    print(f"litellm={litellm}", file=stdout)
-    return 0
-
-
 
 
 def _render_codex_integration(spec: dict[str, Any]) -> str:
@@ -305,6 +262,7 @@ COMMAND_MAP = {
     "service_start": ServiceStartCommand,
     "service_stop": ServiceStopCommand,
     "service_restart": ServiceRestartCommand,
+    "bootstrap_download": BootstrapDownloadCommand,
 }
 
 
@@ -404,6 +362,22 @@ def run_cli(
             command = command_class(args, config)
             return command.execute()
 
+    if args.command == "bootstrap":
+        # Inject stdout/stderr into args for command access
+        args.stdout = stdout
+        args.stderr = stderr
+
+        # Map bootstrap subcommand to command class
+        bootstrap_command_map = {
+            "download": BootstrapDownloadCommand,
+        }
+
+        bootstrap_cmd = getattr(args, "bootstrap_cmd", None)
+        if bootstrap_cmd in bootstrap_command_map:
+            command_class = bootstrap_command_map[bootstrap_cmd]
+            command = command_class(args, config)
+            return command.execute()
+
     if args.command == "integration":
         if args.integration_cmd == "print":
             return _cmd_integration_print(
@@ -417,16 +391,6 @@ def run_cli(
                 config,
                 args.client,
                 target=args.target if args.target else None,
-                stdout=stdout,
-                stderr=stderr,
-            )
-
-    if args.command == "bootstrap":
-        if args.bootstrap_cmd == "download":
-            return _cmd_bootstrap_download(
-                config,
-                cliproxy_version=args.cliproxy_version,
-                cliproxy_repo=args.cliproxy_repo,
                 stdout=stdout,
                 stderr=stderr,
             )

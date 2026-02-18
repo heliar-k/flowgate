@@ -188,7 +188,7 @@ class CLITests(unittest.TestCase):
 
     def test_service_start_stop_all(self):
         out = io.StringIO()
-        with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
+        with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.start.side_effect = [111, 222]
             code = run_cli(
@@ -199,7 +199,7 @@ class CLITests(unittest.TestCase):
         self.assertIn("cliproxyapi_plus:started pid=222", out.getvalue())
 
         out = io.StringIO()
-        with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
+        with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.stop.side_effect = [True, True]
             code = run_cli(
@@ -219,7 +219,7 @@ class CLITests(unittest.TestCase):
 
             out = io.StringIO()
             err = io.StringIO()
-            with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
+            with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
                 supervisor = supervisor_cls.return_value
                 supervisor.is_running.return_value = False
                 code = run_cli(
@@ -243,7 +243,7 @@ class CLITests(unittest.TestCase):
 
             out = io.StringIO()
             err = io.StringIO()
-            with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
+            with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
                 supervisor = supervisor_cls.return_value
                 supervisor.is_running.return_value = False
                 code = run_cli(
@@ -521,18 +521,18 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.download_cliproxyapi_plus",
+                "flowgate.cli.commands.bootstrap.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ) as cliproxy_download,
             mock.patch(
-                "flowgate.cli.prepare_litellm_runner",
+                "flowgate.cli.commands.bootstrap.prepare_litellm_runner",
                 return_value=Path("/tmp/runtime/bin/litellm"),
             ) as litellm_prepare,
             mock.patch(
-                "flowgate.cli.validate_cliproxy_binary", return_value=True
+                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary", return_value=True
             ) as cliproxy_validate,
             mock.patch(
-                "flowgate.cli.validate_litellm_runner", return_value=True
+                "flowgate.cli.commands.bootstrap.validate_litellm_runner", return_value=True
             ) as litellm_validate,
         ):
             code = run_cli(
@@ -696,13 +696,13 @@ class CLITests(unittest.TestCase):
     def test_service_start_reports_cliproxyapiplus_update_when_available(self):
         out = TTYStringIO()
         with (
-            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.cli.read_cliproxyapiplus_installed_version",
+                "flowgate.cliproxyapiplus_update_check.read_cliproxyapiplus_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
-                "flowgate.cli.check_cliproxyapiplus_update",
+                "flowgate.cliproxyapiplus_update_check.check_cliproxyapiplus_update",
                 return_value={
                     "current_version": "v6.8.16-0",
                     "latest_version": "v6.8.18-1",
@@ -735,11 +735,11 @@ class CLITests(unittest.TestCase):
         with (
             mock.patch("flowgate.cli._runtime_dependency_available", return_value=True),
             mock.patch(
-                "flowgate.cli.read_cliproxyapiplus_installed_version",
+                "flowgate.cliproxyapiplus_update_check.read_cliproxyapiplus_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
-                "flowgate.cli.check_cliproxyapiplus_update",
+                "flowgate.cliproxyapiplus_update_check.check_cliproxyapiplus_update",
                 return_value={
                     "current_version": "v6.8.16-0",
                     "latest_version": "v6.8.18-1",
