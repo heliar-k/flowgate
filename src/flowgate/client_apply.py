@@ -78,7 +78,7 @@ def _extract_model_provider(config_text: str) -> str | None:
 
 
 def _upsert_provider_base_url(config_text: str, provider: str, base_url: str) -> str:
-    section_header = rf'(?m)^\[model_providers\.{re.escape(provider)}\]\s*$'
+    section_header = rf"(?m)^\[model_providers\.{re.escape(provider)}\]\s*$"
     header_match = re.search(section_header, config_text)
 
     base_line = f'base_url = "{base_url}"'
@@ -117,12 +117,16 @@ def _upsert_provider_base_url(config_text: str, provider: str, base_url: str) ->
     return config_text[: header_match.start()] + section + config_text[section_end:]
 
 
-def apply_codex_config(target: str | Path, spec: dict[str, Any]) -> dict[str, str | None]:
+def apply_codex_config(
+    target: str | Path, spec: dict[str, Any]
+) -> dict[str, str | None]:
     target_path = Path(target).expanduser()
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
     backup = _backup_file(target_path)
-    config_text = target_path.read_text(encoding="utf-8") if target_path.exists() else ""
+    config_text = (
+        target_path.read_text(encoding="utf-8") if target_path.exists() else ""
+    )
 
     base_url = str(spec.get("base_url", "")).strip()
     if not base_url:

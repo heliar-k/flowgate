@@ -537,7 +537,9 @@ def _cmd_service_action(
         if action in {"start", "restart"} and isinstance(port, int):
             running = supervisor.is_running(name)
             should_check_port = action == "start" and not running
-            should_check_port = should_check_port or (action == "restart" and not running)
+            should_check_port = should_check_port or (
+                action == "restart" and not running
+            )
             if should_check_port and not _is_service_port_available(host, port):
                 ok = False
                 print(

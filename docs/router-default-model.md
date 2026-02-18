@@ -81,18 +81,18 @@ curl -i http://127.0.0.1:4000/v1/messages/count_tokens \
 
 ## 5. 常见错误与修复
 
-- 现象：`404 model not found`  
-  原因：客户端模型名仍是 `router-default`，但网关已改为 `router-main`（或反过来）。  
+- 现象：`404 model not found`
+  原因：客户端模型名仍是 `router-default`，但网关已改为 `router-main`（或反过来）。
   修复：统一网关与客户端的模型别名。
 
-- 现象：fallback 没触发  
-  原因：`profiles.*.litellm_settings.fallbacks` 仍引用旧别名。  
+- 现象：fallback 没触发
+  原因：`profiles.*.litellm_settings.fallbacks` 仍引用旧别名。
   修复：同步更新 `fallbacks` 的 key/value 并重新 `profile set`。
 
-- 现象：Claude Code 仍请求错模型  
-  原因：只改了 `ANTHROPIC_MODEL`，未改 `ANTHROPIC_DEFAULT_*_MODEL`。  
+- 现象：Claude Code 仍请求错模型
+  原因：只改了 `ANTHROPIC_MODEL`，未改 `ANTHROPIC_DEFAULT_*_MODEL`。
   修复：四个模型环境变量一起对齐。
 
-- 现象：Claude 请求 404（路径错误）  
-  原因：`ANTHROPIC_BASE_URL` 配成了 `http://127.0.0.1:4000/v1`。  
+- 现象：Claude 请求 404（路径错误）
+  原因：`ANTHROPIC_BASE_URL` 配成了 `http://127.0.0.1:4000/v1`。
   修复：改成根地址 `http://127.0.0.1:4000`。

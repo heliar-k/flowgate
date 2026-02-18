@@ -9,7 +9,10 @@ class IntegrationSpecTests(unittest.TestCase):
     def test_build_integration_specs_from_litellm_service(self):
         cfg = {
             "services": {"litellm": {"host": "127.0.0.1", "port": 4000}},
-            "integration": {"default_model": "router-default", "fast_model": "router-cheap"},
+            "integration": {
+                "default_model": "router-default",
+                "fast_model": "router-cheap",
+            },
         }
 
         specs = build_integration_specs(cfg)
