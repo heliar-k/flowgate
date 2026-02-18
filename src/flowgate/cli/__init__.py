@@ -36,10 +36,10 @@ if parent_module:
     _runtime_dependency_available = _cli_module._runtime_dependency_available
 
     # Export public functions that tests mock
-    # When these are mocked, we need to update the legacy module's references too
-    ProcessSupervisor = _cli_module.ProcessSupervisor
-    check_http_health = _cli_module.check_http_health
-    check_secret_file_permissions = _cli_module.check_secret_file_permissions
+    # Import these directly from their source modules since cli.py no longer imports them
+    from ..process import ProcessSupervisor
+    from ..health import check_http_health
+    from ..security import check_secret_file_permissions
 
     # Provide a way for tests to update legacy module references when mocking
     def _update_legacy_mock(attr_name, mock_value):

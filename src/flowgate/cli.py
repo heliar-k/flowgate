@@ -24,6 +24,11 @@ from .cli.commands.auth import (
 )
 from .cli.commands.health import DoctorCommand, HealthCommand, StatusCommand
 from .cli.commands.profile import ProfileListCommand, ProfileSetCommand
+from .cli.commands.service import (
+    ServiceRestartCommand,
+    ServiceStartCommand,
+    ServiceStopCommand,
+)
 from .cli.parser import build_parser
 from .cli.utils import (
     _load_and_resolve_config,
@@ -32,29 +37,13 @@ from .cli.utils import (
     _resolve_path,
 )
 from .cliproxyapiplus_update_check import (
-    check_cliproxyapiplus_update,
-    read_cliproxyapiplus_installed_version,
     write_cliproxyapiplus_installed_version,
 )
 from .client_apply import apply_claude_code_settings, apply_codex_config
 from .config import ConfigError, load_router_config
-from .constants import (
-    CLIPROXYAPI_PLUS_SERVICE,
-    DEFAULT_READINESS_PATH,
-    DEFAULT_SERVICE_HOST,
-)
 from .health import check_http_health
 from .integration import build_integration_specs
-from .process import ProcessSupervisor
 from .security import check_secret_file_permissions
-
-
-def _service_names(config: dict[str, Any], target: str) -> list[str]:
-    if target == "all":
-        return list(config["services"].keys())
-    if target not in config["services"]:
-        raise KeyError(f"Unknown service: {target}")
-    return [target]
 
 
 def _runtime_dependency_available(module_name: str) -> bool:
@@ -66,6 +55,7 @@ def _runtime_dependency_available(module_name: str) -> bool:
 
 
 def _is_service_port_available(host: str, port: int) -> bool:
+    """Check if a service port is available for binding."""
     family = socket.AF_INET6 if ":" in host else socket.AF_INET
     try:
         with socket.socket(family, socket.SOCK_STREAM) as probe:
@@ -159,63 +149,6 @@ def _is_executable_file(path: Path) -> bool:
     return path.exists() and path.is_file() and os.access(path, os.X_OK)
 
 
-def _cmd_service_action(
-    config: dict[str, Any], action: str, target: str, *, stdout: TextIO, stderr: TextIO
-) -> int:
-    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
-    try:
-        names = _service_names(config, target)
-    except KeyError as exc:
-        print(str(exc), file=stderr)
-        return 2
-
-    ok = True
-    started_cliproxy = False
-    for name in names:
-        service = config["services"][name]
-        args = service["command"]["args"]
-        cwd = service["command"].get("cwd")
-        host = str(service.get("host", DEFAULT_SERVICE_HOST))
-        port = service.get("port")
-        if cwd is None:
-            cwd = os.getcwd()
-
-        if action in {"start", "restart"} and isinstance(port, int):
-            running = supervisor.is_running(name)
-            should_check_port = action == "start" and not running
-            should_check_port = should_check_port or (
-                action == "restart" and not running
-            )
-            if should_check_port and not _is_service_port_available(host, port):
-                ok = False
-                print(
-                    f"{name}:{action}-failed reason=port-in-use host={host} port={port}",
-                    file=stderr,
-                )
-                continue
-
-        if action == "start":
-            pid = supervisor.start(name, args, cwd=cwd)
-            print(f"{name}:started pid={pid}", file=stdout)
-            if name == CLIPROXYAPI_PLUS_SERVICE:
-                started_cliproxy = True
-        elif action == "stop":
-            stopped = supervisor.stop(name)
-            print(f"{name}:{'stopped' if stopped else 'stop-failed'}", file=stdout)
-            ok = ok and stopped
-        elif action == "restart":
-            pid = supervisor.restart(name, args, cwd=cwd)
-            print(f"{name}:restarted pid={pid}", file=stdout)
-        else:
-            print(f"Unsupported action: {action}", file=stderr)
-            return 2
-
-    if action == "start" and started_cliproxy:
-        _maybe_print_cliproxyapiplus_update(config, stdout=stdout)
-
-    return 0 if ok else 1
-
-
 def _cmd_bootstrap_download(
     config: dict[str, Any],
     *,
@@ -248,52 +181,6 @@ def _cmd_bootstrap_download(
     return 0
 
 
-
-
-def _maybe_print_cliproxyapiplus_update(
-    config: dict[str, Any], *, stdout: TextIO
-) -> None:
-    isatty = getattr(stdout, "isatty", None)
-    if callable(isatty) and not isatty():
-        return
-
-    runtime_dir = str(config.get("paths", {}).get("runtime_dir", "")).strip()
-    if not runtime_dir:
-        return
-
-    current_version = read_cliproxyapiplus_installed_version(
-        runtime_dir, DEFAULT_CLIPROXY_VERSION
-    )
-    update = check_cliproxyapiplus_update(
-        runtime_dir=runtime_dir,
-        current_version=current_version,
-        repo=DEFAULT_CLIPROXY_REPO,
-    )
-    if not update:
-        return
-
-    latest = update["latest_version"]
-    release_url = update.get("release_url", "")
-    config_path = str(
-        config.get("_meta", {}).get("config_path", "config/flowgate.yaml")
-    )
-    print(
-        (
-            "cliproxyapi_plus:update_available "
-            f"current={current_version} latest={latest} "
-            f"release={release_url if release_url else 'n/a'}"
-        ),
-        file=stdout,
-    )
-    print(
-        (
-            "cliproxyapi_plus:update_suggestion "
-            "command="
-            f"'uv run flowgate --config {config_path} "
-            f"bootstrap download --cliproxy-version {latest}'"
-        ),
-        file=stdout,
-    )
 
 
 def _render_codex_integration(spec: dict[str, Any]) -> str:
@@ -415,6 +302,9 @@ COMMAND_MAP = {
     "auth_import": AuthImportCommand,
     "profile_list": ProfileListCommand,
     "profile_set": ProfileSetCommand,
+    "service_start": ServiceStartCommand,
+    "service_stop": ServiceStopCommand,
+    "service_restart": ServiceRestartCommand,
 }
 
 
@@ -496,6 +386,24 @@ def run_cli(
             command = command_class(args, config)
             return command.execute()
 
+    if args.command == "service":
+        # Inject stdout/stderr into args for command access
+        args.stdout = stdout
+        args.stderr = stderr
+
+        # Map service subcommand to command class
+        service_command_map = {
+            "start": ServiceStartCommand,
+            "stop": ServiceStopCommand,
+            "restart": ServiceRestartCommand,
+        }
+
+        service_cmd = getattr(args, "service_cmd", None)
+        if service_cmd in service_command_map:
+            command_class = service_command_map[service_cmd]
+            command = command_class(args, config)
+            return command.execute()
+
     if args.command == "integration":
         if args.integration_cmd == "print":
             return _cmd_integration_print(
@@ -512,15 +420,6 @@ def run_cli(
                 stdout=stdout,
                 stderr=stderr,
             )
-
-    if args.command == "service":
-        return _cmd_service_action(
-            config,
-            args.service_cmd,
-            args.target,
-            stdout=stdout,
-            stderr=stderr,
-        )
 
     if args.command == "bootstrap":
         if args.bootstrap_cmd == "download":

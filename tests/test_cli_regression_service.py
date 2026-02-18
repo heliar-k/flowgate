@@ -107,7 +107,7 @@ class TestServiceCommandExitCodes(unittest.TestCase):
         err = io.StringIO()
 
         # Mock port check to simulate port conflict
-        with mock.patch("flowgate.cli._is_service_port_available", return_value=False):
+        with mock.patch("flowgate.cli.commands.service._is_service_port_available", return_value=False):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "start", "litellm"],
                 stdout=out,
@@ -249,7 +249,7 @@ class TestServiceCommandOutput(unittest.TestCase):
         err = io.StringIO()
 
         # Mock port check to simulate port conflict
-        with mock.patch("flowgate.cli._is_service_port_available", return_value=False):
+        with mock.patch("flowgate.cli.commands.service._is_service_port_available", return_value=False):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "start", "litellm"],
                 stdout=out,
