@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 
 DEFAULT_CLIPROXY_REPO = "router-for-me/CLIProxyAPIPlus"
-DEFAULT_CLIPROXY_VERSION = "v6.8.16-0"
+DEFAULT_CLIPROXY_VERSION = "v6.8.18-1"
 DEFAULT_LITELLM_VERSION = "1.75.8"
 
 

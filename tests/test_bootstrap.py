@@ -77,7 +77,7 @@ class BootstrapTests(unittest.TestCase):
             tf.addfile(exe, io.BytesIO(exe_data))
 
         extracted = _extract_binary_from_bytes(
-            buf.getvalue(), "CLIProxyAPIPlus_6.8.16-0_linux_amd64.tar.gz"
+            buf.getvalue(), "CLIProxyAPIPlus_6.8.18-1_linux_amd64.tar.gz"
         )
         self.assertEqual(extracted, b"ELF_BINARY_PLACEHOLDER")
 

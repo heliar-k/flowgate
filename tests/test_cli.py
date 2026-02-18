@@ -16,6 +16,11 @@ from flowgate.constants import (
 )
 
 
+class TTYStringIO(io.StringIO):
+    def isatty(self) -> bool:
+        return True
+
+
 def write_config(path: Path) -> None:
     data = {
         "paths": {
@@ -687,6 +692,67 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 1)
         text = out.getvalue()
         self.assertIn("doctor:upstream_credentials=fail", text)
+
+    def test_service_start_reports_cliproxyapiplus_update_when_available(self):
+        out = TTYStringIO()
+        with (
+            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.read_cliproxyapiplus_installed_version",
+                return_value="v6.8.16-0",
+            ),
+            mock.patch(
+                "flowgate.cli.check_cliproxyapiplus_update",
+                return_value={
+                    "current_version": "v6.8.16-0",
+                    "latest_version": "v6.8.18-1",
+                    "release_url": "https://github.com/router-for-me/CLIProxyAPIPlus/releases/tag/v6.8.18-1",
+                },
+            ) as checker,
+        ):
+            supervisor = supervisor_cls.return_value
+            supervisor.start.side_effect = [111, 222]
+            code = run_cli(
+                ["--config", str(self.cfg), "service", "start", "all"], stdout=out
+            )
+
+        self.assertEqual(code, 0)
+        self.assertIn("cliproxyapi_plus:update_available", out.getvalue())
+        self.assertIn("latest=v6.8.18-1", out.getvalue())
+        checker.assert_called_once()
+
+    def test_doctor_reports_cliproxyapiplus_update_when_available(self):
+        runtime_bin = self.root / "runtime" / "bin"
+        runtime_bin.mkdir(parents=True, exist_ok=True)
+        cliproxy = runtime_bin / "CLIProxyAPIPlus"
+        litellm = runtime_bin / "litellm"
+        cliproxy.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        litellm.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        os.chmod(cliproxy, 0o755)
+        os.chmod(litellm, 0o755)
+
+        out = TTYStringIO()
+        with (
+            mock.patch("flowgate.cli._runtime_dependency_available", return_value=True),
+            mock.patch(
+                "flowgate.cli.read_cliproxyapiplus_installed_version",
+                return_value="v6.8.16-0",
+            ),
+            mock.patch(
+                "flowgate.cli.check_cliproxyapiplus_update",
+                return_value={
+                    "current_version": "v6.8.16-0",
+                    "latest_version": "v6.8.18-1",
+                    "release_url": "https://github.com/router-for-me/CLIProxyAPIPlus/releases/tag/v6.8.18-1",
+                },
+            ) as checker,
+        ):
+            code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
+
+        self.assertEqual(code, 0)
+        self.assertIn("cliproxyapi_plus:update_available", out.getvalue())
+        self.assertIn("latest=v6.8.18-1", out.getvalue())
+        checker.assert_called_once()
 
 
 if __name__ == "__main__":

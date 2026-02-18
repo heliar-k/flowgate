@@ -17,9 +17,18 @@ from .bootstrap import (
     validate_cliproxy_binary,
     validate_litellm_runner,
 )
+from .cliproxyapiplus_update_check import (
+    check_cliproxyapiplus_update,
+    read_cliproxyapiplus_installed_version,
+    write_cliproxyapiplus_installed_version,
+)
 from .client_apply import apply_claude_code_settings, apply_codex_config
 from .config import ConfigError, load_router_config
-from .constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
+from .constants import (
+    CLIPROXYAPI_PLUS_SERVICE,
+    DEFAULT_READINESS_PATH,
+    DEFAULT_SERVICE_HOST,
+)
 from .health import check_http_health
 from .integration import build_integration_specs
 from .oauth import fetch_auth_url, poll_auth_status
@@ -525,6 +534,7 @@ def _cmd_service_action(
         return 2
 
     ok = True
+    started_cliproxy = False
     for name in names:
         service = config["services"][name]
         args = service["command"]["args"]
@@ -551,6 +561,8 @@ def _cmd_service_action(
         if action == "start":
             pid = supervisor.start(name, args, cwd=cwd)
             print(f"{name}:started pid={pid}", file=stdout)
+            if name == CLIPROXYAPI_PLUS_SERVICE:
+                started_cliproxy = True
         elif action == "stop":
             stopped = supervisor.stop(name)
             print(f"{name}:{'stopped' if stopped else 'stop-failed'}", file=stdout)
@@ -561,6 +573,9 @@ def _cmd_service_action(
         else:
             print(f"Unsupported action: {action}", file=stderr)
             return 2
+
+    if action == "start" and started_cliproxy:
+        _maybe_print_cliproxyapiplus_update(config, stdout=stdout)
 
     return 0 if ok else 1
 
@@ -589,6 +604,9 @@ def _cmd_bootstrap_download(
         print(f"bootstrap failed: {exc}", file=stderr)
         return 1
 
+    write_cliproxyapiplus_installed_version(
+        config["paths"]["runtime_dir"], cliproxy_version
+    )
     print(f"cliproxyapi_plus={cliproxy}", file=stdout)
     print(f"litellm={litellm}", file=stdout)
     return 0
@@ -668,7 +686,54 @@ def _cmd_doctor(config: dict[str, Any], *, stdout: TextIO) -> int:
             file=stdout,
         )
 
+    _maybe_print_cliproxyapiplus_update(config, stdout=stdout)
     return 0 if all_ok else 1
+
+
+def _maybe_print_cliproxyapiplus_update(
+    config: dict[str, Any], *, stdout: TextIO
+) -> None:
+    isatty = getattr(stdout, "isatty", None)
+    if callable(isatty) and not isatty():
+        return
+
+    runtime_dir = str(config.get("paths", {}).get("runtime_dir", "")).strip()
+    if not runtime_dir:
+        return
+
+    current_version = read_cliproxyapiplus_installed_version(
+        runtime_dir, DEFAULT_CLIPROXY_VERSION
+    )
+    update = check_cliproxyapiplus_update(
+        runtime_dir=runtime_dir,
+        current_version=current_version,
+        repo=DEFAULT_CLIPROXY_REPO,
+    )
+    if not update:
+        return
+
+    latest = update["latest_version"]
+    release_url = update.get("release_url", "")
+    config_path = str(
+        config.get("_meta", {}).get("config_path", "config/flowgate.yaml")
+    )
+    print(
+        (
+            "cliproxyapi_plus:update_available "
+            f"current={current_version} latest={latest} "
+            f"release={release_url if release_url else 'n/a'}"
+        ),
+        file=stdout,
+    )
+    print(
+        (
+            "cliproxyapi_plus:update_suggestion "
+            "command="
+            f"'uv run flowgate --config {config_path} "
+            f"bootstrap download --cliproxy-version {latest}'"
+        ),
+        file=stdout,
+    )
 
 
 def _render_codex_integration(spec: dict[str, Any]) -> str:

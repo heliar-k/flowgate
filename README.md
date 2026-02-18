@@ -169,7 +169,7 @@ Custom CLIProxyAPIPlus version:
 ```bash
 uv run flowgate --config config/flowgate.yaml \
   bootstrap download \
-  --cliproxy-version v6.8.16-0
+  --cliproxy-version v6.8.18-1
 ```
 
 ## OAuth login
