@@ -70,3 +70,7 @@ Latest verification:
 - 历史 commit message 已重写，推送历史时需使用 `--force-with-lease`。
 - 本地端口冲突（如 `4000`/`8317`）仍是联调常见风险。
 - 认证文件必须保留在忽略目录并维持最小权限。
+
+## Follow-up Plan (New)
+
+- Codex + Claude Code 双客户端代理改造计划：`docs/plans/2026-02-17-codex-claude-code-dual-proxy-implementation-plan.md`
