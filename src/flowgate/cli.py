@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, TextIO
 
-from .auth_methods import get_headless_import_handler, headless_import_handlers
 from .bootstrap import (
     DEFAULT_CLIPROXY_REPO,
     DEFAULT_CLIPROXY_VERSION,
@@ -17,10 +16,15 @@ from .bootstrap import (
     validate_cliproxy_binary,
     validate_litellm_runner,
 )
+from .cli.commands.auth import (
+    AuthImportCommand,
+    AuthListCommand,
+    AuthLoginCommand,
+    AuthStatusCommand,
+)
 from .cli.commands.health import DoctorCommand, HealthCommand, StatusCommand
 from .cli.parser import build_parser
 from .cli.utils import (
-    _default_auth_dir,
     _load_and_resolve_config,
     _read_state_file,
     _resolve_config_paths,
@@ -40,24 +44,9 @@ from .constants import (
 )
 from .health import check_http_health
 from .integration import build_integration_specs
-from .oauth import fetch_auth_url, poll_auth_status
 from .process import ProcessSupervisor
 from .profile import activate_profile
 from .security import check_secret_file_permissions
-
-
-def _auth_providers(config: dict[str, Any]) -> dict[str, Any]:
-    auth = config.get("auth", {})
-    if isinstance(auth, dict):
-        providers_raw = auth.get("providers", {})
-        if isinstance(providers_raw, dict):
-            return providers_raw
-
-    oauth = config.get("oauth", {})
-    if isinstance(oauth, dict):
-        return oauth
-
-    return {}
 
 
 def _service_names(config: dict[str, Any], target: str) -> list[str]:
@@ -200,193 +189,6 @@ def _cmd_profile_set(
         pid = supervisor.restart("litellm", command, cwd=cwd)
         print(f"litellm:restarted pid={pid}", file=stdout)
     return 0
-
-
-
-
-def _cmd_auth_login(
-    config: dict[str, Any],
-    provider: str,
-    *,
-    timeout: float,
-    poll_interval: float,
-    stdout: TextIO,
-    stderr: TextIO,
-) -> int:
-    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
-    providers = _auth_providers(config)
-    if provider not in providers:
-        supervisor.record_event(
-            "oauth_login",
-            provider=provider,
-            result="failed",
-            detail="provider-not-configured",
-        )
-        available = ",".join(sorted(str(k) for k in providers.keys())) or "none"
-        print(
-            f"OAuth provider not configured: {provider}; available={available}",
-            file=stderr,
-        )
-        return 2
-
-    provider_cfg = providers[provider]
-    auth_url_endpoint = provider_cfg.get("auth_url_endpoint")
-    status_endpoint = provider_cfg.get("status_endpoint")
-    if not auth_url_endpoint or not status_endpoint:
-        supervisor.record_event(
-            "oauth_login", provider=provider, result="failed", detail="endpoint-missing"
-        )
-        print(f"OAuth endpoints not complete for provider={provider}", file=stderr)
-        return 2
-
-    try:
-        url = fetch_auth_url(auth_url_endpoint, timeout=5)
-        print(f"login_url={url}", file=stdout)
-        status = poll_auth_status(
-            status_endpoint,
-            timeout_seconds=timeout,
-            poll_interval_seconds=poll_interval,
-        )
-        supervisor.record_event("oauth_login", provider=provider, result="success")
-        print(f"oauth_status={status}", file=stdout)
-        return 0
-    except Exception as exc:  # noqa: BLE001
-        supervisor.record_event(
-            "oauth_login", provider=provider, result="failed", detail=str(exc)
-        )
-        print(
-            (
-                f"OAuth login failed: {exc} "
-                "hint=verify auth endpoints, run `auth status`, then retry with a larger --timeout if needed"
-            ),
-            file=stderr,
-        )
-        return 1
-
-
-def _cmd_auth_list(config: dict[str, Any], *, stdout: TextIO) -> int:
-    providers_map = _auth_providers(config)
-    providers = sorted(str(name) for name in providers_map.keys())
-    handlers = headless_import_handlers()
-
-    if not providers:
-        print("oauth_providers=none", file=stdout)
-        print("headless_import_providers=none", file=stdout)
-        return 0
-
-    for provider in providers:
-        provider_cfg = providers_map.get(provider, {})
-        oauth_supported = bool(
-            isinstance(provider_cfg, dict)
-            and provider_cfg.get("auth_url_endpoint")
-            and provider_cfg.get("status_endpoint")
-        )
-        headless = "yes" if provider in handlers else "no"
-        print(
-            f"provider={provider} oauth_login={'yes' if oauth_supported else 'no'} headless_import={headless}",
-            file=stdout,
-        )
-
-    supported = sorted(provider for provider in providers if provider in handlers)
-    print(f"oauth_providers={','.join(providers)}", file=stdout)
-    print(
-        f"headless_import_providers={','.join(supported) if supported else 'none'}",
-        file=stdout,
-    )
-    return 0
-
-
-def _cmd_auth_status(config: dict[str, Any], *, stdout: TextIO) -> int:
-    providers_map = _auth_providers(config)
-    providers = sorted(str(name) for name in providers_map.keys())
-    handlers = headless_import_handlers()
-
-    print(f"default_auth_dir={_default_auth_dir(config)}", file=stdout)
-    issues = check_secret_file_permissions(_effective_secret_files(config))
-    print(f"secret_permission_issues={len(issues)}", file=stdout)
-
-    if not providers:
-        print("providers=none", file=stdout)
-        return 0
-
-    for provider in providers:
-        provider_cfg = providers_map.get(provider, {})
-        method = "unknown"
-        oauth_supported = False
-        if isinstance(provider_cfg, dict):
-            method = str(provider_cfg.get("method", "oauth_poll"))
-            oauth_supported = bool(
-                provider_cfg.get("auth_url_endpoint")
-                and provider_cfg.get("status_endpoint")
-            )
-        print(
-            (
-                f"provider={provider} "
-                f"method={method} "
-                f"oauth_login={'yes' if oauth_supported else 'no'} "
-                f"headless_import={'yes' if provider in handlers else 'no'}"
-            ),
-            file=stdout,
-        )
-
-    return 0
-
-
-def _cmd_auth_import_headless(
-    config: dict[str, Any],
-    provider: str,
-    *,
-    source: str,
-    dest_dir: str | None,
-    stdout: TextIO,
-    stderr: TextIO,
-) -> int:
-    handler = get_headless_import_handler(provider)
-    if handler is None:
-        supported = ",".join(sorted(headless_import_handlers().keys())) or "none"
-        print(
-            f"headless import not supported for provider={provider}; supported={supported}",
-            file=stderr,
-        )
-        return 2
-
-    resolved_dest = dest_dir
-    if not resolved_dest:
-        resolved_dest = _default_auth_dir(config)
-
-    try:
-        saved = handler(source, resolved_dest)
-    except Exception as exc:  # noqa: BLE001
-        print(f"headless import failed: {exc}", file=stderr)
-        return 1
-
-    supervisor = ProcessSupervisor(config["paths"]["runtime_dir"])
-    supervisor.record_event(
-        "auth_import",
-        provider=provider,
-        result="success",
-        detail=f"method=headless path={saved}",
-    )
-    print(f"saved_auth={saved}", file=stdout)
-    return 0
-
-
-def _cmd_auth_codex_import_headless(
-    config: dict[str, Any],
-    *,
-    source: str,
-    dest_dir: str | None,
-    stdout: TextIO,
-    stderr: TextIO,
-) -> int:
-    return _cmd_auth_import_headless(
-        config,
-        "codex",
-        source=source,
-        dest_dir=dest_dir,
-        stdout=stdout,
-        stderr=stderr,
-    )
 
 
 def _cmd_service_action(
@@ -639,6 +441,10 @@ COMMAND_MAP = {
     "status": StatusCommand,
     "health": HealthCommand,
     "doctor": DoctorCommand,
+    "auth_list": AuthListCommand,
+    "auth_status": AuthStatusCommand,
+    "auth_login": AuthLoginCommand,
+    "auth_import": AuthImportCommand,
 }
 
 
@@ -668,6 +474,41 @@ def run_cli(
         command = command_class(args, config)
         return command.execute()
 
+    # Handle auth command with nested subcommands
+    if args.command == "auth":
+        # Inject stdout/stderr into args for command access
+        args.stdout = stdout
+        args.stderr = stderr
+
+        # Map provider to command class
+        auth_command_map = {
+            "list": AuthListCommand,
+            "status": AuthStatusCommand,
+            "login": AuthLoginCommand,
+            "import-headless": AuthImportCommand,
+        }
+
+        provider = getattr(args, "provider", None)
+        if provider in auth_command_map:
+            command_class = auth_command_map[provider]
+            command = command_class(args, config)
+            return command.execute()
+
+        # Handle legacy format: auth <provider> <command>
+        # e.g., "auth codex login" or "auth codex import-headless"
+        auth_cmd = getattr(args, "auth_cmd", None)
+        if provider in ("codex", "copilot") and auth_cmd:
+            if auth_cmd == "login":
+                # Map to new format by setting login_provider
+                args.login_provider = provider
+                command = AuthLoginCommand(args, config)
+                return command.execute()
+            if auth_cmd == "import-headless" and provider == "codex":
+                # Map to new format by setting import_provider
+                args.import_provider = provider
+                command = AuthImportCommand(args, config)
+                return command.execute()
+
     if args.command == "profile":
         if args.profile_cmd == "list":
             return _cmd_profile_list(config, stdout=stdout)
@@ -687,47 +528,6 @@ def run_cli(
                 config,
                 args.client,
                 target=args.target if args.target else None,
-                stdout=stdout,
-                stderr=stderr,
-            )
-
-    if args.command == "auth":
-        if args.provider == "list":
-            return _cmd_auth_list(config, stdout=stdout)
-        if args.provider == "status":
-            return _cmd_auth_status(config, stdout=stdout)
-        if args.provider == "login":
-            return _cmd_auth_login(
-                config,
-                args.login_provider,
-                timeout=args.timeout,
-                poll_interval=args.poll_interval,
-                stdout=stdout,
-                stderr=stderr,
-            )
-        if args.provider == "import-headless":
-            return _cmd_auth_import_headless(
-                config,
-                args.import_provider,
-                source=args.source,
-                dest_dir=args.dest_dir if args.dest_dir else None,
-                stdout=stdout,
-                stderr=stderr,
-            )
-        if args.auth_cmd == "login":
-            return _cmd_auth_login(
-                config,
-                args.provider,
-                timeout=args.timeout,
-                poll_interval=args.poll_interval,
-                stdout=stdout,
-                stderr=stderr,
-            )
-        if args.provider == "codex" and args.auth_cmd == "import-headless":
-            return _cmd_auth_codex_import_headless(
-                config,
-                source=args.source,
-                dest_dir=args.dest_dir if args.dest_dir else None,
                 stdout=stdout,
                 stderr=stderr,
             )

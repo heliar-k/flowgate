@@ -118,9 +118,9 @@ class TestAuthCommandExitCodes(unittest.TestCase):
         out = io.StringIO()
         err = io.StringIO()
         with (
-            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch("flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"),
             mock.patch(
-                "flowgate.cli.poll_auth_status",
+                "flowgate.oauth.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out"),
             ),
         ):
@@ -252,8 +252,8 @@ class TestAuthCommandOutput(unittest.TestCase):
         """auth login success output includes login_url and oauth_status"""
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/login"),
-            mock.patch("flowgate.cli.poll_auth_status", return_value="success"),
+            mock.patch("flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch("flowgate.oauth.poll_auth_status", return_value="success"),
         ):
             result = run_cli(
                 ["--config", str(self.cfg), "auth", "login", "codex", "--timeout", "5"],
@@ -276,7 +276,7 @@ class TestAuthCommandOutput(unittest.TestCase):
 
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-        with mock.patch("flowgate.cli.get_headless_import_handler", return_value=handler):
+        with mock.patch("flowgate.auth_methods.get_headless_import_handler", return_value=handler):
             result = run_cli(
                 [
                     "--config",
@@ -300,9 +300,9 @@ class TestAuthCommandOutput(unittest.TestCase):
         out = io.StringIO()
         err = io.StringIO()
         with (
-            mock.patch("flowgate.cli.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch("flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"),
             mock.patch(
-                "flowgate.cli.poll_auth_status",
+                "flowgate.oauth.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out; last status=pending"),
             ),
         ):

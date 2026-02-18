@@ -44,9 +44,6 @@ if parent_module:
     ProcessSupervisor = _cli_module.ProcessSupervisor
     check_http_health = _cli_module.check_http_health
     check_secret_file_permissions = _cli_module.check_secret_file_permissions
-    fetch_auth_url = _cli_module.fetch_auth_url
-    get_headless_import_handler = _cli_module.get_headless_import_handler
-    poll_auth_status = _cli_module.poll_auth_status
 
     # Provide a way for tests to update legacy module references when mocking
     def _update_legacy_mock(attr_name, mock_value):
@@ -72,8 +69,5 @@ else:
     ProcessSupervisor = None
     check_http_health = None
     check_secret_file_permissions = None
-    fetch_auth_url = None
-    get_headless_import_handler = None
-    poll_auth_status = None
 
 __all__ = ["run_cli"]

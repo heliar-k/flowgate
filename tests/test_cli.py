@@ -266,12 +266,12 @@ class CLITests(unittest.TestCase):
     def test_auth_login(self):
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.cli.fetch_auth_url", return_value="https://example.com/login"
+                "flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"
             ) as f_url,
             mock.patch(
-                "flowgate.cli.poll_auth_status", return_value="success"
+                "flowgate.oauth.poll_auth_status", return_value="success"
             ) as p_status,
         ):
             code = run_cli(
@@ -292,12 +292,12 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         err = io.StringIO()
         with (
-            mock.patch("flowgate.cli.ProcessSupervisor"),
+            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor"),
             mock.patch(
-                "flowgate.cli.fetch_auth_url", return_value="https://example.com/login"
+                "flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"
             ),
             mock.patch(
-                "flowgate.cli.poll_auth_status",
+                "flowgate.oauth.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out; last status=pending"),
             ),
         ):
@@ -344,13 +344,13 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.cli.fetch_auth_url",
+                "flowgate.oauth.fetch_auth_url",
                 return_value="https://example.com/custom-login",
             ) as f_url,
             mock.patch(
-                "flowgate.cli.poll_auth_status", return_value="success"
+                "flowgate.oauth.poll_auth_status", return_value="success"
             ) as p_status,
         ):
             code = run_cli(
@@ -375,7 +375,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
         with mock.patch(
-            "flowgate.cli.get_headless_import_handler", return_value=handler
+            "flowgate.auth_methods.get_headless_import_handler", return_value=handler
         ) as resolver:
             code = run_cli(
                 [
@@ -403,9 +403,9 @@ class CLITests(unittest.TestCase):
         handler = mock.Mock(return_value=Path("/tmp/auths/custom-headless-import.json"))
         with (
             mock.patch(
-                "flowgate.cli.get_headless_import_handler", return_value=handler
+                "flowgate.auth_methods.get_headless_import_handler", return_value=handler
             ) as resolver,
-            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
         ):
             code = run_cli(
                 [
@@ -458,7 +458,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
         with mock.patch(
-            "flowgate.cli.get_headless_import_handler", return_value=handler
+            "flowgate.auth_methods.get_headless_import_handler", return_value=handler
         ) as resolver:
             code = run_cli(
                 [
@@ -494,7 +494,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
         with mock.patch(
-            "flowgate.cli.get_headless_import_handler", return_value=handler
+            "flowgate.auth_methods.get_headless_import_handler", return_value=handler
         ) as resolver:
             code = run_cli(
                 [
