@@ -12,6 +12,7 @@ import sys
 from typing import Callable
 
 from ..config import ConfigError
+from ..process import ProcessError
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,6 @@ EXIT_CONFIG_ERROR = 1
 EXIT_RUNTIME_ERROR = 2
 EXIT_PERMISSION_ERROR = 3
 EXIT_INTERNAL_ERROR = 99
-
-
-class ProcessError(RuntimeError):
-    """Raised when a process operation fails (start, stop, restart, port conflicts)."""
 
 
 def handle_command_errors(func: Callable) -> Callable:

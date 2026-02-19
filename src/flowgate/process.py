@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import Mapping
 
 
+class ProcessError(RuntimeError):
+    """Raised when a process operation fails (start, stop, restart, port conflicts)."""
+
+
 class ProcessSupervisor:
     def __init__(self, runtime_dir: str | Path):
         self.runtime_dir = Path(runtime_dir)
