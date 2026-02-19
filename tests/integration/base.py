@@ -1,43 +1,29 @@
 """Base classes and utilities for FlowGate integration tests.
 
-Integration tests are skipped by default in CI.  Set the environment
-variable ``RUN_INTEGRATION_TESTS=1`` to enable them.
+Integration tests are marked with ``@pytest.mark.integration`` and are skipped
+by default unless explicitly selected with ``pytest -m integration``.
 """
 from __future__ import annotations
 
 import json
-import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
 
-_SKIP_REASON = "Integration tests require RUN_INTEGRATION_TESTS=1"
-_INTEGRATION_FLAG = "RUN_INTEGRATION_TESTS"
-
-
-def requires_integration_env():
-    """Decorator: skip a test unless the integration test flag is set."""
-    return unittest.skipUnless(
-        os.environ.get(_INTEGRATION_FLAG) == "1",
-        _SKIP_REASON,
-    )
-
 
 class IntegrationTestBase(unittest.TestCase):
     """Base class for all FlowGate integration tests.
 
     Provides:
-    - Automatic skip when ``RUN_INTEGRATION_TESTS`` is not set.
     - A temporary working directory (``self.root``) created per test class.
     - Helper methods for building minimal config files.
-    """
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        if os.environ.get(_INTEGRATION_FLAG) != "1":
-            raise unittest.SkipTest(_SKIP_REASON)
+    Note:
+        All test classes that inherit from this base must be decorated with
+        ``@pytest.mark.integration`` to be properly skipped/selected by pytest.
+    """
 
     def setUp(self) -> None:
         self._tmpdir = tempfile.mkdtemp(prefix="flowgate_itest_")

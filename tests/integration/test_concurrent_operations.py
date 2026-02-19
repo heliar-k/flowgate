@@ -18,7 +18,7 @@ Note on thread safety:
       different runtime dirs) verify that all operations succeed.
 
 Run with:
-    RUN_INTEGRATION_TESTS=1 python -m unittest tests.integration.test_concurrent_operations -v
+    pytest tests/integration/test_concurrent_operations.py -v -m integration
 """
 from __future__ import annotations
 
@@ -32,6 +32,8 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 from flowgate.cli import run_cli
 from flowgate.process import ProcessSupervisor
@@ -111,6 +113,7 @@ def _make_isolated_config(base_root: Path, index: int) -> tuple[Path, dict[str, 
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 class TestConcurrentProfileSwitch(IntegrationTestBase):
     """Concurrent profile switches in *isolated* runtime directories all succeed."""
 
@@ -201,6 +204,7 @@ class TestConcurrentProfileSwitch(IntegrationTestBase):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 class TestConcurrentHealthChecks(IntegrationTestBase):
     """Parallel health checks do not interfere with each other."""
 
@@ -253,6 +257,7 @@ class TestConcurrentHealthChecks(IntegrationTestBase):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 class TestProfileSwitchAndRestart(IntegrationTestBase):
     """Switching a profile while a service is running, then restarting it."""
 
@@ -319,6 +324,7 @@ class TestProfileSwitchAndRestart(IntegrationTestBase):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 class TestConcurrentServiceManagement(IntegrationTestBase):
     """Multiple services can be started and stopped in parallel."""
 

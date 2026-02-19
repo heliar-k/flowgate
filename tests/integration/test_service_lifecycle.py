@@ -5,7 +5,7 @@ using mock commands (``python -c "import time; time.sleep(120)"``).
 They do NOT require LiteLLM or CLIProxyAPIPlus binaries.
 
 Run with:
-    RUN_INTEGRATION_TESTS=1 python -m unittest tests.integration.test_service_lifecycle -v
+    pytest tests/integration/test_service_lifecycle.py -v -m integration
 """
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ import sys
 import time
 import unittest
 from pathlib import Path
+
+import pytest
 
 from flowgate.process import ProcessSupervisor
 
@@ -24,6 +26,7 @@ _SLEEP_CMD = [sys.executable, "-c", "import time; time.sleep(120)"]
 _FAST_EXIT_CMD = [sys.executable, "-c", "import sys; sys.exit(0)"]
 
 
+@pytest.mark.integration
 class TestServiceStart(IntegrationTestBase):
     """Tests for ProcessSupervisor.start()."""
 
@@ -100,6 +103,7 @@ class TestServiceStart(IntegrationTestBase):
             sv.stop("svc-f", timeout=3)
 
 
+@pytest.mark.integration
 class TestServiceStop(IntegrationTestBase):
     """Tests for ProcessSupervisor.stop()."""
 
@@ -154,6 +158,7 @@ class TestServiceStop(IntegrationTestBase):
         self.assertTrue(result)
 
 
+@pytest.mark.integration
 class TestServiceRestart(IntegrationTestBase):
     """Tests for ProcessSupervisor.restart()."""
 
@@ -199,6 +204,7 @@ class TestServiceRestart(IntegrationTestBase):
             sv.stop("svc-l", timeout=3)
 
 
+@pytest.mark.integration
 class TestServiceLifecycleEndToEnd(IntegrationTestBase):
     """End-to-end lifecycle: start → health-check state → stop."""
 
@@ -247,6 +253,7 @@ class TestServiceLifecycleEndToEnd(IntegrationTestBase):
         self.assertIn("service_stop", event_types)
 
 
+@pytest.mark.integration
 class TestEventLogIntegrity(IntegrationTestBase):
     """Verify that the event log is valid JSON-lines after multiple operations."""
 

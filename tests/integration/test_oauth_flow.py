@@ -5,7 +5,7 @@ the provider auth-URL and status endpoints.  No network access to real
 OAuth providers is required.
 
 Run with:
-    RUN_INTEGRATION_TESTS=1 python -m unittest tests.integration.test_oauth_flow -v
+    pytest tests/integration/test_oauth_flow.py -v -m integration
 """
 from __future__ import annotations
 
@@ -18,6 +18,8 @@ import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 from urllib.error import URLError
+
+import pytest
 
 from flowgate.oauth import fetch_auth_url, poll_auth_status
 
@@ -130,6 +132,7 @@ class MockOAuthServer:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 class TestFetchAuthUrl(IntegrationTestBase):
     """Tests for ``flowgate.oauth.fetch_auth_url``."""
 
@@ -173,6 +176,7 @@ class TestFetchAuthUrl(IntegrationTestBase):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 class TestPollAuthStatusSuccess(IntegrationTestBase):
     """Tests for the success paths of ``flowgate.oauth.poll_auth_status``."""
 
@@ -228,6 +232,7 @@ class TestPollAuthStatusSuccess(IntegrationTestBase):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 class TestPollAuthStatusFailure(IntegrationTestBase):
     """Tests for failure / error paths of ``flowgate.oauth.poll_auth_status``."""
 
@@ -285,6 +290,7 @@ class TestPollAuthStatusFailure(IntegrationTestBase):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 class TestOAuthFlowEndToEnd(IntegrationTestBase):
     """End-to-end: fetch auth URL then poll until completion."""
 
