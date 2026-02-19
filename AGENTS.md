@@ -18,8 +18,14 @@ FlowGate is a local control tool for managing `CLIProxyAPIPlus + LiteLLM` stacks
 **Configuration** (`src/flowgate/config.py`):
 - Supports config schema version 2 (explicit or defaulted)
 - JSON/YAML parsing with backward compatibility for legacy keys
-- Path resolution relative to config file location
+- Path resolution via PathResolver class (`config_utils/path_resolver.py`)
 - Validates required top-level keys and service definitions
+
+**Path Resolution** (`src/flowgate/config_utils/path_resolver.py`):
+- Unified path resolution for all configuration paths
+- Supports absolute paths (unchanged) and relative paths (relative to config dir)
+- Handles 4 path types: paths.*, secret_files, credentials.upstream.*.file, services.*.command.cwd
+- Deep-copy configuration to avoid mutations
 
 **Bootstrap** (`src/flowgate/bootstrap.py`):
 - Downloads platform-specific CLIProxyAPIPlus binary from GitHub releases
@@ -55,6 +61,11 @@ FlowGate is a local control tool for managing `CLIProxyAPIPlus + LiteLLM` stacks
 ## Directory Layout
 
 - `src/flowgate/`: Main package code
+  - `config.py`: Configuration loading and validation
+  - `config_utils/`: Configuration utilities
+    - `path_resolver.py`: Unified path resolution
+  - `cli/`: Command-line interface
+  - `validators.py`: Configuration validators
 - `tests/`: unittest suite (unit + integration tests)
 - `config/examples/`: Sample configs (copy to `config/flowgate.yaml` and `config/cliproxyapi.yaml`)
 - `.router/`: Runtime artifacts (PIDs, logs, binaries, auth files) - intentionally gitignored

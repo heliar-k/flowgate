@@ -532,62 +532,50 @@ class ConfigMigrateCommand(BaseCommand):
 
 ---
 
-### 2.2 简化路径解析逻辑
+### 2.2 简化路径解析逻辑 ✅ **已完成 (2026-02-19)**
 
 **问题描述**:
 - `_resolve_config_paths()` 函数处理 4 种路径类型,逻辑复杂
 - 路径解析依赖关系混乱 (相对路径基准不一致)
 
-**优化方案**:
-创建 `PathResolver` 类统一处理:
+**实际成果**:
+- ✅ Task 1: 创建 PathResolver 类
+  - 新增 `src/flowgate/config_utils/path_resolver.py` (127 行)
+  - Git 提交: `c4ed81b`
+- ✅ Task 2: 添加 PathResolver 单元测试
+  - 新增 `tests/test_path_resolver.py` (414 行, 21 测试)
+  - 测试: 203 → 224 (+21)
+  - Git 提交: `9101c8b`
+- ✅ Task 3: 重构 cli/utils.py 使用 PathResolver
+  - cli/utils.py: 84 → 49 行 (-42%)
+  - 删除 37 行重复路径解析代码
+  - 重命名 config/ → config_utils/ (避免命名冲突)
+  - Git 提交: `2975c9e`
+- ✅ Task 4: 运行完整测试套件验证
+  - 所有 224 测试通过 (100%)
+  - 无性能退化
+- ✅ Task 5: 更新文档
+  - 更新 CLAUDE.md (已包含 PathResolver 文档)
+  - 创建 docs/path-resolution.md (360 行完整技术文档)
+  - 更新优化计划状态
+  - 创建完成报告
 
-```python
-# src/flowgate/config/path_resolver.py
-from pathlib import Path
+**代码指标**:
+- 新增文件: 2 个 (path_resolver.py, test_path_resolver.py)
+- 修改文件: 2 个 (cli/utils.py, cli.py)
+- 新增代码: ~541 行 (生产 127 + 测试 414)
+- 删除代码: 37 行路径解析逻辑
+- 净代码变化: 49 行 cli/utils.py (减少 42%)
+- 新增测试: 21 个
+- 测试总数: 203 → 224 (+10.3%)
+- 新增文档: 1 个 (path-resolution.md, 360 行)
 
-class PathResolver:
-    def __init__(self, config_path: Path):
-        self.config_dir = config_path.parent.resolve()
+**Git 提交**:
+- `c4ed81b` - feat(config): add PathResolver class for unified path resolution
+- `9101c8b` - test(config): add comprehensive PathResolver tests (21 tests)
+- `2975c9e` - refactor(cli): use PathResolver in CLI utils
 
-    def resolve(self, path_str: str, base_dir: Path = None) -> Path:
-        """
-        解析路径,支持绝对路径和相对路径
-
-        相对路径解析规则:
-        1. 默认相对于配置文件目录
-        2. 如果指定 base_dir,则相对于 base_dir
-        """
-        path = Path(path_str)
-        if path.is_absolute():
-            return path
-
-        base = base_dir or self.config_dir
-        return (base / path).resolve()
-
-    def resolve_config_paths(self, config: dict) -> dict:
-        """递归解析配置中的所有路径字段"""
-        resolved = config.copy()
-
-        # 解析顶级路径
-        for key in ["runtime_dir", "active_config", "state_file", "log_file"]:
-            if key in config["paths"]:
-                resolved["paths"][key] = str(self.resolve(config["paths"][key]))
-
-        # 解析凭证文件路径
-        runtime_dir = Path(resolved["paths"]["runtime_dir"])
-        for name, cred in config.get("credentials", {}).get("upstream", {}).items():
-            if "file" in cred:
-                resolved["credentials"]["upstream"][name]["file"] = str(
-                    self.resolve(cred["file"], base_dir=runtime_dir)
-                )
-
-        return resolved
-```
-
-**影响范围**:
-- 新增文件: `config/path_resolver.py`
-- 修改文件: `config.py` (简化 100+ 行路径处理代码)
-- 测试更新: 新增 `test_path_resolver.py`
+**完成报告**: 见 `docs/plans/phase-2-2-completion-report.md`
 
 ---
 
@@ -992,9 +980,8 @@ Overall Status: DEGRADED (1 warning)
 - ✅ 拆分 cli.py 模块 (阶段 1.1) **已完成 2026-02-18**
 - ✅ 统一异常处理 (阶段 1.2) **已完成 2026-02-19**
 - ✅ 提取配置验证 (阶段 1.3) **已完成 2026-02-19**
-- ⏳ 简化路径解析 (阶段 2.1) **待开始**
-- ⏳ 添加 config migrate 命令 (阶段 2.2) **待开始**
-- ⏳ 弃用 config_version: 1 (警告,不移除) **待开始**
+- ✅ 移除 config v1 支持 (阶段 2.1) **已完成 2026-02-19**
+- ✅ 简化路径解析 (阶段 2.2) **已完成 2026-02-19**
 
 **v0.3.0** (中期，1-2 个月):
 - ✅ 完全移除 config v1 支持 (阶段 2.2) 【破坏性变更】
@@ -1127,6 +1114,8 @@ Overall Status: DEGRADED (1 warning)
 | 2026-02-18 | 1.3 | Claude | Phase 1.1 执行完成：CLI 模块化重构（基础设施 + 命令迁移） |
 | 2026-02-19 | 1.4 | Claude | Phase 1.2 执行完成：统一异常处理和日志记录 |
 | 2026-02-19 | 1.5 | Claude | Phase 1.3 执行完成：提取配置验证逻辑 |
+| 2026-02-19 | 1.6 | Claude | Phase 2.1 执行完成：移除 config_version 1 支持 |
+| 2026-02-19 | 1.7 | Claude | Phase 2.2 执行完成：简化路径解析逻辑 |
 
 ---
 
