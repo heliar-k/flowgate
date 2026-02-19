@@ -1,0 +1,275 @@
+"""Configuration validation utilities for FlowGate.
+
+This module provides centralized validation logic for configuration files,
+extracting validation concerns from the main config module.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from flowgate.config import ConfigError
+
+
+class ConfigValidator:
+    """Centralized configuration validation for FlowGate.
+
+    All methods are static and raise ConfigError on validation failures.
+    """
+
+    # -------------------------------------------------------------------------
+    # Helper Methods
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _require_keys(
+        config: dict[str, Any], required: set[str], context: str
+    ) -> None:
+        """Check that all required keys exist in config.
+
+        Args:
+            config: Configuration dictionary to validate
+            required: Set of required key names
+            context: Context string for error messages (e.g., "paths", "services")
+
+        Raises:
+            ConfigError: If any required keys are missing
+        """
+        missing = sorted(required - set(config.keys()))
+        if missing:
+            raise ConfigError(
+                f"{context} is missing required keys: {', '.join(missing)}"
+            )
+
+    @staticmethod
+    def _validate_type(value: Any, expected_type: type, name: str) -> None:
+        """Validate that a value matches the expected type.
+
+        Args:
+            value: Value to validate
+            expected_type: Expected Python type
+            name: Field name for error messages
+
+        Raises:
+            ConfigError: If value type doesn't match expected type
+        """
+        if not isinstance(value, expected_type):
+            type_name = expected_type.__name__
+            raise ConfigError(f"{name} must be a {type_name}")
+
+    @staticmethod
+    def _validate_non_empty_string(value: Any, name: str) -> None:
+        """Validate that a value is a non-empty string.
+
+        Args:
+            value: Value to validate
+            name: Field name for error messages
+
+        Raises:
+            ConfigError: If value is not a string or is empty
+        """
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(f"{name} must be a non-empty string")
+
+    # -------------------------------------------------------------------------
+    # Validator Methods
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def validate_paths(paths_config: dict[str, Any]) -> None:
+        """Validate the paths configuration section.
+
+        Required keys: runtime_dir, active_config, state_file, log_file
+
+        Args:
+            paths_config: The paths section from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        required = {"runtime_dir", "active_config", "state_file", "log_file"}
+        ConfigValidator._require_keys(paths_config, required, "paths")
+
+    @staticmethod
+    def validate_service(service_name: str, service_config: dict[str, Any]) -> None:
+        """Validate a single service configuration.
+
+        Required structure:
+        - command: dict with 'args' key
+        - command.args: non-empty list of strings
+
+        Args:
+            service_name: Name of the service (e.g., "litellm")
+            service_config: Service configuration dictionary
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        ConfigValidator._validate_type(
+            service_config, dict, f"services.{service_name}"
+        )
+
+        if "command" not in service_config or not isinstance(
+            service_config["command"], dict
+        ):
+            raise ConfigError(f"services.{service_name}.command must be provided")
+
+        args = service_config["command"].get("args")
+        if (
+            not isinstance(args, list)
+            or not all(isinstance(i, str) for i in args)
+            or not args
+        ):
+            raise ConfigError(
+                f"services.{service_name}.command.args must be a non-empty string list"
+            )
+
+    @staticmethod
+    def validate_services(services_config: dict[str, Any]) -> None:
+        """Validate the services configuration section.
+
+        Required services: litellm, cliproxyapi_plus
+        Each service must have valid command configuration.
+
+        Args:
+            services_config: The services section from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        required = {"litellm", "cliproxyapi_plus"}
+        ConfigValidator._require_keys(services_config, required, "services")
+
+        for name, svc in services_config.items():
+            ConfigValidator.validate_service(name, svc)
+
+    @staticmethod
+    def validate_litellm_base(config: dict[str, Any]) -> None:
+        """Validate the litellm_base configuration section.
+
+        Currently validates that it's a dictionary. Additional validation
+        for model_list and settings can be added as needed.
+
+        Args:
+            config: The litellm_base section from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        ConfigValidator._validate_type(config, dict, "litellm_base")
+
+    @staticmethod
+    def validate_profiles(profiles_config: dict[str, Any]) -> None:
+        """Validate the profiles configuration section.
+
+        Requirements:
+        - Must not be empty
+        - All profile names must be non-empty strings
+        - All profile values must be dictionaries
+
+        Args:
+            profiles_config: The profiles section from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        if not profiles_config:
+            raise ConfigError("profiles must not be empty")
+
+        for key, value in profiles_config.items():
+            if not isinstance(key, str) or not key:
+                raise ConfigError("profile names must be non-empty strings")
+            ConfigValidator._validate_type(value, dict, f"profiles.{key}")
+
+    @staticmethod
+    def validate_credentials(credentials_config: dict[str, Any]) -> None:
+        """Validate the credentials configuration section.
+
+        Structure:
+        - Only 'upstream' key is allowed
+        - upstream: dict of credential entries
+        - Each entry must have a 'file' key with non-empty string value
+
+        Args:
+            credentials_config: The credentials section from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        unknown = sorted(set(credentials_config.keys()) - {"upstream"})
+        if unknown:
+            raise ConfigError(f"credentials has unknown keys: {', '.join(unknown)}")
+
+        upstream = credentials_config.get("upstream", {})
+        ConfigValidator._validate_type(upstream, dict, "credentials.upstream")
+
+        for name, entry in upstream.items():
+            if not isinstance(name, str) or not name:
+                raise ConfigError(
+                    "credentials.upstream keys must be non-empty strings"
+                )
+            ConfigValidator._validate_type(
+                entry, dict, f"credentials.upstream.{name}"
+            )
+
+            unknown_entry = sorted(set(entry.keys()) - {"file"})
+            if unknown_entry:
+                raise ConfigError(
+                    f"credentials.upstream.{name} has unknown keys: {', '.join(unknown_entry)}"
+                )
+
+            file_path = entry.get("file")
+            ConfigValidator._validate_non_empty_string(
+                file_path, f"credentials.upstream.{name}.file"
+            )
+
+    @staticmethod
+    def validate_oauth(oauth_config: dict[str, Any]) -> None:
+        """Validate the oauth configuration section (legacy).
+
+        Each provider must be a dictionary. This is a legacy validation
+        for backward compatibility with config version 1.
+
+        Args:
+            oauth_config: The oauth section from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        for name, provider in oauth_config.items():
+            ConfigValidator._validate_type(provider, dict, f"oauth.{name}")
+
+    @staticmethod
+    def validate_auth_providers(providers_config: dict[str, Any]) -> None:
+        """Validate the auth.providers configuration section.
+
+        Each provider must be a dictionary containing auth endpoints
+        and configuration.
+
+        Args:
+            providers_config: The auth.providers section from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        for name, provider in providers_config.items():
+            ConfigValidator._validate_type(
+                provider, dict, f"auth.providers.{name}"
+            )
+
+    @staticmethod
+    def validate_secret_files(secret_files: Any) -> None:
+        """Validate the secret_files configuration.
+
+        Must be a list of string paths.
+
+        Args:
+            secret_files: The secret_files value from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        if not isinstance(secret_files, list) or not all(
+            isinstance(p, str) for p in secret_files
+        ):
+            raise ConfigError("secret_files must be a list of string paths")
