@@ -13,51 +13,17 @@ from pathlib import Path
 from typing import Any
 
 from ..config import load_router_config
-
-
-def _resolve_path(base_dir: Path, value: str) -> str:
-    p = Path(value)
-    if p.is_absolute():
-        return str(p)
-    return str((base_dir / p).resolve())
-
-
-def _resolve_config_paths(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
-    cfg = json.loads(json.dumps(config))
-    base_dir = config_path.parent
-
-    for key, value in cfg["paths"].items():
-        if isinstance(value, str):
-            cfg["paths"][key] = _resolve_path(base_dir, value)
-
-    cfg["secret_files"] = [
-        _resolve_path(base_dir, p) for p in cfg.get("secret_files", [])
-    ]
-
-    credentials = cfg.get("credentials", {})
-    if isinstance(credentials, dict):
-        upstream = credentials.get("upstream", {})
-        if isinstance(upstream, dict):
-            for entry in upstream.values():
-                if not isinstance(entry, dict):
-                    continue
-                file_path = entry.get("file")
-                if isinstance(file_path, str):
-                    entry["file"] = _resolve_path(base_dir, file_path)
-
-    for service in cfg.get("services", {}).values():
-        command = service.get("command", {})
-        cwd = command.get("cwd")
-        if isinstance(cwd, str):
-            command["cwd"] = _resolve_path(base_dir, cwd)
-
-    return cfg
+from ..config_utils.path_resolver import PathResolver
 
 
 def _load_and_resolve_config(path: str) -> dict[str, Any]:
     cfg_path = Path(path)
     cfg = load_router_config(cfg_path)
-    resolved = _resolve_config_paths(cfg, cfg_path)
+
+    # Use PathResolver to resolve all configuration paths
+    resolver = PathResolver(cfg_path)
+    resolved = resolver.resolve_config_paths(cfg)
+
     resolved["_meta"] = {
         "config_path": str(cfg_path.resolve()),
         "config_dir": str(cfg_path.resolve().parent),

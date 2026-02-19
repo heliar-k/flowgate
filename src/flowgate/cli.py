@@ -28,8 +28,6 @@ from .cli.parser import build_parser
 from .cli.utils import (
     _load_and_resolve_config,
     _read_state_file,
-    _resolve_config_paths,
-    _resolve_path,
 )
 from .config import ConfigError, load_router_config
 from .health import check_http_health

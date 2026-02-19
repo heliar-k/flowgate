@@ -1,21 +1,11 @@
 """Unit tests for PathResolver class."""
 
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-# Import PathResolver from the config/path_resolver.py module
-# Since config is both a module (config.py) and a directory (config/),
-# we need to add the config directory to sys.path and import directly
-config_dir = Path(__file__).parent.parent / "src" / "flowgate" / "config"
-sys.path.insert(0, str(config_dir))
-
-from path_resolver import PathResolver
-
-# Remove from sys.path to avoid side effects
-sys.path.pop(0)
+from flowgate.config_utils.path_resolver import PathResolver
 
 
 class TestPathResolverInit(unittest.TestCase):
