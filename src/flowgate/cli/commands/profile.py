@@ -9,12 +9,14 @@ from __future__ import annotations
 import sys
 from typing import TextIO
 
+from ..error_handler import handle_command_errors
 from .base import BaseCommand
 
 
 class ProfileListCommand(BaseCommand):
     """List all available profiles."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute profile list command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
@@ -37,6 +39,7 @@ class ProfileShowCommand(BaseCommand):
 class ProfileSetCommand(BaseCommand):
     """Set the active profile."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute profile set command."""
         # Import from cli module for test mocking compatibility

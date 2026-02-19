@@ -11,6 +11,7 @@ from typing import Any, TextIO
 
 from ...client_apply import apply_claude_code_settings, apply_codex_config
 from ...integration import build_integration_specs
+from ..error_handler import handle_command_errors
 from .base import BaseCommand
 
 
@@ -58,6 +59,7 @@ def _render_claude_code_integration(spec: dict[str, Any]) -> str:
 class IntegrationPrintCommand(BaseCommand):
     """Print integration configuration snippet for a client."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute integration print command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
@@ -65,11 +67,7 @@ class IntegrationPrintCommand(BaseCommand):
 
         client = self.args.client
 
-        try:
-            specs = build_integration_specs(self.config)
-        except Exception as exc:  # noqa: BLE001
-            print(f"integration render failed: {exc}", file=stderr)
-            return 1
+        specs = build_integration_specs(self.config)
 
         if client == "codex":
             print(_render_codex_integration(specs.get("codex", {})), file=stdout)
@@ -87,6 +85,7 @@ class IntegrationPrintCommand(BaseCommand):
 class IntegrationApplyCommand(BaseCommand):
     """Apply integration configuration to a client config file."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute integration apply command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
@@ -95,11 +94,7 @@ class IntegrationApplyCommand(BaseCommand):
         client = self.args.client
         target = self.args.target if self.args.target else None
 
-        try:
-            specs = build_integration_specs(self.config)
-        except Exception as exc:  # noqa: BLE001
-            print(f"integration render failed: {exc}", file=stderr)
-            return 1
+        specs = build_integration_specs(self.config)
 
         if client == "codex":
             resolved_target = target or "~/.codex/config.toml"
@@ -107,22 +102,14 @@ class IntegrationApplyCommand(BaseCommand):
             if not isinstance(spec, dict):
                 print("integration spec missing codex block", file=stderr)
                 return 1
-            try:
-                result = apply_codex_config(resolved_target, spec)
-            except Exception as exc:  # noqa: BLE001
-                print(f"integration apply failed: {exc}", file=stderr)
-                return 1
+            result = apply_codex_config(resolved_target, spec)
         elif client == "claude-code":
             resolved_target = target or "~/.claude/settings.json"
             spec = specs.get("claude_code", {})
             if not isinstance(spec, dict):
                 print("integration spec missing claude_code block", file=stderr)
                 return 1
-            try:
-                result = apply_claude_code_settings(resolved_target, spec)
-            except Exception as exc:  # noqa: BLE001
-                print(f"integration apply failed: {exc}", file=stderr)
-                return 1
+            result = apply_claude_code_settings(resolved_target, spec)
         else:
             print(f"Unknown integration client: {client}", file=stderr)
             return 2
