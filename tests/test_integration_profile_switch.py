@@ -5,62 +5,30 @@ import unittest
 from pathlib import Path
 
 from flowgate.cli import run_cli
-from flowgate.constants import (
-    DEFAULT_SERVICE_HOST,
-    DEFAULT_SERVICE_PORTS,
-    DEFAULT_SERVICE_READINESS_PATHS,
-)
+from tests.fixtures import ConfigFactory
 
 
 class ProfileSwitchIntegrationTests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
         self.cfg_path = self.root / "flowgate.yaml"
-        cfg = {
-            "paths": {
-                "runtime_dir": str(self.root / "runtime"),
-                "active_config": str(self.root / "runtime" / "litellm.active.yaml"),
-                "state_file": str(self.root / "runtime" / "state.json"),
-                "log_file": str(self.root / "logs" / "routerctl.log"),
-            },
-            "services": {
-                "litellm": {
-                    "host": DEFAULT_SERVICE_HOST,
-                    "port": DEFAULT_SERVICE_PORTS["litellm"],
-                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["litellm"],
-                    "command": {
-                        "args": ["python", "-c", "import time; time.sleep(60)"]
-                    },
-                },
-                "cliproxyapi_plus": {
-                    "host": DEFAULT_SERVICE_HOST,
-                    "port": DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
-                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS[
-                        "cliproxyapi_plus"
-                    ],
-                    "command": {
-                        "args": ["python", "-c", "import time; time.sleep(60)"]
-                    },
-                },
-            },
-            "litellm_base": {
-                "litellm_settings": {"num_retries": 1, "cooldown_time": 10},
-                "router_settings": {"routing_strategy": "simple-shuffle"},
-            },
-            "profiles": {
-                "reliability": {
-                    "litellm_settings": {"num_retries": 3, "cooldown_time": 60},
-                },
-                "balanced": {
-                    "litellm_settings": {"num_retries": 2, "cooldown_time": 30},
-                },
-                "cost": {
-                    "litellm_settings": {"num_retries": 1, "cooldown_time": 5},
-                },
-            },
-            "oauth": {},
-            "secret_files": [],
+
+        cfg = ConfigFactory.with_profiles(["reliability", "balanced"])
+        # Add custom cost profile with specific cooldown_time for test
+        cfg["profiles"]["cost"] = {
+            "litellm_settings": {"num_retries": 1, "cooldown_time": 5}
         }
+        cfg["paths"] = ConfigFactory.paths(
+            runtime_dir=str(self.root / "runtime"),
+            active_config=str(self.root / "runtime" / "litellm.active.yaml"),
+            state_file=str(self.root / "runtime" / "state.json"),
+            log_file=str(self.root / "logs" / "routerctl.log"),
+        )
+        cfg["litellm_base"]["litellm_settings"] = {"num_retries": 1, "cooldown_time": 10}
+        cfg["litellm_base"]["router_settings"] = {"routing_strategy": "simple-shuffle"}
+        cfg["oauth"] = {}
+        cfg["secret_files"] = []
+
         self.cfg_path.write_text(json.dumps(cfg), encoding="utf-8")
 
     def test_switch_profile_updates_active_config(self):

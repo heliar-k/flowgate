@@ -14,6 +14,7 @@ from flowgate.constants import (
     DEFAULT_SERVICE_PORTS,
     DEFAULT_SERVICE_READINESS_PATHS,
 )
+from tests.fixtures import ConfigFactory
 
 
 class TTYStringIO(io.StringIO):
@@ -22,45 +23,25 @@ class TTYStringIO(io.StringIO):
 
 
 def write_config(path: Path) -> None:
-    data = {
-        "paths": {
-            "runtime_dir": str(path.parent / "runtime"),
-            "active_config": str(path.parent / "runtime" / "litellm.active.yaml"),
-            "state_file": str(path.parent / "runtime" / "state.json"),
-            "log_file": str(path.parent / "logs" / "routerctl.log"),
+    """Write test config using ConfigFactory."""
+    data = ConfigFactory.with_profiles(["reliability", "balanced", "cost"])
+    data["paths"] = ConfigFactory.paths(
+        runtime_dir=str(path.parent / "runtime"),
+        active_config=str(path.parent / "runtime" / "litellm.active.yaml"),
+        state_file=str(path.parent / "runtime" / "state.json"),
+        log_file=str(path.parent / "logs" / "routerctl.log"),
+    )
+    data["oauth"] = {
+        "codex": {
+            "auth_url_endpoint": "http://example.local/codex/auth-url",
+            "status_endpoint": "http://example.local/codex/status",
         },
-        "services": {
-            "litellm": {
-                "host": DEFAULT_SERVICE_HOST,
-                "port": DEFAULT_SERVICE_PORTS["litellm"],
-                "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["litellm"],
-                "command": {"args": ["python", "-c", "import time; time.sleep(60)"]},
-            },
-            "cliproxyapi_plus": {
-                "host": DEFAULT_SERVICE_HOST,
-                "port": DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
-                "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["cliproxyapi_plus"],
-                "command": {"args": ["python", "-c", "import time; time.sleep(60)"]},
-            },
+        "copilot": {
+            "auth_url_endpoint": "http://example.local/copilot/auth-url",
+            "status_endpoint": "http://example.local/copilot/status",
         },
-        "litellm_base": {"litellm_settings": {"num_retries": 1}},
-        "profiles": {
-            "reliability": {"litellm_settings": {"num_retries": 3}},
-            "balanced": {"litellm_settings": {"num_retries": 2}},
-            "cost": {"litellm_settings": {"num_retries": 1}},
-        },
-        "oauth": {
-            "codex": {
-                "auth_url_endpoint": "http://example.local/codex/auth-url",
-                "status_endpoint": "http://example.local/codex/status",
-            },
-            "copilot": {
-                "auth_url_endpoint": "http://example.local/copilot/auth-url",
-                "status_endpoint": "http://example.local/copilot/status",
-            },
-        },
-        "secret_files": [],
     }
+    data["secret_files"] = []
     path.write_text(json.dumps(data), encoding="utf-8")
 
 

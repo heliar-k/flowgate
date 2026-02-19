@@ -4,6 +4,7 @@ import unittest
 
 from flowgate.config import ConfigError
 from flowgate.validators import ConfigValidator
+from tests.fixtures import ConfigFactory
 
 
 class TestConfigValidatorHelpers(unittest.TestCase):
@@ -85,12 +86,7 @@ class TestValidatePaths(unittest.TestCase):
 
     def _valid_paths_config(self):
         """Return a valid paths configuration."""
-        return {
-            "runtime_dir": ".router",
-            "active_config": ".router/active.yaml",
-            "state_file": ".router/state.json",
-            "log_file": ".router/events.log",
-        }
+        return ConfigFactory.paths()
 
     def test_validate_paths_valid(self):
         """Test validate_paths with valid config."""
@@ -134,11 +130,7 @@ class TestValidateService(unittest.TestCase):
 
     def _valid_service_config(self):
         """Return a valid service configuration."""
-        return {
-            "command": {"args": ["/path/to/service", "--flag"]},
-            "host": "127.0.0.1",
-            "port": 4000,
-        }
+        return ConfigFactory.service("test-service", 4000)
 
     def test_validate_service_valid(self):
         """Test validate_service with valid config."""
@@ -203,16 +195,8 @@ class TestValidateServices(unittest.TestCase):
     def _valid_services_config(self):
         """Return a valid services configuration."""
         return {
-            "litellm": {
-                "command": {"args": ["/path/to/litellm"]},
-                "host": "127.0.0.1",
-                "port": 4000,
-            },
-            "cliproxyapi_plus": {
-                "command": {"args": ["/path/to/cliproxyapi"]},
-                "host": "127.0.0.1",
-                "port": 9000,
-            },
+            "litellm": ConfigFactory.service("litellm", 4000),
+            "cliproxyapi_plus": ConfigFactory.service("cliproxyapi", 9000),
         }
 
     def test_validate_services_valid(self):
@@ -296,9 +280,9 @@ class TestValidateProfiles(unittest.TestCase):
     def _valid_profiles_config(self):
         """Return a valid profiles configuration."""
         return {
-            "reliability": {"litellm_settings": {"num_retries": 3}},
-            "balanced": {"litellm_settings": {"num_retries": 2}},
-            "cost": {"litellm_settings": {"num_retries": 1}},
+            "reliability": ConfigFactory.profile("reliability"),
+            "balanced": ConfigFactory.profile("balanced"),
+            "cost": ConfigFactory.profile("cost"),
         }
 
     def test_validate_profiles_valid(self):

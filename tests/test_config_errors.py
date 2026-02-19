@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 
 from flowgate.config import ConfigError, load_router_config, merge_dicts
+from tests.fixtures import ConfigFactory
 
 
 class TestConfigErrorHandling(unittest.TestCase):
@@ -25,38 +26,9 @@ class TestConfigErrorHandling(unittest.TestCase):
 
     def _minimal_valid_config(self) -> dict:
         """Return minimal valid configuration."""
-        return {
-            "config_version": 2,
-            "paths": {
-                "runtime_dir": ".router/runtime",
-                "active_config": ".router/runtime/litellm.active.yaml",
-                "state_file": ".router/runtime/state.json",
-                "log_file": ".router/runtime/events.log",
-            },
-            "services": {
-                "litellm": {
-                    "host": "127.0.0.1",
-                    "port": 4000,
-                    "command": {"args": ["litellm", "--config", "config.yaml"]},
-                },
-                "cliproxyapi_plus": {
-                    "host": "127.0.0.1",
-                    "port": 5000,
-                    "command": {"args": ["./cliproxyapi", "--port", "5000"]},
-                },
-            },
-            "litellm_base": {
-                "model_list": [
-                    {
-                        "model_name": "test-model",
-                        "litellm_params": {"model": "openai/gpt-4"},
-                    }
-                ]
-            },
-            "profiles": {
-                "default": {"litellm_settings": {"num_retries": 1}},
-            },
-        }
+        config = ConfigFactory.with_config_version(2)
+        config["profiles"] = {"default": {"litellm_settings": {"num_retries": 1}}}
+        return config
 
     def test_missing_required_key_paths(self):
         """Test ConfigError when paths key is missing."""

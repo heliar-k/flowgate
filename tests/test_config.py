@@ -6,11 +6,8 @@ import unittest
 from pathlib import Path
 
 from flowgate.config import ConfigError, load_router_config, merge_dicts
-from flowgate.constants import (
-    DEFAULT_SERVICE_HOST,
-    DEFAULT_SERVICE_PORTS,
-    DEFAULT_SERVICE_READINESS_PATHS,
-)
+from flowgate.constants import DEFAULT_SERVICE_PORTS
+from tests.fixtures import ConfigFactory
 
 
 class ConfigTests(unittest.TestCase):
@@ -22,72 +19,26 @@ class ConfigTests(unittest.TestCase):
         return Path(tmp.name)
 
     def _base_config(self) -> dict:
-        return {
-            "paths": {
-                "runtime_dir": "runtime",
-                "active_config": "runtime/litellm.active.yaml",
-                "state_file": "runtime/state.json",
-                "log_file": "logs/routerctl.log",
+        """Create base config for tests using ConfigFactory."""
+        config = ConfigFactory.with_profiles(["reliability", "balanced", "cost"])
+        config["paths"] = ConfigFactory.paths(
+            runtime_dir="runtime",
+            active_config="runtime/litellm.active.yaml",
+            state_file="runtime/state.json",
+            log_file="logs/routerctl.log",
+        )
+        config["oauth"] = {
+            "codex": {
+                "auth_url_endpoint": "http://127.0.0.1:9000/auth-url",
+                "status_endpoint": "http://127.0.0.1:9000/status",
             },
-            "services": {
-                "litellm": {
-                    "host": DEFAULT_SERVICE_HOST,
-                    "port": DEFAULT_SERVICE_PORTS["litellm"],
-                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS["litellm"],
-                    "command": {
-                        "args": [
-                            "python",
-                            "-m",
-                            "http.server",
-                            str(DEFAULT_SERVICE_PORTS["litellm"]),
-                        ]
-                    },
-                },
-                "cliproxyapi_plus": {
-                    "host": DEFAULT_SERVICE_HOST,
-                    "port": DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
-                    "readiness_path": DEFAULT_SERVICE_READINESS_PATHS[
-                        "cliproxyapi_plus"
-                    ],
-                    "command": {
-                        "args": [
-                            "python",
-                            "-m",
-                            "http.server",
-                            str(DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]),
-                        ]
-                    },
-                },
+            "copilot": {
+                "auth_url_endpoint": "http://127.0.0.1:9001/auth-url",
+                "status_endpoint": "http://127.0.0.1:9001/status",
             },
-            "litellm_base": {
-                "model_list": [
-                    {
-                        "model_name": "router-default",
-                        "litellm_params": {"model": "openai/gpt-4o"},
-                    }
-                ]
-            },
-            "profiles": {
-                "reliability": {
-                    "litellm_settings": {"num_retries": 3, "cooldown_time": 60}
-                },
-                "balanced": {
-                    "litellm_settings": {"num_retries": 2, "cooldown_time": 30}
-                },
-                "cost": {"litellm_settings": {"num_retries": 1, "cooldown_time": 10}},
-            },
-            "oauth": {
-                "codex": {
-                    "auth_url_endpoint": "http://127.0.0.1:9000/auth-url",
-                    "status_endpoint": "http://127.0.0.1:9000/status",
-                },
-                "copilot": {
-                    "auth_url_endpoint": "http://127.0.0.1:9001/auth-url",
-                    "status_endpoint": "http://127.0.0.1:9001/status",
-                },
-            },
-            "secret_files": ["auth/codex.json", "auth/copilot.json"],
         }
+        config["secret_files"] = ["auth/codex.json", "auth/copilot.json"]
+        return config
 
     def test_load_valid_config(self):
         path = self._write_config(self._base_config())
