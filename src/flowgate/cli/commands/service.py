@@ -11,7 +11,8 @@ import sys
 from typing import Any, TextIO
 
 from ...constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
-from ...process import ProcessSupervisor
+from ...process import ProcessError, ProcessSupervisor
+from ..error_handler import handle_command_errors
 from .base import BaseCommand
 
 
@@ -20,7 +21,7 @@ def _service_names(config: dict[str, Any], target: str) -> list[str]:
     if target == "all":
         return list(config["services"].keys())
     if target not in config["services"]:
-        raise KeyError(f"Unknown service: {target}")
+        raise ProcessError(f"Unknown service: {target}")
     return [target]
 
 
@@ -92,6 +93,7 @@ def _maybe_print_cliproxyapiplus_update(
 class ServiceStartCommand(BaseCommand):
     """Start one or all services."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute service start command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
@@ -100,11 +102,7 @@ class ServiceStartCommand(BaseCommand):
         supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
         target = self.args.target
 
-        try:
-            names = _service_names(self.config, target)
-        except KeyError as exc:
-            print(str(exc), file=stderr)
-            return 2
+        names = _service_names(self.config, target)
 
         ok = True
         started_cliproxy = False
@@ -143,6 +141,7 @@ class ServiceStartCommand(BaseCommand):
 class ServiceStopCommand(BaseCommand):
     """Stop one or all services."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute service stop command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
@@ -151,11 +150,7 @@ class ServiceStopCommand(BaseCommand):
         supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
         target = self.args.target
 
-        try:
-            names = _service_names(self.config, target)
-        except KeyError as exc:
-            print(str(exc), file=stderr)
-            return 2
+        names = _service_names(self.config, target)
 
         ok = True
         for name in names:
@@ -169,6 +164,7 @@ class ServiceStopCommand(BaseCommand):
 class ServiceRestartCommand(BaseCommand):
     """Restart one or all services."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute service restart command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
@@ -177,11 +173,7 @@ class ServiceRestartCommand(BaseCommand):
         supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
         target = self.args.target
 
-        try:
-            names = _service_names(self.config, target)
-        except KeyError as exc:
-            print(str(exc), file=stderr)
-            return 2
+        names = _service_names(self.config, target)
 
         ok = True
         for name in names:
