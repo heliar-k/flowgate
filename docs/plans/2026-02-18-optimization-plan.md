@@ -824,10 +824,10 @@ uv run pytest tests/unit/  # 仅运行单元测试
 
 ---
 
-## 阶段 4: 文档和工程优化 (P2-P3) 🚧 **进行中 (2026-02-19)**
+## 阶段 4: 文档和工程优化 (P2-P3) ✅ **已完成 (2026-02-19)**
 
 **详细执行计划**: 见 `docs/plans/phase-4-execution-plan.md`
-**完成报告**: 见 `docs/plans/phase-4-1-completion-report.md`
+**完成报告**: 见 `docs/plans/phase-4-completion-report.md`
 
 ### 4.1 统一文档管理 ✅ **已完成 (2026-02-19)**
 
@@ -911,11 +911,22 @@ CLAUDE.md                   # → 符号链接到 docs/development.md
 
 ---
 
-### 4.3 添加架构图和 API 文档
+### 4.3 添加架构图和 API 文档 ✅ **已完成 (2026-02-19)**
 
 **问题描述**:
 - 缺少可视化架构图
 - 新开发者难以快速理解项目结构
+- 没有自动化 API 文档生成
+
+**完成状态**:
+- ✅ 创建 4 个 Mermaid 架构图（组件图、时序图、状态图）
+- ✅ 创建详细数据流文档（5 个主要流程，811 行）
+- ✅ 设置 pdoc 自动生成 API 文档（19 个 HTML 文件）
+- ✅ 创建文档生成脚本 `scripts/generate_docs.sh`
+- ✅ 更新 AGENTS.md 添加架构章节
+- ✅ Git 提交: `5a11e06`, `d4628a0`, `c6b8552`, `60a07aa`, `4d16d2a`
+
+**详细报告**: 见 `docs/plans/phase-4-3-completion-report.md`
 
 **优化方案**:
 使用 Mermaid 创建架构图:
