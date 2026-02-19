@@ -313,12 +313,25 @@ class BaseCommand:
 
 ---
 
-### 1.2 统一异常处理和日志记录
+### 1.2 统一异常处理和日志记录 ✅ **已完成 (2026-02-19)**
 
 **问题描述**:
 - 大量 `except Exception as exc: # noqa: BLE001` 过度宽泛的异常捕获
 - 错误输出不一致 (stderr vs 日志文件)
 - 缺少调试信息和堆栈跟踪
+
+**实际成果**:
+- 创建统一的 error_handler.py 模块
+- 应用到全部 16 个命令（health 3个, auth 4个, service 3个, profile 3个, bootstrap 1个, integration 2个）
+- 标准化退出码：0=成功, 1=配置错误, 2=运行时错误, 3=权限错误, 99=内部错误
+- 新增 18 个错误处理测试
+- 测试总数从 121 增加到 132
+- 消除 64 行重复的 try-catch 代码
+- Git 提交: `f6b82d0`, `68bc101`, `5e2be0b`, `26f4c42`, `d008195`, `23f1a9b`
+- Git 标签: `phase-1-2-complete`
+- 解决技术债: TD-2 (noqa: BLE001), TD-8 (错误消息不一致)
+
+**完成报告**: 见 `docs/plans/phase-1-2-completion-report.md`
 
 **优化方案**:
 创建统一的异常处理装饰器和日志工具:
@@ -927,7 +940,7 @@ Overall Status: DEGRADED (1 warning)
 **v0.2.0** (短期，2-3 周):
 - ✅ Phase 0: 准备阶段（回归测试、配置迁移、技术债更新）**已完成 2026-02-18**
 - ✅ 拆分 cli.py 模块 (阶段 1.1) **已完成 2026-02-18**
-- ⏳ 统一异常处理 (阶段 1.2) **待开始**
+- ✅ 统一异常处理 (阶段 1.2) **已完成 2026-02-19**
 - ⏳ 提取配置验证 (阶段 1.3) **待开始**
 - ⏳ 简化路径解析 (阶段 2.1) **待开始**
 - ⏳ 添加 config migrate 命令 (阶段 2.2) **待开始**
@@ -1031,13 +1044,13 @@ Overall Status: DEGRADED (1 warning)
 | ID | 问题描述 | 位置 | 优先级 | 预计耗时 | 状态 |
 |----|---------|------|--------|---------|------|
 | ~~TD-1~~ | ~~`__pycache__` 未在 `.gitignore` 中~~ | ~~根目录~~ | ~~P3~~ | ~~5 分钟~~ | ✅ 已完成 (.gitignore:11) |
-| TD-2 | `# noqa: BLE001` 过度使用 | 多个文件 | P1 | 2 天 (阶段 1.2) | ⏳ 待处理 |
+| ~~TD-2~~ | ~~`# noqa: BLE001` 过度使用~~ | ~~多个文件~~ | ~~P1~~ | ~~2 天 (阶段 1.2)~~ | ✅ 已完成 (2026-02-19) |
 | TD-3 | 配置验证重复代码 | config.py | P1 | 1 天 (阶段 1.3) | ⏳ 待处理 |
 | ~~TD-4~~ | ~~缺少 `docs/release-and-rollback.md`~~ | ~~docs/~~ | ~~P2~~ | ~~1 小时~~ | ✅ 已完成 (docs/release-and-rollback.md:1) |
 | TD-5 | 硬编码测试配置 | test_cli.py | P2 | 1 天 (阶段 3.2) | ⏳ 待处理 |
 | TD-6 | LiteLLM 版本固定 | pyproject.toml | P2 | 0.5 天 (阶段 4.2) | ⏳ 待处理 |
 | TD-7 | 缺少性能指标 | 全局 | P3 | 1 天 (阶段 5.1) | ⏳ 待处理 |
-| TD-8 | 错误消息不一致 | 多个文件 | P2 | 0.5 天 (阶段 1.2) | ⏳ 待处理 |
+| ~~TD-8~~ | ~~错误消息不一致~~ | ~~多个文件~~ | ~~P2~~ | ~~0.5 天 (阶段 1.2)~~ | ✅ 已完成 (2026-02-19) |
 | TD-9 | 缺少架构图 | docs/ | P3 | 1 天 (阶段 4.3) | ⏳ 待处理 |
 | TD-10 | `_build_parser()` 函数过长 | cli.py | P1 | 0.5 天 (阶段 1.1) | ✅ 已完成 (已提取到 parser.py) |
 | ~~TD-11~~ | ~~项目配置使用旧字段~~ | ~~config/flowgate.yaml~~ | ~~P1~~ | ~~0.5 天 (阶段 0.2)~~ | ✅ 已完成 (2026-02-18) |
@@ -1062,6 +1075,7 @@ Overall Status: DEGRADED (1 warning)
 | 2026-02-18 | 1.1 | Claude + Codex | 修订版：新增 Phase 0，调整执行策略，基于 Codex 验证 |
 | 2026-02-18 | 1.2 | Claude | Phase 0 执行：补充回归测试、配置迁移、技术债更新 |
 | 2026-02-18 | 1.3 | Claude | Phase 1.1 执行完成：CLI 模块化重构（基础设施 + 命令迁移） |
+| 2026-02-19 | 1.4 | Claude | Phase 1.2 执行完成：统一异常处理和日志记录 |
 
 ---
 
@@ -1113,11 +1127,13 @@ Overall Status: DEGRADED (1 warning)
 2. ✅ Phase 0.1: 补充回归测试 **已完成 2026-02-18**
 3. ✅ Phase 0.2: 修复项目配置 **已完成 2026-02-18**
 4. ✅ Phase 1.1: 拆分 cli.py（渐进式）**已完成 2026-02-18**
-5. ⏳ Phase 1.2: 统一异常处理 **待开始**
+5. ✅ Phase 1.2: 统一异常处理 **已完成 2026-02-19**
+6. ⏳ Phase 1.3: 提取配置验证逻辑 **待开始**
 
 **详细执行计划**:
 - Phase 0: 见 `docs/plans/2026-02-18-phase-0-preparation.md` ✅ 已完成
 - Phase 0 完成报告: 见 `docs/plans/phase-0-completion-report.md`
 - Phase 1.1.1 完成报告: 见 `docs/plans/phase-1-1-1-completion-report.md`
 - Phase 1.1.2 完成报告: 见 `docs/plans/phase-1-1-2-completion-report.md`
+- Phase 1.2 完成报告: 见 `docs/plans/phase-1-2-completion-report.md` ✅ 已完成
 - Phase 1-5: 待创建详细执行计划
