@@ -84,6 +84,15 @@ uv run flowgate --config config/flowgate.yaml bootstrap download
 uv run flowgate --config config/flowgate.yaml bootstrap download --cliproxy-version v6.8.18-1
 ```
 
+### Configuration Management
+```bash
+# Migrate config from version 1 to version 2
+uv run flowgate --config config/flowgate.yaml config migrate
+
+# Preview migration changes without applying
+uv run flowgate --config config/flowgate.yaml config migrate --dry-run
+```
+
 ### Profile Management
 ```bash
 uv run flowgate --config config/flowgate.yaml profile list
@@ -96,6 +105,18 @@ uv run flowgate --config config/flowgate.yaml service start all
 uv run flowgate --config config/flowgate.yaml service stop all
 uv run flowgate --config config/flowgate.yaml status
 uv run flowgate --config config/flowgate.yaml health
+```
+
+### Config Migration
+```bash
+# Check if migration is needed (loads config and shows warnings)
+uv run flowgate --config config/flowgate.yaml status
+
+# Preview migration changes without applying
+uv run flowgate --config config/flowgate.yaml config migrate --dry-run
+
+# Perform migration (creates automatic backup)
+uv run flowgate --config config/flowgate.yaml config migrate
 ```
 
 ### OAuth and Authentication
@@ -151,9 +172,13 @@ PROFILE=reliability ./scripts/smoke_local.sh config/flowgate.yaml
 
 ## Configuration Schema
 
-Current version: `config_version: 2`
+Current version: `config_version: 2` (recommended)
+
+**IMPORTANT**: Config version 1 is deprecated as of v0.2.0 and will be removed in v0.3.0.
+Use `flowgate config migrate` to upgrade your configuration.
 
 Required top-level keys:
+- `config_version`: Should be set to `2` explicitly
 - `paths`: runtime_dir, active_config, state_file, log_file
 - `services`: litellm, cliproxyapi_plus (each with command.args, host, port)
 - `litellm_base`: model_list, router_settings, litellm_settings
@@ -164,10 +189,24 @@ Optional:
 - `auth.providers.<name>`: OAuth configuration (replaces legacy `oauth`)
 - `secret_files`: Additional sensitive file paths for permission checks
 
-Backward compatibility:
-- `oauth` → `auth.providers` (auto-normalized)
+### Config Version Migration
+
+Version 1 configs are deprecated and will stop working in v0.3.0. Migrate using:
+
+```bash
+# Preview migration changes
+flowgate --config config/flowgate.yaml config migrate --dry-run
+
+# Perform migration (creates backup automatically)
+flowgate --config config/flowgate.yaml config migrate
+```
+
+Legacy field mappings (v1 → v2):
+- `oauth` → `auth.providers` (auto-normalized in v0.2.x)
 - `services.cliproxyapi` → `services.cliproxyapi_plus`
 - `secrets` → `secret_files`
+
+See `docs/config-version-migration.md` for detailed migration guide.
 
 ## Code Style
 

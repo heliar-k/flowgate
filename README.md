@@ -314,6 +314,27 @@ Coverage/acceptance baseline:
 
 ## Config upgrade notes
 
+**IMPORTANT**: Config version 1 is deprecated as of v0.2.0 and will be removed in v0.3.0.
+
+If you see this warning when running FlowGate commands:
+```
+⚠️  WARNING: config_version 1 is deprecated and will be removed in v0.3.0
+```
+
+Migrate your configuration immediately:
+
+```bash
+# Preview changes
+uv run flowgate --config config/flowgate.yaml config migrate --dry-run
+
+# Apply migration (creates automatic backup)
+uv run flowgate --config config/flowgate.yaml config migrate
+```
+
+See `docs/config-version-migration.md` for detailed migration guide.
+
+### Current Schema (Version 2)
+
 - Current schema version is `config_version: 2` (recommended to set explicitly in local config).
 - If omitted, parser defaults to version `2`.
 - Compatibility migration is built in for common legacy keys:

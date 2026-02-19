@@ -150,6 +150,9 @@ class ConfigValidator:
         ConfigValidator._require_keys(services_config, required, "services")
 
         for name, svc in services_config.items():
+            # Skip comment fields
+            if name.startswith("_comment"):
+                continue
             ConfigValidator.validate_service(name, svc)
 
     @staticmethod

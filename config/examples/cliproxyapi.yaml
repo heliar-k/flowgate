@@ -1,3 +1,7 @@
+# CLIProxyAPIPlus Configuration
+# This config is for the CLIProxyAPIPlus service (OAuth-backed providers)
+# See: https://github.com/your-org/CLIProxyAPIPlus
+
 host: "127.0.0.1"
 port: 8317
 auth-dir: "./.router/auths"

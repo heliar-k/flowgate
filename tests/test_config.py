@@ -1,4 +1,6 @@
+import io
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -190,6 +192,95 @@ class ConfigTests(unittest.TestCase):
 
         with self.assertRaises(ConfigError):
             load_router_config(path)
+
+    def test_deprecation_warning_for_config_version_1(self):
+        """Test that config_version 1 triggers deprecation warning."""
+        data = self._base_config()
+        data["config_version"] = 1
+        path = self._write_config(data)
+
+        # Capture stderr
+        old_stderr = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            cfg = load_router_config(path)
+            warning_output = sys.stderr.getvalue()
+
+            # Verify config still loads correctly
+            self.assertEqual(cfg["config_version"], 1)
+
+            # Verify deprecation warning is present
+            self.assertIn("WARNING: config_version 1 is deprecated", warning_output)
+            self.assertIn("will be removed in v0.3.0", warning_output)
+            self.assertIn("flowgate config migrate --to-version 2", warning_output)
+        finally:
+            sys.stderr = old_stderr
+
+    def test_deprecation_warning_includes_legacy_fields(self):
+        """Test that deprecation warning lists detected legacy fields."""
+        data = self._base_config()
+        data["config_version"] = 1
+        # Use legacy field names
+        data["secrets"] = data.pop("secret_files")
+        data["services"]["cliproxyapi"] = data["services"].pop("cliproxyapi_plus")
+        path = self._write_config(data)
+
+        # Capture stderr
+        old_stderr = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            cfg = load_router_config(path)
+            warning_output = sys.stderr.getvalue()
+
+            # Verify legacy fields are mentioned
+            self.assertIn("Legacy field mappings detected:", warning_output)
+            self.assertIn("'secrets' → use 'secret_files' instead", warning_output)
+            self.assertIn("'cliproxyapi' → use 'cliproxyapi_plus' instead", warning_output)
+            self.assertIn("'oauth' → use 'auth.providers' instead", warning_output)
+
+            # Verify config still works
+            self.assertIn("cliproxyapi_plus", cfg["services"])
+            self.assertEqual(cfg["secret_files"], ["auth/codex.json", "auth/copilot.json"])
+        finally:
+            sys.stderr = old_stderr
+
+    def test_no_deprecation_warning_for_config_version_2(self):
+        """Test that config_version 2 does not trigger deprecation warning."""
+        data = self._base_config()
+        data["config_version"] = 2
+        path = self._write_config(data)
+
+        # Capture stderr
+        old_stderr = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            cfg = load_router_config(path)
+            warning_output = sys.stderr.getvalue()
+
+            # Verify no deprecation warning
+            self.assertEqual(warning_output, "")
+            self.assertEqual(cfg["config_version"], 2)
+        finally:
+            sys.stderr = old_stderr
+
+    def test_no_deprecation_warning_when_version_defaults_to_2(self):
+        """Test that defaulting to version 2 does not trigger warning."""
+        data = self._base_config()
+        # Don't specify config_version, should default to 2
+        path = self._write_config(data)
+
+        # Capture stderr
+        old_stderr = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            cfg = load_router_config(path)
+            warning_output = sys.stderr.getvalue()
+
+            # Verify no deprecation warning
+            self.assertEqual(warning_output, "")
+            self.assertEqual(cfg["config_version"], 2)
+        finally:
+            sys.stderr = old_stderr
 
 
 if __name__ == "__main__":

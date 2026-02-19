@@ -75,4 +75,10 @@ def build_parser() -> argparse.ArgumentParser:
     download.add_argument("--cliproxy-version", default=DEFAULT_CLIPROXY_VERSION)
     download.add_argument("--cliproxy-repo", default=DEFAULT_CLIPROXY_REPO)
 
+    config = sub.add_parser("config")
+    config_sub = config.add_subparsers(dest="config_cmd", required=True)
+    migrate = config_sub.add_parser("migrate")
+    migrate.add_argument("--to-version", type=int, default=2, dest="to_version")
+    migrate.add_argument("--dry-run", action="store_true", dest="dry_run")
+
     return parser

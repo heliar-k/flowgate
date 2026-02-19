@@ -1,4 +1,7 @@
 {
+  "_comment": "FlowGate Configuration - Version 2",
+  "_comment_version": "IMPORTANT: This config uses version 2 schema. Version 1 is deprecated and will be removed in v0.3.0",
+  "_comment_migration": "To migrate from version 1: flowgate --config <path> config migrate",
   "config_version": 2,
   "paths": {
     "runtime_dir": "../.router/runtime",
@@ -16,6 +19,7 @@
         "args": [".router/runtime/bin/litellm", "--config", ".router/runtime/litellm.active.yaml"]
       }
     },
+    "_comment_cliproxyapi_plus": "Note: Use 'cliproxyapi_plus' (not 'cliproxyapi') in version 2",
     "cliproxyapi_plus": {
       "host": "127.0.0.1",
       "port": 8317,
@@ -89,6 +93,7 @@
       }
     }
   },
+  "_comment_auth": "Note: Use 'auth.providers' (not 'oauth') in version 2",
   "auth": {
     "providers": {
       "codex": {
@@ -103,6 +108,7 @@
       }
     }
   },
+  "_comment_secret_files": "Note: Use 'secret_files' (not 'secrets') in version 2",
   "secret_files": [
     "../.router/auths/codex.json",
     "../.router/auths/copilot.json"

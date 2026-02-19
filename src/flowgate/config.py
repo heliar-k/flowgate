@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -86,8 +87,12 @@ def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
         )
     normalized["config_version"] = version_raw
 
+    # Track legacy fields for deprecation warning
+    legacy_fields_detected = []
+
     if "secret_files" not in normalized and "secrets" in normalized:
         normalized["secret_files"] = normalized["secrets"]
+        legacy_fields_detected.append("'secrets' → use 'secret_files' instead")
     normalized.pop("secrets", None)
 
     services_raw = normalized.get("services")
@@ -95,6 +100,7 @@ def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
         services = dict(services_raw)
         if "cliproxyapi_plus" not in services and "cliproxyapi" in services:
             services["cliproxyapi_plus"] = services.pop("cliproxyapi")
+            legacy_fields_detected.append("'cliproxyapi' → use 'cliproxyapi_plus' instead")
         normalized["services"] = services
 
     auth_raw = normalized.get("auth")
@@ -102,12 +108,30 @@ def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
 
     if "auth" not in normalized and isinstance(oauth_raw, dict):
         normalized["auth"] = {"providers": dict(oauth_raw)}
+        legacy_fields_detected.append("'oauth' → use 'auth.providers' instead")
     elif isinstance(auth_raw, dict):
         providers_raw = auth_raw.get("providers", {})
         providers = _ensure_mapping(providers_raw, "auth.providers")
         normalized["auth"] = {"providers": providers}
         if "oauth" not in normalized:
             normalized["oauth"] = dict(providers)
+
+    # Print deprecation warning for config_version 1
+    if version_raw == 1:
+        warning_lines = [
+            "⚠️  WARNING: config_version 1 is deprecated and will be removed in v0.3.0",
+            "Please migrate your configuration to version 2.",
+            "Run: flowgate config migrate --to-version 2",
+            "",
+        ]
+
+        if legacy_fields_detected:
+            warning_lines.append("Legacy field mappings detected:")
+            for field in legacy_fields_detected:
+                warning_lines.append(f"- {field}")
+
+        warning_message = "\n".join(warning_lines) + "\n"
+        sys.stderr.write(warning_message)
 
     return normalized
 
@@ -116,7 +140,11 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     path_obj = Path(path)
     data = _normalize_legacy_fields(_parse_yaml_like(path_obj))
 
-    unknown = sorted(set(data.keys()) - _ALLOWED_TOP_LEVEL_KEYS)
+    # Filter out comment fields (keys starting with _comment)
+    unknown = sorted(
+        k for k in set(data.keys()) - _ALLOWED_TOP_LEVEL_KEYS
+        if not k.startswith("_comment")
+    )
     if unknown:
         raise ConfigError(f"Unknown top-level keys: {', '.join(unknown)}")
 

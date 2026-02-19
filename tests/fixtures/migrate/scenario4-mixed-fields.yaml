@@ -1,0 +1,53 @@
+config_version: 2
+paths:
+  runtime_dir: ../.router/runtime
+  active_config: ../.router/runtime/litellm.active.yaml
+  state_file: ../.router/runtime/state.json
+  log_file: ../.router/logs/routerctl.log
+services:
+  litellm:
+    host: 127.0.0.1
+    port: 4000
+    readiness_path: /health
+    command:
+      cwd: ..
+      args:
+      - .router/runtime/bin/litellm
+      - --config
+      - .router/runtime/litellm.active.yaml
+  cliproxyapi_plus:
+    host: 127.0.0.1
+    port: 8317
+    readiness_path: /
+    command:
+      cwd: ..
+      args:
+      - .router/runtime/bin/CLIProxyAPIPlus
+      - -config
+      - config/cliproxyapi.yaml
+credentials:
+  upstream:
+    cliproxy_default:
+      file: ../.router/secrets/upstream_cliproxyapi_api_key
+litellm_base:
+  model_list:
+  - model_name: router-default
+    litellm_params:
+      model: openai/router-default
+      api_base: http://127.0.0.1:8317/v1
+      api_key_ref: cliproxy_default
+  router_settings:
+    routing_strategy: simple-shuffle
+  litellm_settings:
+    num_retries: 1
+profiles:
+  reliability:
+    litellm_settings:
+      num_retries: 3
+auth:
+  providers:
+    codex:
+      auth_url_endpoint: http://127.0.0.1:8317/v0/management/oauth/codex/auth-url
+      status_endpoint: http://127.0.0.1:8317/v0/management/oauth/codex/status
+secret_files:
+- ../.router/auths/codex.json

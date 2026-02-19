@@ -15,6 +15,7 @@ from .cli.commands.auth import (
     AuthStatusCommand,
 )
 from .cli.commands.bootstrap import BootstrapDownloadCommand
+from .cli.commands.config import ConfigMigrateCommand
 from .cli.commands.health import DoctorCommand, HealthCommand, StatusCommand
 from .cli.commands.integration import IntegrationApplyCommand, IntegrationPrintCommand
 from .cli.commands.profile import ProfileListCommand, ProfileSetCommand
@@ -285,6 +286,22 @@ def run_cli(
         integration_cmd = getattr(args, "integration_cmd", None)
         if integration_cmd in integration_command_map:
             command_class = integration_command_map[integration_cmd]
+            command = command_class(args, config)
+            return command.execute()
+
+    if args.command == "config":
+        # Inject stdout/stderr into args for command access
+        args.stdout = stdout
+        args.stderr = stderr
+
+        # Map config subcommand to command class
+        config_command_map = {
+            "migrate": ConfigMigrateCommand,
+        }
+
+        config_cmd = getattr(args, "config_cmd", None)
+        if config_cmd in config_command_map:
+            command_class = config_command_map[config_cmd]
             command = command_class(args, config)
             return command.execute()
 
