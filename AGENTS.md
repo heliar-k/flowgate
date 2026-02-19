@@ -8,6 +8,67 @@ FlowGate is a local control tool for managing `CLIProxyAPIPlus + LiteLLM` stacks
 
 ## Architecture
 
+FlowGate uses a modular architecture with clear separation of concerns. For detailed architecture documentation, see:
+
+- **[Architecture Overview](docs/architecture/README.md)** - System design and C4 model diagrams
+- **[Architecture Diagrams](docs/architecture/diagrams.md)** - Visual architecture representations (Mermaid)
+- **[Data Flows](docs/architecture/data-flows.md)** - Key data flow documentation
+- **[Python API Reference](docs/api/python-api.md)** - Auto-generated API documentation
+
+### Key Components
+
+**CLI Layer** (`src/flowgate/cli/`):
+- Command routing and argument parsing
+- Uses BaseCommand pattern for all commands
+- Unified error handling via @handle_command_errors decorator
+- Entry point for all user interactions
+
+**Configuration** (`src/flowgate/config.py`, `src/flowgate/config_utils/`):
+- Schema validation (version 2)
+- Path resolution (PathResolver class in `config_utils/path_resolver.py`)
+- Credential management and reference resolution
+- Backward compatibility for legacy configs
+
+**Process Management** (`src/flowgate/process.py`):
+- Service lifecycle (start/stop/restart)
+- PID-based process tracking under `.router/runtime/pids/`
+- Port conflict detection and validation
+- Event logging to `.router/runtime/events.log`
+- Health check support
+
+**Profile Management** (`src/flowgate/profile.py`):
+- Policy profile switching (reliability/balanced/cost)
+- Config overlay merging (deep merge of base + profile)
+- Credential reference resolution (`api_key_ref` → actual keys)
+- Automatic service restart on profile change
+- Atomic file writes for config and state
+
+**Authentication** (`src/flowgate/oauth.py`, `src/flowgate/auth_methods.py`):
+- OAuth polling flow for browser-based authentication
+- Headless import support for non-interactive environments
+- Multiple provider support (Codex, GitHub Copilot)
+- Secure credential storage in `.router/auth/`
+
+**Bootstrap** (`src/flowgate/bootstrap.py`):
+- Platform-specific binary downloads from GitHub releases
+- LiteLLM runner script generation (wraps `uv run litellm`)
+- Platform detection (darwin/linux, amd64/arm64)
+
+**Integration** (`src/flowgate/integration.py`, `src/flowgate/client_apply.py`):
+- Client config snippet generation (Codex, Claude Code)
+- Automated config file updates with backup
+- Multiple client integrations
+
+### Visual Architecture
+
+See [Architecture Diagrams](docs/architecture/diagrams.md) for visual representations including:
+- **Component Diagram**: Shows main components and their relationships
+- **Profile Switch Flow**: Sequence diagram for profile activation
+- **OAuth Login Flow**: Sequence diagram for authentication
+- **Service Lifecycle**: State diagram for service management
+
+## Architecture
+
 ### Core Components
 
 **CLI Layer** (`src/flowgate/cli.py`):
