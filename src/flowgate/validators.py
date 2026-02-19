@@ -6,9 +6,10 @@ extracting validation concerns from the main config module.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-from flowgate.config import ConfigError
+if TYPE_CHECKING:
+    from flowgate.config import ConfigError
 
 
 class ConfigValidator:
@@ -35,6 +36,8 @@ class ConfigValidator:
         Raises:
             ConfigError: If any required keys are missing
         """
+        from flowgate.config import ConfigError
+
         missing = sorted(required - set(config.keys()))
         if missing:
             raise ConfigError(
@@ -53,6 +56,8 @@ class ConfigValidator:
         Raises:
             ConfigError: If value type doesn't match expected type
         """
+        from flowgate.config import ConfigError
+
         if not isinstance(value, expected_type):
             type_name = expected_type.__name__
             raise ConfigError(f"{name} must be a {type_name}")
@@ -68,6 +73,8 @@ class ConfigValidator:
         Raises:
             ConfigError: If value is not a string or is empty
         """
+        from flowgate.config import ConfigError
+
         if not isinstance(value, str) or not value.strip():
             raise ConfigError(f"{name} must be a non-empty string")
 
@@ -105,6 +112,8 @@ class ConfigValidator:
         Raises:
             ConfigError: If validation fails
         """
+        from flowgate.config import ConfigError
+
         ConfigValidator._validate_type(
             service_config, dict, f"services.{service_name}"
         )
@@ -173,6 +182,8 @@ class ConfigValidator:
         Raises:
             ConfigError: If validation fails
         """
+        from flowgate.config import ConfigError
+
         if not profiles_config:
             raise ConfigError("profiles must not be empty")
 
@@ -196,6 +207,8 @@ class ConfigValidator:
         Raises:
             ConfigError: If validation fails
         """
+        from flowgate.config import ConfigError
+
         unknown = sorted(set(credentials_config.keys()) - {"upstream"})
         if unknown:
             raise ConfigError(f"credentials has unknown keys: {', '.join(unknown)}")
@@ -269,6 +282,8 @@ class ConfigValidator:
         Raises:
             ConfigError: If validation fails
         """
+        from flowgate.config import ConfigError
+
         if not isinstance(secret_files, list) or not all(
             isinstance(p, str) for p in secret_files
         ):

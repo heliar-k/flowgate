@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from flowgate.validators import ConfigValidator
+
 
 class ConfigError(ValueError):
     """Raised when router tool config is invalid."""
@@ -57,84 +59,15 @@ def _ensure_mapping(value: Any, name: str) -> dict[str, Any]:
     return value
 
 
-def _validate_paths(paths: dict[str, Any]) -> None:
-    required = {"runtime_dir", "active_config", "state_file", "log_file"}
-    missing = sorted(required - set(paths.keys()))
-    if missing:
-        raise ConfigError(f"paths is missing required keys: {', '.join(missing)}")
-
-
-def _validate_services(services: dict[str, Any]) -> None:
-    required = {"litellm", "cliproxyapi_plus"}
-    missing = sorted(required - set(services.keys()))
-    if missing:
-        raise ConfigError(f"services is missing required keys: {', '.join(missing)}")
-
-    for name, svc in services.items():
-        if not isinstance(svc, dict):
-            raise ConfigError(f"services.{name} must be a mapping/object")
-        if "command" not in svc or not isinstance(svc["command"], dict):
-            raise ConfigError(f"services.{name}.command must be provided")
-        args = svc["command"].get("args")
-        if (
-            not isinstance(args, list)
-            or not all(isinstance(i, str) for i in args)
-            or not args
-        ):
-            raise ConfigError(
-                f"services.{name}.command.args must be a non-empty string list"
-            )
-
-
-def _validate_profiles(profiles: dict[str, Any]) -> None:
-    if not profiles:
-        raise ConfigError("profiles must not be empty")
-    for key, value in profiles.items():
-        if not isinstance(key, str) or not key:
-            raise ConfigError("profile names must be non-empty strings")
-        if not isinstance(value, dict):
-            raise ConfigError(f"profiles.{key} must be a mapping/object")
-
-
-def _validate_oauth(oauth: dict[str, Any]) -> None:
-    for name, provider in oauth.items():
-        if not isinstance(provider, dict):
-            raise ConfigError(f"oauth.{name} must be a mapping/object")
-
-
-def _validate_auth_providers(providers: dict[str, Any]) -> None:
-    for name, provider in providers.items():
-        if not isinstance(provider, dict):
-            raise ConfigError(f"auth.providers.{name} must be a mapping/object")
 
 
 def _normalize_credentials(credentials: dict[str, Any]) -> dict[str, Any]:
-    unknown = sorted(set(credentials.keys()) - {"upstream"})
-    if unknown:
-        raise ConfigError(f"credentials has unknown keys: {', '.join(unknown)}")
+    ConfigValidator.validate_credentials(credentials)
 
-    upstream_raw = credentials.get("upstream", {})
-    upstream = _ensure_mapping(upstream_raw, "credentials.upstream")
-
+    upstream = credentials.get("upstream", {})
     normalized_upstream: dict[str, dict[str, str]] = {}
     for name, entry in upstream.items():
-        if not isinstance(name, str) or not name:
-            raise ConfigError("credentials.upstream keys must be non-empty strings")
-        if not isinstance(entry, dict):
-            raise ConfigError(f"credentials.upstream.{name} must be a mapping/object")
-
-        unknown_entry = sorted(set(entry.keys()) - {"file"})
-        if unknown_entry:
-            raise ConfigError(
-                f"credentials.upstream.{name} has unknown keys: {', '.join(unknown_entry)}"
-            )
-
         file_path = entry.get("file")
-        if not isinstance(file_path, str) or not file_path.strip():
-            raise ConfigError(
-                f"credentials.upstream.{name}.file must be a non-empty string"
-            )
-
         normalized_upstream[name] = {"file": file_path}
 
     return {"upstream": normalized_upstream}
@@ -196,9 +129,10 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     litellm_base = _ensure_mapping(data["litellm_base"], "litellm_base")
     profiles = _ensure_mapping(data["profiles"], "profiles")
 
-    _validate_paths(paths)
-    _validate_services(services)
-    _validate_profiles(profiles)
+    ConfigValidator.validate_paths(paths)
+    ConfigValidator.validate_services(services)
+    ConfigValidator.validate_litellm_base(litellm_base)
+    ConfigValidator.validate_profiles(profiles)
 
     credentials_raw = data.get("credentials", {})
     credentials_map = _ensure_mapping(credentials_raw, "credentials")
@@ -206,19 +140,16 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
 
     oauth = data.get("oauth", {})
     oauth_map = _ensure_mapping(oauth, "oauth")
-    _validate_oauth(oauth_map)
+    ConfigValidator.validate_oauth(oauth_map)
 
     auth_raw = data.get("auth", {})
     auth_map = _ensure_mapping(auth_raw, "auth")
     providers_raw = auth_map.get("providers", {})
     providers = _ensure_mapping(providers_raw, "auth.providers")
-    _validate_auth_providers(providers)
+    ConfigValidator.validate_auth_providers(providers)
 
     secret_files = data.get("secret_files", [])
-    if not isinstance(secret_files, list) or not all(
-        isinstance(p, str) for p in secret_files
-    ):
-        raise ConfigError("secret_files must be a list of string paths")
+    ConfigValidator.validate_secret_files(secret_files)
 
     return {
         "config_version": data["config_version"],
