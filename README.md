@@ -1,7 +1,7 @@
 # FlowGate
 
 [![CI Status](https://github.com/heliar-k/flowgate/actions/workflows/ci.yml/badge.svg)](https://github.com/heliar-k/flowgate/actions)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A local control tool for managing **CLIProxyAPIPlus + LiteLLM** stacks with policy profile switching and unified CLI.
@@ -22,7 +22,7 @@ export UV_CACHE_DIR=.uv-cache
 uv sync --group runtime --group test
 ```
 
-**Requirements**: Python 3.12+, `uv` package manager
+**Requirements**: Python 3.11+, `uv` package manager
 
 ### 2. Configure
 

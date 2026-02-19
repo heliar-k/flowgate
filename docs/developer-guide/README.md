@@ -27,6 +27,14 @@ Welcome to the FlowGate Developer Guide! This section contains documentation for
 4. Submit pull request ([Contributing](contributing.md))
 5. Code review and merge
 
+## Useful Scripts
+
+- **`scripts/check_dependencies.sh`**: Audit dependencies for outdated packages and security issues
+- **`scripts/xgate`**: Wrapper script for running FlowGate CLI without activating venv
+- **`scripts/xtest`**: Quick test runner for development
+- **`scripts/doctor.sh`**: Preflight checks for configuration and runtime
+- **`scripts/smoke_local.sh`**: End-to-end smoke tests for all features
+
 ## Key Resources
 
 - **CLAUDE.md / AGENTS.md**: AI assistant instructions (symlinked in root)

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Relaxed LiteLLM version constraint to `>=1.75.8,<2.0.0` (allows minor updates while preventing breaking changes)
+- Extended Python version support to `>=3.11` (was `>=3.12,<3.14`)
+
+### Added
+- Dependency audit script: `scripts/check_dependencies.sh` for checking outdated packages and versions
+
 ## [0.2.0] - 2026-02-19
 
 **Major Release**: Code structure refactoring and configuration system simplification
