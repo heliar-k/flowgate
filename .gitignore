@@ -50,3 +50,6 @@ config/cliproxyapi.yaml
 config/auths/
 config/static/
 .env
+
+# Generated documentation
+docs/api/_generated/
