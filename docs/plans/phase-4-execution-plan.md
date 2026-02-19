@@ -198,8 +198,11 @@ docs/
 **Priority**: P3
 **Duration**: 0.5 days
 **Owner**: TBD
+**Status**: ✅ COMPLETED (2026-02-19)
 
 #### Subtask 4.2.1: Relax LiteLLM Version Constraint
+
+**Status**: ✅ COMPLETED (2026-02-19)
 
 **Current**:
 ```toml
@@ -227,6 +230,8 @@ dependencies = [
 
 #### Subtask 4.2.2: Extend Python Version Support
 
+**Status**: ✅ COMPLETED (2026-02-19)
+
 **Current**:
 ```toml
 requires-python = ">=3.12,<=3.13.14"
@@ -252,6 +257,8 @@ requires-python = ">=3.11"
 - Need thorough testing before release
 
 #### Subtask 4.2.3: Add Dependency Audit Scripts
+
+**Status**: ✅ COMPLETED (2026-02-19)
 
 **Create** `scripts/check_dependencies.sh`:
 ```bash
@@ -282,6 +289,8 @@ echo "Audit complete."
 - Schedule weekly manual runs
 
 #### Subtask 4.2.4: Update Documentation
+
+**Status**: ✅ COMPLETED (2026-02-19)
 
 **Files to Update**:
 - `docs/developer-guide/getting-started.md` - Update setup instructions
@@ -456,11 +465,11 @@ jobs:
 
 ### Task 4.2: Dependencies
 
-- [ ] LiteLLM constraint relaxed to `>=1.75.8,<2.0.0`
-- [ ] Python support extended to `>=3.11`
-- [ ] Tests pass on Python 3.11, 3.12, 3.13
-- [ ] Dependency audit script created
-- [ ] Documentation updated
+- [x] LiteLLM constraint relaxed to `>=1.75.8,<2.0.0`
+- [x] Python support extended to `>=3.11`
+- [x] Tests pass on Python 3.11, 3.12, 3.13
+- [x] Dependency audit script created
+- [x] Documentation updated
 
 ### Task 4.3: Architecture
 
@@ -506,18 +515,18 @@ jobs:
 | 4.1.4 | Create missing docs | 8h | 4.1.3 | 📋 TODO |
 | 4.1.5 | Update root README | 1h | 4.1.4 | ✅ COMPLETED (out of order) |
 | 4.1.6 | Validation | 2h | 4.1.5 | 📋 TODO |
-| 4.2.1 | Relax LiteLLM version | 1h | None | 📋 TODO |
-| 4.2.2 | Extend Python support | 2h | 4.2.1 | 📋 TODO |
-| 4.2.3 | Add audit scripts | 1h | None | 📋 TODO |
-| 4.2.4 | Update docs | 0.5h | 4.2.1-3 | 📋 TODO |
+| 4.2.1 | Relax LiteLLM version | 1h | None | ✅ COMPLETED |
+| 4.2.2 | Extend Python support | 2h | 4.2.1 | ✅ COMPLETED |
+| 4.2.3 | Add audit scripts | 1h | None | ✅ COMPLETED |
+| 4.2.4 | Update docs | 0.5h | 4.2.1-3 | ✅ COMPLETED |
 | 4.3.1 | System diagrams | 2h | None | 📋 TODO |
 | 4.3.2 | Data flow diagrams | 2h | 4.3.1 | 📋 TODO |
 | 4.3.3 | API documentation | 3h | None | 📋 TODO |
 | 4.3.4 | Update CLAUDE.md | 1h | 4.3.1-3 | 📋 TODO |
 
 **Total Estimated Duration**: 19-23 hours (2.5-3 days)
-**Completed**: 9 hours (actual: 5.5 hours, 39% faster)
-**Remaining**: 10-14 hours
+**Completed**: 13.5 hours (actual: 5.85 hours, 57% faster)
+**Remaining**: 5.5-9.5 hours
 
 ---
 
