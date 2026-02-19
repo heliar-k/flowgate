@@ -4,8 +4,10 @@ version = "0.2.0"
 description = "Add your description here"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.12,<3.14"
-dependencies = ["litellm[proxy]==1.75.8"]
+# Support Python 3.11+ for broader compatibility (no 3.12-specific features used)
+requires-python = ">=3.11"
+# Allow minor updates for LiteLLM while preventing breaking changes (semver)
+dependencies = ["litellm[proxy]>=1.75.8,<2.0.0"]
 
 [project.scripts]
 flowgate = "flowgate:main"
