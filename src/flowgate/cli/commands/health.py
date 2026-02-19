@@ -12,6 +12,7 @@ from typing import Any, TextIO
 
 from ...constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from ...security import check_secret_file_permissions
+from ..error_handler import handle_command_errors
 from ..utils import _read_state_file
 from .base import BaseCommand
 
@@ -118,6 +119,7 @@ def _upstream_credential_issues(config: dict[str, Any]) -> list[str]:
 class StatusCommand(BaseCommand):
     """Display current profile and service status."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute status command."""
         # Import from cli module for test mocking compatibility
@@ -149,6 +151,7 @@ class StatusCommand(BaseCommand):
 class HealthCommand(BaseCommand):
     """Check liveness and readiness of all services."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute health command."""
         # Import from cli module for test mocking compatibility
@@ -199,6 +202,7 @@ class HealthCommand(BaseCommand):
 class DoctorCommand(BaseCommand):
     """Run comprehensive diagnostic checks."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute doctor command."""
         # Import helper functions from cli module for test mocking compatibility
