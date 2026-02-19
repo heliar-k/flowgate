@@ -22,7 +22,10 @@ from flowgate.cli.error_handler import (
 )
 from flowgate.config import ConfigError
 
+import pytest
 
+
+@pytest.mark.unit
 class TestErrorHandler(unittest.TestCase):
     """Test cases for error handler decorator."""
 

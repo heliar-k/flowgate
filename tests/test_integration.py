@@ -4,7 +4,10 @@ import unittest
 
 from flowgate.integration import build_integration_specs
 
+import pytest
 
+
+@pytest.mark.unit
 class IntegrationSpecTests(unittest.TestCase):
     def test_build_integration_specs_from_litellm_service(self):
         cfg = {

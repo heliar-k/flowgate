@@ -15,8 +15,13 @@ test = ["pytest>=8.3.0,<9", "pytest-cov>=5.0.0,<6"]
 
 [tool.pytest.ini_options]
 markers = [
+    "unit: marks tests as unit tests (fast, no external dependencies)",
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
 ]
+# Default: skip integration tests unless explicitly requested
+addopts = "-m 'not integration'"
+# Add project root to Python path for imports
+pythonpath = ["."]
 
 [build-system]
 requires = ["uv_build>=0.10.2,<0.11.0"]

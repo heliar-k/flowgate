@@ -15,7 +15,9 @@ from urllib.error import URLError
 from flowgate.oauth import fetch_auth_url, poll_auth_status
 from flowgate.headless_import import import_codex_headless_auth
 
+import pytest
 
+@pytest.mark.unit
 class TestOAuthErrorHandling(unittest.TestCase):
     """Test OAuth error handling."""
 
@@ -244,9 +246,9 @@ class TestOAuthErrorHandling(unittest.TestCase):
                 timeout_seconds=5,
                 poll_interval_seconds=0.1,
             )
+
             self.assertEqual(status, "success")
-
-
+@pytest.mark.unit
 class TestHeadlessImportErrorHandling(unittest.TestCase):
     """Test headless import error handling."""
 

@@ -13,6 +13,8 @@ from unittest import mock
 
 from flowgate.cli import run_cli
 
+import pytest
+
 
 def write_minimal_config(path: Path) -> None:
     """Create a minimal test configuration file"""
@@ -54,9 +56,9 @@ def write_minimal_config(path: Path) -> None:
         "secret_files": [],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
+
     path.write_text(json.dumps(data), encoding="utf-8")
-
-
+@pytest.mark.unit
 class TestAuthCommandExitCodes(unittest.TestCase):
     """Regression tests for auth command exit codes"""
 
@@ -205,9 +207,9 @@ class TestAuthCommandExitCodes(unittest.TestCase):
             stderr=err,
         )
         self.assertEqual(result, 2, "Expected exit code 2 (unsupported feature)")
+
         self.assertIn("not supported", err.getvalue())
-
-
+@pytest.mark.unit
 class TestAuthCommandOutput(unittest.TestCase):
     """Regression tests for auth command output formats"""
 

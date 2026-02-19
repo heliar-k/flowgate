@@ -9,7 +9,10 @@ from flowgate.config import ConfigError, load_router_config, merge_dicts
 from flowgate.constants import DEFAULT_SERVICE_PORTS
 from tests.fixtures import ConfigFactory
 
+import pytest
 
+
+@pytest.mark.unit
 class ConfigTests(unittest.TestCase):
     def _write_config(self, data: dict) -> Path:
         tmp = tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False)

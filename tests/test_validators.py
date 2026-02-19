@@ -6,7 +6,9 @@ from flowgate.config import ConfigError
 from flowgate.validators import ConfigValidator
 from tests.fixtures import ConfigFactory
 
+import pytest
 
+@pytest.mark.unit
 class TestConfigValidatorHelpers(unittest.TestCase):
     """Test ConfigValidator helper methods."""
 
@@ -78,9 +80,9 @@ class TestConfigValidatorHelpers(unittest.TestCase):
         """Test _validate_non_empty_string with non-string value."""
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator._validate_non_empty_string(123, "test_field")
+
         self.assertIn("test_field must be a non-empty string", str(ctx.exception))
-
-
+@pytest.mark.unit
 class TestValidatePaths(unittest.TestCase):
     """Test validate_paths method."""
 
@@ -122,9 +124,9 @@ class TestValidatePaths(unittest.TestCase):
         try:
             ConfigValidator.validate_paths(config)
         except ConfigError:
+
             self.fail("Extra keys should be allowed in paths config")
-
-
+@pytest.mark.unit
 class TestValidateService(unittest.TestCase):
     """Test validate_service method."""
 
@@ -186,9 +188,9 @@ class TestValidateService(unittest.TestCase):
         config = {"command": {"args": ["/path/to/service", 123, "--flag"]}}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
+
         self.assertIn("services.test_service.command.args must be a non-empty string list", str(ctx.exception))
-
-
+@pytest.mark.unit
 class TestValidateServices(unittest.TestCase):
     """Test validate_services method."""
 
@@ -235,9 +237,9 @@ class TestValidateServices(unittest.TestCase):
         config["litellm"]["command"]["args"] = []  # Invalid: empty args
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_services(config)
+
         self.assertIn("services.litellm.command.args must be a non-empty string list", str(ctx.exception))
-
-
+@pytest.mark.unit
 class TestValidateLitellmBase(unittest.TestCase):
     """Test validate_litellm_base method."""
 
@@ -271,9 +273,9 @@ class TestValidateLitellmBase(unittest.TestCase):
         """Test validate_litellm_base with list instead of dict."""
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_litellm_base([])
+
         self.assertIn("litellm_base must be a dict", str(ctx.exception))
-
-
+@pytest.mark.unit
 class TestValidateProfiles(unittest.TestCase):
     """Test validate_profiles method."""
 
@@ -318,9 +320,9 @@ class TestValidateProfiles(unittest.TestCase):
         config = {"reliability": "not_a_dict"}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_profiles(config)
+
         self.assertIn("profiles.reliability must be a dict", str(ctx.exception))
-
-
+@pytest.mark.unit
 class TestValidateCredentials(unittest.TestCase):
     """Test validate_credentials method."""
 
@@ -402,9 +404,9 @@ class TestValidateCredentials(unittest.TestCase):
         config = {"upstream": {"openai": {"file": 123}}}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_credentials(config)
+
         self.assertIn("credentials.upstream.openai.file must be a non-empty string", str(ctx.exception))
-
-
+@pytest.mark.unit
 class TestValidateOAuth(unittest.TestCase):
     """Test validate_oauth method (legacy)."""
 
@@ -437,9 +439,9 @@ class TestValidateOAuth(unittest.TestCase):
         config = {"codex": "not_a_dict"}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_oauth(config)
+
         self.assertIn("oauth.codex must be a dict", str(ctx.exception))
-
-
+@pytest.mark.unit
 class TestValidateAuthProviders(unittest.TestCase):
     """Test validate_auth_providers method."""
 
@@ -472,9 +474,9 @@ class TestValidateAuthProviders(unittest.TestCase):
         config = {"codex": "not_a_dict"}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_auth_providers(config)
+
         self.assertIn("auth.providers.codex must be a dict", str(ctx.exception))
-
-
+@pytest.mark.unit
 class TestValidateSecretFiles(unittest.TestCase):
     """Test validate_secret_files method."""
 

@@ -140,20 +140,32 @@ uv run flowgate --config config/flowgate.yaml auth import-headless codex --sourc
 
 ### Testing
 ```bash
-# Run all tests
-uv run python -m unittest discover -s tests -v
+# Run all unit tests (default, skips integration tests)
+uv run pytest tests/ -v
+
+# Run only unit tests explicitly
+uv run pytest tests/ -v -m unit
+
+# Run only integration tests
+uv run pytest tests/ -v -m integration
+
+# Run all tests (unit + integration)
+uv run pytest tests/ -v -m ""
 
 # Without venv activation
 ./scripts/xtest
 
-# Run single test file
-uv run python -m unittest tests.test_config
+# Run specific test file
+uv run pytest tests/test_config.py -v
 
 # Run single test case
-uv run python -m unittest tests.test_config.TestConfigValidation.test_missing_required_keys
+uv run pytest tests/test_config.py::ConfigTests::test_load_valid_config -v
 
 # With coverage
 uv run pytest --cov=src/flowgate --cov-report=term-missing
+
+# Legacy unittest runner (still works)
+uv run python -m unittest discover -s tests -v
 ```
 
 ### Health Checks and Diagnostics
@@ -173,13 +185,39 @@ PROFILE=reliability ./scripts/smoke_local.sh config/flowgate.yaml
 
 ## Testing Strategy
 
-- **Unit tests**: Core modules (`test_config.py`, `test_process.py`, `test_security.py`)
-- **Integration tests**: Cross-module workflows (`test_cli.py`, `test_integration_profile_switch.py`)
+- **Unit tests**: Core modules marked with `@pytest.mark.unit` (351 tests)
+  - Fast, no external dependencies
+  - Tests: `test_config.py`, `test_process.py`, `test_validators.py`, `test_security.py`, etc.
+- **Integration tests**: Cross-module workflows marked with `@pytest.mark.integration` (43 tests)
+  - Real subprocess management, file I/O
+  - Located in `tests/integration/`
+  - Tests: `test_service_lifecycle.py`, `test_oauth_flow.py`, `test_concurrent_operations.py`
 - **Smoke tests**: Real runtime validation (`scripts/smoke_local.sh`)
 - Test naming convention: `test_<behavior_description>`
-- Tests use `unittest` framework exclusively
+- Framework: pytest with unittest.TestCase (compatible with both runners)
 - Add/update tests before changing behavior
 - PRs must include tests for affected functionality
+
+### Test Markers
+
+- `@pytest.mark.unit`: Fast unit tests (default, run by CI)
+- `@pytest.mark.integration`: Slower integration tests (skipped by default)
+
+### Running Tests
+
+```bash
+# Default: unit tests only
+pytest tests/
+
+# All tests
+pytest tests/ -m ""
+
+# Only integration tests
+pytest tests/ -m integration
+
+# Specific marker
+pytest tests/ -m unit
+```
 
 ## Configuration Schema
 
@@ -270,8 +308,9 @@ Example scopes: `bootstrap`, `cli`, `config`, `profile`, `auth`, `service`
 
 Workflow: `.github/workflows/ci.yml`
 - Runs on: push to main, all PRs
-- Steps: `uv sync`, `unittest discover`, CLI help checks
-- Intentionally excludes: OAuth network flows, service startup
+- Steps: `uv sync`, `pytest` (all tests including integration), CLI help checks
+- Test command: `uv run pytest tests/ -v -m ""`
+- Intentionally excludes: OAuth network flows requiring real endpoints
 
 ## Security
 

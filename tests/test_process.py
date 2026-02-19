@@ -8,7 +8,10 @@ from unittest import mock
 from flowgate.process import ProcessSupervisor
 from flowgate.health import check_health_url
 
+import pytest
 
+
+@pytest.mark.unit
 class ProcessSupervisorTests(unittest.TestCase):
     def test_start_and_stop_long_running_process(self):
         runtime_dir = Path(tempfile.mkdtemp())

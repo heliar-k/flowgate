@@ -6,6 +6,8 @@ import tarfile
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 from flowgate.bootstrap import (
     _extract_binary_from_bytes,
     detect_platform,
@@ -15,7 +17,7 @@ from flowgate.bootstrap import (
     validate_litellm_runner,
 )
 
-
+@pytest.mark.unit
 class BootstrapTests(unittest.TestCase):
     def test_detect_platform_darwin_arm64(self):
         with (

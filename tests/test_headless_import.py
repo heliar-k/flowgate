@@ -6,7 +6,10 @@ from pathlib import Path
 
 from flowgate.headless_import import import_codex_headless_auth
 
+import pytest
 
+
+@pytest.mark.unit
 class HeadlessImportTests(unittest.TestCase):
     def test_import_codex_headless_auth(self):
         root = Path(tempfile.mkdtemp())

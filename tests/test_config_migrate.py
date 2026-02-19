@@ -13,7 +13,8 @@ from pathlib import Path
 
 from flowgate.cli import run_cli
 
-
+import pytest
+@pytest.mark.unit
 class TestConfigMigrate(unittest.TestCase):
     """Test config migrate command."""
 
@@ -156,6 +157,7 @@ class TestConfigMigrate(unittest.TestCase):
         """Test migrating version 1 to version 2 (YAML format)."""
         try:
             import yaml  # type: ignore
+
         except ModuleNotFoundError:
             self.skipTest("PyYAML not installed")
 

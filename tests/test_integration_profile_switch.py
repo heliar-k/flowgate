@@ -7,7 +7,10 @@ from pathlib import Path
 from flowgate.cli import run_cli
 from tests.fixtures import ConfigFactory
 
+import pytest
 
+
+@pytest.mark.unit
 class ProfileSwitchIntegrationTests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())

@@ -13,7 +13,10 @@ from unittest import mock
 
 from flowgate.profile import activate_profile
 
+import pytest
 
+
+@pytest.mark.unit
 class TestProfileErrorHandling(unittest.TestCase):
     """Test profile management error handling."""
 

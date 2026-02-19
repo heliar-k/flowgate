@@ -3,7 +3,10 @@ from unittest import mock
 
 from flowgate.oauth import fetch_auth_url, poll_auth_status
 
+import pytest
 
+
+@pytest.mark.unit
 class OAuthTests(unittest.TestCase):
     def test_fetch_auth_url(self):
         with mock.patch(

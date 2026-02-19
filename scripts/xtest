@@ -4,4 +4,7 @@ set -eu
 export UV_CACHE_DIR="${UV_CACHE_DIR:-.uv-cache}"
 export UV_TOOL_DIR="${UV_TOOL_DIR:-.uv-tools}"
 
-uvx --from . python -m unittest discover -s tests -v "$@"
+# Run pytest instead of unittest
+# By default, runs unit tests only (integration tests are skipped)
+# Use -m "" to run all tests, or -m integration to run only integration tests
+uvx --from . pytest tests/ -v "$@"

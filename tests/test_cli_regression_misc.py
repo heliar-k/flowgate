@@ -14,6 +14,8 @@ from unittest import mock
 
 from flowgate.cli import run_cli
 
+import pytest
+
 
 def write_minimal_config(path: Path) -> None:
     """Create a minimal test configuration file"""
@@ -63,9 +65,9 @@ def write_state_file(path: Path, profile: str = "reliability") -> None:
         "updated_at": "2026-02-18T10:00:00Z",
     }
     path.parent.mkdir(parents=True, exist_ok=True)
+
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-
-
+@pytest.mark.unit
 class TestProfileCommandRegression(unittest.TestCase):
     """Profile command regression tests"""
 
@@ -169,9 +171,9 @@ class TestProfileCommandRegression(unittest.TestCase):
         self.assertIn("profile=cost", output)
         self.assertIn("litellm:restarted", output)
         self.assertIn("pid=12345", output)
+
         mock_supervisor.restart.assert_called_once()
-
-
+@pytest.mark.unit
 class TestDiagnosticCommandRegression(unittest.TestCase):
     """Diagnostic command regression tests"""
 

@@ -2,6 +2,8 @@ import re
 import unittest
 from pathlib import Path
 
+import pytest
+
 from flowgate.config import load_router_config
 from flowgate.constants import (
     DEFAULT_SERVICE_HOST,
@@ -10,6 +12,7 @@ from flowgate.constants import (
 )
 
 
+@pytest.mark.unit
 class DefaultsSyncTests(unittest.TestCase):
     def test_example_flowgate_services_match_constants(self):
         cfg = load_router_config(Path("config/examples/flowgate.yaml"))

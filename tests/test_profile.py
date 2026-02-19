@@ -6,7 +6,10 @@ from pathlib import Path
 from flowgate.profile import activate_profile
 from tests.fixtures import ConfigFactory
 
+import pytest
 
+
+@pytest.mark.unit
 class ProfileActivationTests(unittest.TestCase):
     def _config(self, root: Path) -> dict:
         """Create test config using ConfigFactory."""

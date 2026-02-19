@@ -3,7 +3,10 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
+import pytest
 
+
+@pytest.mark.unit
 class PreCommitConfigTests(unittest.TestCase):
     def test_pre_commit_config_includes_standard_and_ruff_hooks(self):
         path = Path(".pre-commit-config.yaml")

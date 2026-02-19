@@ -12,7 +12,10 @@ from pathlib import Path
 from flowgate.config import ConfigError, load_router_config, merge_dicts
 from tests.fixtures import ConfigFactory
 
+import pytest
 
+
+@pytest.mark.unit
 class TestConfigErrorHandling(unittest.TestCase):
     """Test configuration error handling."""
 

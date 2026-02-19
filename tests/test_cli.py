@@ -16,6 +16,7 @@ from flowgate.constants import (
 )
 from tests.fixtures import ConfigFactory
 
+import pytest
 
 class TTYStringIO(io.StringIO):
     def isatty(self) -> bool:
@@ -42,9 +43,9 @@ def write_config(path: Path) -> None:
         },
     }
     data["secret_files"] = []
+
     path.write_text(json.dumps(data), encoding="utf-8")
-
-
+@pytest.mark.unit
 class CLITests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())

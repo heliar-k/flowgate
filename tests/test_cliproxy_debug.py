@@ -4,7 +4,10 @@ import unittest
 
 from flowgate.cliproxy_debug import management_api_url_from_auth, management_page_url
 
+import pytest
 
+
+@pytest.mark.unit
 class CliproxyDebugTests(unittest.TestCase):
     def test_management_page_url_uses_root_path(self) -> None:
         self.assertEqual(

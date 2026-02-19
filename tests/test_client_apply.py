@@ -7,7 +7,10 @@ from pathlib import Path
 
 from flowgate.client_apply import apply_claude_code_settings, apply_codex_config
 
+import pytest
 
+
+@pytest.mark.unit
 class ClientApplyTests(unittest.TestCase):
     def test_apply_claude_creates_backup_and_merges_managed_env_keys(self):
         root = Path(tempfile.mkdtemp())

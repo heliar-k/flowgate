@@ -13,6 +13,8 @@ from unittest import mock
 
 from flowgate.cli import run_cli
 
+import pytest
+
 
 def write_minimal_config(path: Path) -> None:
     """Create a minimal test configuration file"""
@@ -50,9 +52,9 @@ def write_minimal_config(path: Path) -> None:
         "secret_files": [],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
+
     path.write_text(json.dumps(data), encoding="utf-8")
-
-
+@pytest.mark.unit
 class TestServiceCommandExitCodes(unittest.TestCase):
     """Regression tests for service command exit codes"""
 
@@ -151,9 +153,9 @@ class TestServiceCommandExitCodes(unittest.TestCase):
                 stderr=err,
             )
         # Should exit with code 2 (argparse error)
+
         self.assertEqual(cm.exception.code, 2, "Expected exit code 2 for missing subcommand")
-
-
+@pytest.mark.unit
 class TestServiceCommandOutput(unittest.TestCase):
     """Regression tests for service command output formats"""
 

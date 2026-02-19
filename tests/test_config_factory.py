@@ -5,7 +5,10 @@ import unittest
 from flowgate.config import load_router_config
 from tests.fixtures import ConfigFactory
 
+import pytest
 
+
+@pytest.mark.unit
 class TestConfigFactory(unittest.TestCase):
     """Test ConfigFactory methods produce valid configurations."""
 

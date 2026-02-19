@@ -15,7 +15,8 @@ from unittest import mock
 
 from flowgate.process import ProcessError, ProcessSupervisor
 
-
+import pytest
+@pytest.mark.unit
 class TestProcessErrorHandling(unittest.TestCase):
     """Test process management error handling."""
 
@@ -81,6 +82,7 @@ class TestProcessErrorHandling(unittest.TestCase):
         events_log = self.runtime_dir / "events.log"
         if events_log.exists():
             import json
+
 
             events = [
                 json.loads(line)

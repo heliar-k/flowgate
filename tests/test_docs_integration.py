@@ -3,7 +3,10 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
+import pytest
 
+
+@pytest.mark.unit
 class IntegrationDocsTests(unittest.TestCase):
     def test_integration_doc_mentions_claude_gateway_support(self):
         text = Path("docs/integration-claude-code-codex.md").read_text(encoding="utf-8")

@@ -7,7 +7,8 @@ from pathlib import Path
 
 from flowgate.config_utils.path_resolver import PathResolver
 
-
+import pytest
+@pytest.mark.unit
 class TestPathResolverInit(unittest.TestCase):
     """Test PathResolver initialization."""
 
@@ -33,6 +34,7 @@ class TestPathResolverInit(unittest.TestCase):
 
             # Use relative path from temp dir
             import os
+
             original_cwd = os.getcwd()
             try:
                 os.chdir(temp_dir)
@@ -46,9 +48,9 @@ class TestPathResolverInit(unittest.TestCase):
                     resolver.config_dir, (Path(temp_dir) / "config").resolve()
                 )
             finally:
+
                 os.chdir(original_cwd)
-
-
+@pytest.mark.unit
 class TestPathResolverResolve(unittest.TestCase):
     """Test resolve() method."""
 
@@ -96,9 +98,9 @@ class TestPathResolverResolve(unittest.TestCase):
         rel_path = "a/b/c/d/file.txt"
         result = self.resolver.resolve(rel_path)
         expected = str((self.config_path.parent / rel_path).resolve())
+
         self.assertEqual(result, expected)
-
-
+@pytest.mark.unit
 class TestPathResolverResolveConfigPaths(unittest.TestCase):
     """Test resolve_config_paths() method."""
 
