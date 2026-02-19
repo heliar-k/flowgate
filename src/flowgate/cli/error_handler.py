@@ -42,26 +42,31 @@ def handle_command_errors(func: Callable) -> Callable:
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> int:
+        # Extract stderr from command instance if available (for testing)
+        stderr = sys.stderr
+        if args and hasattr(args[0], "args"):
+            stderr = getattr(args[0].args, "stderr", None) or sys.stderr
+
         try:
             return func(*args, **kwargs)
         except ConfigError as exc:
             logger.error("Configuration error: %s", exc)
-            print(f"❌ Configuration error: {exc}", file=sys.stderr)
+            print(f"❌ Configuration error: {exc}", file=stderr)
             return EXIT_CONFIG_ERROR
         except ProcessError as exc:
             logger.error("Process operation failed: %s", exc, exc_info=True)
-            print(f"❌ Process operation failed: {exc}", file=sys.stderr)
+            print(f"❌ Process operation failed: {exc}", file=stderr)
             return EXIT_RUNTIME_ERROR
         except PermissionError as exc:
             logger.error("Permission denied: %s", exc)
-            print(f"❌ Permission denied: {exc}", file=sys.stderr)
+            print(f"❌ Permission denied: {exc}", file=stderr)
             return EXIT_PERMISSION_ERROR
         except Exception as exc:
             logger.exception("Internal error: %s", exc)
             print(
                 f"❌ Internal error: {exc}\n"
                 "Please use --debug for more details",
-                file=sys.stderr,
+                file=stderr,
             )
             return EXIT_INTERNAL_ERROR
 

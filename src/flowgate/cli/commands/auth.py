@@ -9,8 +9,10 @@ from __future__ import annotations
 import sys
 from typing import Any, TextIO
 
+from ...config import ConfigError
 from ...process import ProcessSupervisor
 from ...security import check_secret_file_permissions
+from ..error_handler import handle_command_errors
 from ..utils import _default_auth_dir
 from .base import BaseCommand
 
@@ -50,6 +52,7 @@ def _effective_secret_files(config: dict[str, Any]) -> list[str]:
 class AuthListCommand(BaseCommand):
     """List available authentication providers and their capabilities."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute auth list command."""
         # Import here to avoid circular dependency
@@ -91,6 +94,7 @@ class AuthListCommand(BaseCommand):
 class AuthStatusCommand(BaseCommand):
     """Display authentication status and provider configuration."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute auth status command."""
         # Import here to avoid circular dependency
@@ -136,6 +140,7 @@ class AuthStatusCommand(BaseCommand):
 class AuthLoginCommand(BaseCommand):
     """Perform OAuth login for a provider."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute auth login command."""
         # Import here to avoid circular dependency
@@ -185,23 +190,20 @@ class AuthLoginCommand(BaseCommand):
             supervisor.record_event("oauth_login", provider=provider, result="success")
             print(f"oauth_status={status}", file=stdout)
             return 0
-        except Exception as exc:  # noqa: BLE001
+        except (TimeoutError, RuntimeError, ValueError, OSError) as exc:
             supervisor.record_event(
                 "oauth_login", provider=provider, result="failed", detail=str(exc)
             )
-            print(
-                (
-                    f"OAuth login failed: {exc} "
-                    "hint=verify auth endpoints, run `auth status`, then retry with a larger --timeout if needed"
-                ),
-                file=stderr,
-            )
-            return 1
+            raise ConfigError(
+                f"OAuth login failed: {exc} "
+                "hint=verify auth endpoints, run `auth status`, then retry with a larger --timeout if needed"
+            ) from exc
 
 
 class AuthImportCommand(BaseCommand):
     """Import authentication credentials from headless source."""
 
+    @handle_command_errors
     def execute(self) -> int:
         """Execute auth import-headless command."""
         # Import here to avoid circular dependency
@@ -229,9 +231,8 @@ class AuthImportCommand(BaseCommand):
 
         try:
             saved = handler(source, resolved_dest)
-        except Exception as exc:  # noqa: BLE001
-            print(f"headless import failed: {exc}", file=stderr)
-            return 1
+        except (FileNotFoundError, ValueError, OSError, RuntimeError) as exc:
+            raise ConfigError(f"headless import failed: {exc}") from exc
 
         supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
         supervisor.record_event(
