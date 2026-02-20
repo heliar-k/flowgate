@@ -4,6 +4,8 @@ import json
 import time
 from urllib.request import urlopen
 
+from .observability import measure_time
+
 
 def _get_json(url: str, timeout: float) -> dict:
     with urlopen(url, timeout=timeout) as response:  # nosec B310
@@ -14,6 +16,7 @@ def _get_json(url: str, timeout: float) -> dict:
     return data
 
 
+@measure_time("oauth_fetch_auth_url")
 def fetch_auth_url(auth_url_endpoint: str, *, timeout: float = 5.0) -> str:
     payload = _get_json(auth_url_endpoint, timeout)
 
@@ -25,6 +28,7 @@ def fetch_auth_url(auth_url_endpoint: str, *, timeout: float = 5.0) -> str:
     raise ValueError("OAuth auth-url endpoint did not return auth_url/url/login_url")
 
 
+@measure_time("oauth_poll_status")
 def poll_auth_status(
     status_endpoint: str,
     *,

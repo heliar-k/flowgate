@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping
 
+from .observability import measure_time
+
 
 class ProcessError(RuntimeError):
     """Raised when a process operation fails (start, stop, restart, port conflicts)."""
@@ -82,6 +84,7 @@ class ProcessSupervisor:
             return False
         return self._is_pid_running(pid)
 
+    @measure_time("service_start")
     def start(
         self,
         name: str,
@@ -133,6 +136,7 @@ class ProcessSupervisor:
         )
         return process.pid
 
+    @measure_time("service_stop")
     def stop(self, name: str, *, timeout: float = 5.0) -> bool:
         child = self._children.get(name)
         if child is not None:
@@ -204,6 +208,7 @@ class ProcessSupervisor:
         )
         return False
 
+    @measure_time("service_restart")
     def restart(
         self,
         name: str,

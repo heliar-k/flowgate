@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import merge_dicts
+from .observability import measure_time
 
 
 def _atomic_write(path: Path, content: str) -> None:
@@ -47,6 +48,7 @@ def _read_api_key_from_file(path: str) -> str:
     return api_key
 
 
+@measure_time("credential_resolution")
 def _resolve_model_api_key_refs(
     litellm_doc: dict[str, Any], *, upstream_credentials: dict[str, str]
 ) -> None:
@@ -85,6 +87,7 @@ def _resolve_model_api_key_refs(
         params.pop("api_key_ref", None)
 
 
+@measure_time("profile_switch")
 def activate_profile(
     config: dict[str, Any],
     profile_name: str,

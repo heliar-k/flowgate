@@ -156,11 +156,58 @@ class HealthCommand(BaseCommand):
         """Execute health command."""
         # Import from cli module for test mocking compatibility
         from ... import cli as cli_module
+        from ...health import comprehensive_health_check
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
+        verbose = getattr(self.args, "verbose", False)
 
+        # Run comprehensive health check
+        health_result = comprehensive_health_check(self.config, verbose=verbose)
+
+        # Print overall status
+        overall = health_result["overall_status"]
+        counts = health_result["status_counts"]
+        print(
+            f"Overall Status: {overall.upper()} "
+            f"(✓ {counts['healthy']} healthy, "
+            f"⚠ {counts['degraded']} degraded, "
+            f"✗ {counts['unhealthy']} unhealthy)",
+            file=stdout,
+        )
+        print("", file=stdout)
+
+        # Print individual check results
+        checks = health_result["checks"]
+        for check_name, result in checks.items():
+            status = result["status"]
+            message = result["message"]
+
+            # Status icon
+            if status == "healthy":
+                icon = "✓"
+            elif status == "degraded":
+                icon = "⚠"
+            else:
+                icon = "✗"
+
+            print(f"{icon} {check_name}: {message}", file=stdout)
+
+            # Print details in verbose mode
+            if verbose and result.get("details"):
+                details = result["details"]
+                for key, value in details.items():
+                    if isinstance(value, (list, dict)) and value:
+                        print(f"  {key}: {value}", file=stdout)
+                    elif not isinstance(value, (list, dict)):
+                        print(f"  {key}: {value}", file=stdout)
+
+        print("", file=stdout)
+
+        # Also run service health checks
         supervisor = cli_module.ProcessSupervisor(self.config["paths"]["runtime_dir"])
-        all_ok = True
+        all_ok = overall == "healthy"
+
+        print("Service Health:", file=stdout)
         for name, service in sorted(self.config["services"].items()):
             running = supervisor.is_running(name)
             liveness_ok = running
@@ -181,21 +228,32 @@ class HealthCommand(BaseCommand):
                 readiness = {"ok": False, "status_code": None, "error": "missing-port"}
 
             readiness_ok = bool(readiness["ok"])
-            code = readiness["status_code"]
-            error = readiness["error"]
+
+            # Status icon
+            if liveness_ok and readiness_ok:
+                icon = "✓"
+            else:
+                icon = "✗"
+
             print(
-                (
-                    f"{name}:liveness={'ok' if liveness_ok else 'fail'} "
-                    f"readiness={'ok' if readiness_ok else 'fail'} "
-                    f"running={'yes' if running else 'no'} "
-                    f"readiness_code={code if code is not None else 'n/a'} "
-                    f"readiness_error={error or 'none'} "
-                    f"readiness_url={readiness_url}"
-                ),
+                f"{icon} {name}: "
+                f"liveness={'ok' if liveness_ok else 'fail'} "
+                f"readiness={'ok' if readiness_ok else 'fail'}",
                 file=stdout,
             )
 
+            if verbose:
+                code = readiness["status_code"]
+                error = readiness["error"]
+                print(f"  running: {'yes' if running else 'no'}", file=stdout)
+                print(f"  readiness_url: {readiness_url}", file=stdout)
+                if code is not None:
+                    print(f"  readiness_code: {code}", file=stdout)
+                if error:
+                    print(f"  readiness_error: {error}", file=stdout)
+
             all_ok = all_ok and liveness_ok and readiness_ok
+
         return 0 if all_ok else 1
 
 

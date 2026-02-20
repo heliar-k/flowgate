@@ -233,10 +233,10 @@ class TestDiagnosticCommandRegression(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         output = stdout.getvalue()
-        self.assertIn("litellm:liveness=ok", output)
+        # New format includes "Service Health:" section
+        self.assertIn("Service Health:", output)
+        self.assertIn("litellm: liveness=ok", output)
         self.assertIn("readiness=ok", output)
-        self.assertIn("running=yes", output)
-        self.assertIn("readiness_code=200", output)
 
     @mock.patch("flowgate.cli.ProcessSupervisor")
     @mock.patch("flowgate.cli.check_http_health")
@@ -264,7 +264,6 @@ class TestDiagnosticCommandRegression(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("liveness=fail", output)
         self.assertIn("readiness=fail", output)
-        self.assertIn("running=no", output)
 
     @mock.patch("flowgate.cli._is_executable_file")
     def test_doctor_runtime_exists(self, mock_is_executable: mock.Mock) -> None:
