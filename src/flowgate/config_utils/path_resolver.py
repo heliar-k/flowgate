@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ..observability import measure_time
+
 
 class PathResolver:
     """Unified configuration path resolver.
@@ -54,6 +56,7 @@ class PathResolver:
             return str(p)
         return str((self.config_dir / p).resolve())
 
+    @measure_time("path_resolution")
     def resolve_config_paths(self, config: dict[str, Any]) -> dict[str, Any]:
         """Recursively resolve all path fields in configuration.
 

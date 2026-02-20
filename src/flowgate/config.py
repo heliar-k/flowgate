@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from flowgate.observability import measure_time
 from flowgate.validators import ConfigValidator
 
 
@@ -74,6 +75,7 @@ def _normalize_credentials(credentials: dict[str, Any]) -> dict[str, Any]:
     return {"upstream": normalized_upstream}
 
 
+@measure_time("config_normalize")
 def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(data)
 
@@ -136,6 +138,7 @@ def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+@measure_time("config_load")
 def load_router_config(path: str | Path) -> dict[str, Any]:
     path_obj = Path(path)
     data = _normalize_legacy_fields(_parse_yaml_like(path_obj))

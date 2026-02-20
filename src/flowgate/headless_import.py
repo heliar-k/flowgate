@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .observability import measure_time
+
 
 OUTPUT_FILENAME = "codex-headless-import.json"
 
@@ -17,6 +19,7 @@ def _load_json(path: Path) -> dict:
     return data
 
 
+@measure_time("oauth_import_headless")
 def import_codex_headless_auth(source: str | Path, dest_dir: str | Path) -> Path:
     src = Path(source).expanduser().resolve()
     if not src.exists():
