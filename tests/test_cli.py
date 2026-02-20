@@ -120,9 +120,10 @@ class CLITests(unittest.TestCase):
             code = run_cli(["--config", str(self.cfg), "health"], stdout=out)
         self.assertEqual(code, 1)
         text = out.getvalue()
-        self.assertIn("litellm:liveness=ok readiness=ok", text)
-        self.assertIn("cliproxyapi_plus:liveness=ok readiness=fail", text)
-        self.assertIn("readiness_code=503", text)
+        # New format includes service health section
+        self.assertIn("Service Health:", text)
+        self.assertIn("litellm: liveness=ok readiness=ok", text)
+        self.assertIn("cliproxyapi_plus: liveness=ok readiness=fail", text)
 
     def test_health_command_uses_default_readiness_path_when_missing(self):
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
@@ -138,6 +139,19 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.check_http_health",
                 return_value={"ok": True, "status_code": 200, "error": None},
             ) as checker,
+            mock.patch(
+                "flowgate.health.comprehensive_health_check",
+                return_value={
+                    "overall_status": "healthy",
+                    "status_counts": {"healthy": 4, "degraded": 0, "unhealthy": 0},
+                    "checks": {
+                        "disk_space": {"status": "healthy", "message": "OK", "details": {}},
+                        "memory": {"status": "healthy", "message": "OK", "details": {}},
+                        "credentials": {"status": "healthy", "message": "OK", "details": {}},
+                        "port_conflicts": {"status": "healthy", "message": "OK", "details": {}},
+                    },
+                },
+            ),
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.side_effect = [True, True]
@@ -166,7 +180,8 @@ class CLITests(unittest.TestCase):
             supervisor.is_running.side_effect = [True, False]
             code = run_cli(["--config", str(self.cfg), "health"], stdout=out)
         self.assertEqual(code, 1)
-        self.assertIn("litellm:liveness=fail readiness=ok", out.getvalue())
+        # New format: service name followed by status
+        self.assertIn("litellm: liveness=fail readiness=ok", out.getvalue())
 
     def test_service_start_stop_all(self):
         out = io.StringIO()
