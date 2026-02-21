@@ -64,15 +64,6 @@ class TestConfigFactory(unittest.TestCase):
         self.assertIn("codex", config["auth"]["providers"])
         self.assertIn("copilot", config["auth"]["providers"])
 
-    def test_with_oauth_creates_legacy_oauth_section(self):
-        """with_oauth should create legacy oauth section for v1 compat."""
-        config = ConfigFactory.with_oauth(["codex"])
-
-        self.assertIn("oauth", config)
-        self.assertIn("codex", config["oauth"])
-        self.assertIn("auth_url_endpoint", config["oauth"]["codex"])
-        self.assertIn("status_endpoint", config["oauth"]["codex"])
-
     def test_with_credentials_creates_upstream_section(self):
         """with_credentials should create credentials.upstream section."""
         config = ConfigFactory.with_credentials({

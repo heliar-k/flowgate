@@ -53,17 +53,6 @@ def build_parser() -> argparse.ArgumentParser:
     import_headless_any.add_argument("--source", default="~/.codex/auth.json")
     import_headless_any.add_argument("--dest-dir", default="")
 
-    for provider in ("codex", "copilot"):
-        provider_parser = auth_sub.add_parser(provider)
-        provider_sub = provider_parser.add_subparsers(dest="auth_cmd", required=True)
-        login = provider_sub.add_parser("login")
-        login.add_argument("--timeout", type=float, default=120)
-        login.add_argument("--poll-interval", type=float, default=2)
-        if provider == "codex":
-            import_headless = provider_sub.add_parser("import-headless")
-            import_headless.add_argument("--source", default="~/.codex/auth.json")
-            import_headless.add_argument("--dest-dir", default="")
-
     service = sub.add_parser("service")
     service_sub = service.add_subparsers(dest="service_cmd", required=True)
     for action in ("start", "stop", "restart"):
@@ -75,11 +64,5 @@ def build_parser() -> argparse.ArgumentParser:
     download = bootstrap_sub.add_parser("download")
     download.add_argument("--cliproxy-version", default=DEFAULT_CLIPROXY_VERSION)
     download.add_argument("--cliproxy-repo", default=DEFAULT_CLIPROXY_REPO)
-
-    config = sub.add_parser("config")
-    config_sub = config.add_subparsers(dest="config_cmd", required=True)
-    migrate = config_sub.add_parser("migrate")
-    migrate.add_argument("--to-version", type=int, default=2, dest="to_version")
-    migrate.add_argument("--dry-run", action="store_true", dest="dry_run")
 
     return parser

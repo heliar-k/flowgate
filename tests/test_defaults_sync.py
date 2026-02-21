@@ -46,21 +46,21 @@ class DefaultsSyncTests(unittest.TestCase):
         api_base = default_model.get("litellm_params", {}).get("api_base")
         self.assertEqual(api_base, f"http://{DEFAULT_SERVICE_HOST}:{cliproxy_port}/v1")
 
-        oauth = cfg.get("oauth", {})
+        providers = cfg.get("auth", {}).get("providers", {})
         self.assertEqual(
-            oauth.get("codex", {}).get("auth_url_endpoint"),
+            providers.get("codex", {}).get("auth_url_endpoint"),
             f"http://{DEFAULT_SERVICE_HOST}:{cliproxy_port}/v0/management/oauth/codex/auth-url",
         )
         self.assertEqual(
-            oauth.get("codex", {}).get("status_endpoint"),
+            providers.get("codex", {}).get("status_endpoint"),
             f"http://{DEFAULT_SERVICE_HOST}:{cliproxy_port}/v0/management/oauth/codex/status",
         )
         self.assertEqual(
-            oauth.get("copilot", {}).get("auth_url_endpoint"),
+            providers.get("copilot", {}).get("auth_url_endpoint"),
             f"http://{DEFAULT_SERVICE_HOST}:{cliproxy_port}/v0/management/oauth/github-copilot/auth-url",
         )
         self.assertEqual(
-            oauth.get("copilot", {}).get("status_endpoint"),
+            providers.get("copilot", {}).get("status_endpoint"),
             f"http://{DEFAULT_SERVICE_HOST}:{cliproxy_port}/v0/management/oauth/github-copilot/status",
         )
 

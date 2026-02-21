@@ -6,12 +6,12 @@ This module contains command handlers for starting, stopping, and restarting ser
 from __future__ import annotations
 
 import os
-import socket
 import sys
 from typing import Any, TextIO
 
 from ...constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
 from ...process import ProcessError, ProcessSupervisor
+from ...utils import _is_service_port_available
 from ..error_handler import handle_command_errors
 from .base import BaseCommand
 
@@ -23,18 +23,6 @@ def _service_names(config: dict[str, Any], target: str) -> list[str]:
     if target not in config["services"]:
         raise ProcessError(f"Unknown service: {target}")
     return [target]
-
-
-def _is_service_port_available(host: str, port: int) -> bool:
-    """Check if a service port is available for binding."""
-    family = socket.AF_INET6 if ":" in host else socket.AF_INET
-    try:
-        with socket.socket(family, socket.SOCK_STREAM) as probe:
-            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            probe.bind((host, port))
-    except OSError:
-        return False
-    return True
 
 
 def _maybe_print_cliproxyapiplus_update(

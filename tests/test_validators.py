@@ -407,41 +407,6 @@ class TestValidateCredentials(unittest.TestCase):
 
         self.assertIn("credentials.upstream.openai.file must be a non-empty string", str(ctx.exception))
 @pytest.mark.unit
-class TestValidateOAuth(unittest.TestCase):
-    """Test validate_oauth method (legacy)."""
-
-    def test_validate_oauth_valid(self):
-        """Test validate_oauth with valid config."""
-        config = {
-            "codex": {
-                "auth_url_endpoint": "http://localhost:9000/auth-url",
-                "status_endpoint": "http://localhost:9000/status",
-            },
-            "copilot": {
-                "auth_url_endpoint": "http://localhost:9001/auth-url",
-                "status_endpoint": "http://localhost:9001/status",
-            },
-        }
-        try:
-            ConfigValidator.validate_oauth(config)
-        except ConfigError:
-            self.fail("Valid oauth config should not raise ConfigError")
-
-    def test_validate_oauth_empty(self):
-        """Test validate_oauth with empty config."""
-        try:
-            ConfigValidator.validate_oauth({})
-        except ConfigError:
-            self.fail("Empty oauth config should not raise ConfigError")
-
-    def test_validate_oauth_provider_not_dict(self):
-        """Test validate_oauth with provider not being a dict."""
-        config = {"codex": "not_a_dict"}
-        with self.assertRaises(ConfigError) as ctx:
-            ConfigValidator.validate_oauth(config)
-
-        self.assertIn("oauth.codex must be a dict", str(ctx.exception))
-@pytest.mark.unit
 class TestValidateAuthProviders(unittest.TestCase):
     """Test validate_auth_providers method."""
 

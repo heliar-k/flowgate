@@ -7,7 +7,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from flowgate.cli import _build_parser, run_cli
+from flowgate.cli import run_cli
+from flowgate.cli.parser import build_parser
 from flowgate.constants import (
     DEFAULT_READINESS_PATH,
     DEFAULT_SERVICE_HOST,
@@ -32,15 +33,17 @@ def write_config(path: Path) -> None:
         state_file=str(path.parent / "runtime" / "state.json"),
         log_file=str(path.parent / "logs" / "routerctl.log"),
     )
-    data["oauth"] = {
-        "codex": {
-            "auth_url_endpoint": "http://example.local/codex/auth-url",
-            "status_endpoint": "http://example.local/codex/status",
-        },
-        "copilot": {
-            "auth_url_endpoint": "http://example.local/copilot/auth-url",
-            "status_endpoint": "http://example.local/copilot/status",
-        },
+    data["auth"] = {
+        "providers": {
+            "codex": {
+                "auth_url_endpoint": "http://example.local/codex/auth-url",
+                "status_endpoint": "http://example.local/codex/status",
+            },
+            "copilot": {
+                "auth_url_endpoint": "http://example.local/copilot/auth-url",
+                "status_endpoint": "http://example.local/copilot/status",
+            },
+        }
     }
     data["secret_files"] = []
 
@@ -272,7 +275,7 @@ class CLITests(unittest.TestCase):
             ) as p_status,
         ):
             code = run_cli(
-                ["--config", str(self.cfg), "auth", "codex", "login"], stdout=out
+                ["--config", str(self.cfg), "auth", "login", "codex"], stdout=out
             )
         self.assertEqual(code, 0)
         self.assertIn("https://example.com/login", out.getvalue())
@@ -309,7 +312,7 @@ class CLITests(unittest.TestCase):
 
     def test_auth_list_reports_configured_providers_and_headless_support(self):
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
-        data["oauth"]["custom"] = {
+        data["auth"]["providers"]["custom"] = {
             "auth_url_endpoint": "http://example.local/custom/auth-url",
             "status_endpoint": "http://example.local/custom/status",
         }
@@ -333,7 +336,7 @@ class CLITests(unittest.TestCase):
 
     def test_auth_login_generic_provider_command(self):
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
-        data["oauth"]["custom"] = {
+        data["auth"]["providers"]["custom"] = {
             "auth_url_endpoint": "http://example.local/custom/auth-url",
             "status_endpoint": "http://example.local/custom/status",
         }
@@ -462,8 +465,8 @@ class CLITests(unittest.TestCase):
                     "--config",
                     str(self.cfg),
                     "auth",
-                    "codex",
                     "import-headless",
+                    "codex",
                     "--source",
                     "/tmp/codex-auth.json",
                 ],
@@ -498,8 +501,8 @@ class CLITests(unittest.TestCase):
                     "--config",
                     str(cfg_path),
                     "auth",
-                    "codex",
                     "import-headless",
+                    "codex",
                     "--source",
                     "/tmp/codex-auth.json",
                 ],
@@ -546,13 +549,13 @@ class CLITests(unittest.TestCase):
         litellm_validate.assert_called_once()
 
     def test_bootstrap_download_rejects_litellm_version_flag(self):
-        parser = _build_parser()
+        parser = build_parser()
         with self.assertRaises(SystemExit) as ctx:
             parser.parse_args(["bootstrap", "download", "--litellm-version", "1.2.3"])
         self.assertNotEqual(ctx.exception.code, 0)
 
     def test_parser_prog_name_is_flowgate(self):
-        parser = _build_parser()
+        parser = build_parser()
         self.assertIn("flowgate", parser.format_usage())
 
     def test_integration_print_codex(self):

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +20,6 @@ _ALLOWED_TOP_LEVEL_KEYS = {
     "litellm_base",
     "profiles",
     "auth",
-    "oauth",
     "secret_files",
 }
 
@@ -33,7 +31,7 @@ _REQUIRED_TOP_LEVEL_KEYS = {
 }
 
 _LATEST_CONFIG_VERSION = 2
-_SUPPORTED_CONFIG_VERSIONS = {1, 2}
+_SUPPORTED_CONFIG_VERSIONS = {2}
 
 
 def _parse_yaml_like(path: Path) -> dict[str, Any]:
@@ -89,51 +87,11 @@ def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
         )
     normalized["config_version"] = version_raw
 
-    # Track legacy fields for deprecation warning
-    legacy_fields_detected = []
-
-    if "secret_files" not in normalized and "secrets" in normalized:
-        normalized["secret_files"] = normalized["secrets"]
-        legacy_fields_detected.append("'secrets' → use 'secret_files' instead")
-    normalized.pop("secrets", None)
-
-    services_raw = normalized.get("services")
-    if isinstance(services_raw, dict):
-        services = dict(services_raw)
-        if "cliproxyapi_plus" not in services and "cliproxyapi" in services:
-            services["cliproxyapi_plus"] = services.pop("cliproxyapi")
-            legacy_fields_detected.append("'cliproxyapi' → use 'cliproxyapi_plus' instead")
-        normalized["services"] = services
-
     auth_raw = normalized.get("auth")
-    oauth_raw = normalized.get("oauth")
-
-    if "auth" not in normalized and isinstance(oauth_raw, dict):
-        normalized["auth"] = {"providers": dict(oauth_raw)}
-        legacy_fields_detected.append("'oauth' → use 'auth.providers' instead")
-    elif isinstance(auth_raw, dict):
+    if isinstance(auth_raw, dict):
         providers_raw = auth_raw.get("providers", {})
         providers = _ensure_mapping(providers_raw, "auth.providers")
         normalized["auth"] = {"providers": providers}
-        if "oauth" not in normalized:
-            normalized["oauth"] = dict(providers)
-
-    # Print deprecation warning for config_version 1
-    if version_raw == 1:
-        warning_lines = [
-            "⚠️  WARNING: config_version 1 is deprecated and will be removed in v0.3.0",
-            "Please migrate your configuration to version 2.",
-            "Run: flowgate config migrate --to-version 2",
-            "",
-        ]
-
-        if legacy_fields_detected:
-            warning_lines.append("Legacy field mappings detected:")
-            for field in legacy_fields_detected:
-                warning_lines.append(f"- {field}")
-
-        warning_message = "\n".join(warning_lines) + "\n"
-        sys.stderr.write(warning_message)
 
     return normalized
 
@@ -169,10 +127,6 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     credentials_map = _ensure_mapping(credentials_raw, "credentials")
     credentials = _normalize_credentials(credentials_map)
 
-    oauth = data.get("oauth", {})
-    oauth_map = _ensure_mapping(oauth, "oauth")
-    ConfigValidator.validate_oauth(oauth_map)
-
     auth_raw = data.get("auth", {})
     auth_map = _ensure_mapping(auth_raw, "auth")
     providers_raw = auth_map.get("providers", {})
@@ -190,7 +144,6 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
         "litellm_base": litellm_base,
         "profiles": profiles,
         "auth": {"providers": providers},
-        "oauth": oauth_map,
         "secret_files": secret_files,
     }
 

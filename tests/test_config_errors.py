@@ -313,14 +313,14 @@ class TestConfigErrorHandling(unittest.TestCase):
             load_router_config(path)
         self.assertIn("secret_files must be a list of string paths", str(ctx.exception))
 
-    def test_oauth_provider_not_dict(self):
-        """Test ConfigError when oauth provider is not a dict."""
+    def test_oauth_key_rejected_as_unknown(self):
+        """Test ConfigError when legacy oauth key is used."""
         cfg = self._minimal_valid_config()
-        cfg["oauth"] = {"codex": "invalid"}
+        cfg["oauth"] = {"codex": {"auth_url_endpoint": "http://x", "status_endpoint": "http://x"}}
         path = self._write_config(cfg)
         with self.assertRaises(ConfigError) as ctx:
             load_router_config(path)
-        self.assertIn("oauth.codex", str(ctx.exception))
+        self.assertIn("Unknown top-level keys: oauth", str(ctx.exception))
 
     def test_auth_providers_not_dict(self):
         """Test ConfigError when auth.providers entry is not a dict."""
@@ -329,8 +329,7 @@ class TestConfigErrorHandling(unittest.TestCase):
         path = self._write_config(cfg)
         with self.assertRaises(ConfigError) as ctx:
             load_router_config(path)
-        # The error comes from oauth validation (legacy normalization)
-        self.assertIn("oauth.codex", str(ctx.exception))
+        self.assertIn("auth.providers.codex", str(ctx.exception))
 
     def test_invalid_json_content(self):
         """Test error when config file contains invalid JSON."""

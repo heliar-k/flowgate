@@ -18,16 +18,12 @@ from .base import BaseCommand
 
 
 def _auth_providers(config: dict[str, Any]) -> dict[str, Any]:
-    """Extract auth providers from config, supporting both new and legacy formats."""
+    """Extract auth providers from config."""
     auth = config.get("auth", {})
     if isinstance(auth, dict):
         providers_raw = auth.get("providers", {})
         if isinstance(providers_raw, dict):
             return providers_raw
-
-    oauth = config.get("oauth", {})
-    if isinstance(oauth, dict):
-        return oauth
 
     return {}
 

@@ -1,6 +1,4 @@
-import io
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -30,15 +28,17 @@ class ConfigTests(unittest.TestCase):
             state_file="runtime/state.json",
             log_file="logs/routerctl.log",
         )
-        config["oauth"] = {
-            "codex": {
-                "auth_url_endpoint": "http://127.0.0.1:9000/auth-url",
-                "status_endpoint": "http://127.0.0.1:9000/status",
-            },
-            "copilot": {
-                "auth_url_endpoint": "http://127.0.0.1:9001/auth-url",
-                "status_endpoint": "http://127.0.0.1:9001/status",
-            },
+        config["auth"] = {
+            "providers": {
+                "codex": {
+                    "auth_url_endpoint": "http://127.0.0.1:9000/auth-url",
+                    "status_endpoint": "http://127.0.0.1:9000/status",
+                },
+                "copilot": {
+                    "auth_url_endpoint": "http://127.0.0.1:9001/auth-url",
+                    "status_endpoint": "http://127.0.0.1:9001/status",
+                },
+            }
         }
         config["secret_files"] = ["auth/codex.json", "auth/copilot.json"]
         return config
@@ -74,20 +74,6 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaises(ConfigError):
             load_router_config(path)
 
-    def test_migrates_legacy_secrets_key(self):
-        data = self._base_config()
-        data["secrets"] = data.pop("secret_files")
-        path = self._write_config(data)
-        cfg = load_router_config(path)
-        self.assertEqual(cfg["secret_files"], ["auth/codex.json", "auth/copilot.json"])
-
-    def test_migrates_legacy_cliproxyapi_service_name(self):
-        data = self._base_config()
-        data["services"]["cliproxyapi"] = data["services"].pop("cliproxyapi_plus")
-        path = self._write_config(data)
-        cfg = load_router_config(path)
-        self.assertIn("cliproxyapi_plus", cfg["services"])
-
     def test_load_auth_providers_new_schema(self):
         data = self._base_config()
         data["auth"] = {
@@ -99,7 +85,6 @@ class ConfigTests(unittest.TestCase):
                 }
             }
         }
-        data.pop("oauth", None)
         path = self._write_config(data)
         cfg = load_router_config(path)
         self.assertIn("auth", cfg)
@@ -147,94 +132,58 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaises(ConfigError):
             load_router_config(path)
 
-    def test_deprecation_warning_for_config_version_1(self):
-        """Test that config_version 1 triggers deprecation warning."""
+    def test_rejects_config_version_1(self):
+        """Test that config_version 1 is rejected."""
         data = self._base_config()
         data["config_version"] = 1
         path = self._write_config(data)
 
-        # Capture stderr
-        old_stderr = sys.stderr
-        sys.stderr = io.StringIO()
-        try:
-            cfg = load_router_config(path)
-            warning_output = sys.stderr.getvalue()
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
 
-            # Verify config still loads correctly
-            self.assertEqual(cfg["config_version"], 1)
+        self.assertIn("Unsupported config_version=1", str(ctx.exception))
 
-            # Verify deprecation warning is present
-            self.assertIn("WARNING: config_version 1 is deprecated", warning_output)
-            self.assertIn("will be removed in v0.3.0", warning_output)
-            self.assertIn("flowgate config migrate --to-version 2", warning_output)
-        finally:
-            sys.stderr = old_stderr
-
-    def test_deprecation_warning_includes_legacy_fields(self):
-        """Test that deprecation warning lists detected legacy fields."""
+    def test_rejects_legacy_oauth_key(self):
+        """Test that the legacy 'oauth' top-level key is rejected."""
         data = self._base_config()
-        data["config_version"] = 1
-        # Use legacy field names
+        data["oauth"] = {
+            "codex": {
+                "auth_url_endpoint": "http://127.0.0.1:9000/auth-url",
+                "status_endpoint": "http://127.0.0.1:9000/status",
+            }
+        }
+        path = self._write_config(data)
+
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
+
+        self.assertIn("Unknown top-level keys: oauth", str(ctx.exception))
+
+    def test_rejects_legacy_secrets_key(self):
+        """Test that the legacy 'secrets' top-level key is rejected."""
+        data = self._base_config()
         data["secrets"] = data.pop("secret_files")
-        data["services"]["cliproxyapi"] = data["services"].pop("cliproxyapi_plus")
         path = self._write_config(data)
 
-        # Capture stderr
-        old_stderr = sys.stderr
-        sys.stderr = io.StringIO()
-        try:
-            cfg = load_router_config(path)
-            warning_output = sys.stderr.getvalue()
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
 
-            # Verify legacy fields are mentioned
-            self.assertIn("Legacy field mappings detected:", warning_output)
-            self.assertIn("'secrets' → use 'secret_files' instead", warning_output)
-            self.assertIn("'cliproxyapi' → use 'cliproxyapi_plus' instead", warning_output)
-            self.assertIn("'oauth' → use 'auth.providers' instead", warning_output)
-
-            # Verify config still works
-            self.assertIn("cliproxyapi_plus", cfg["services"])
-            self.assertEqual(cfg["secret_files"], ["auth/codex.json", "auth/copilot.json"])
-        finally:
-            sys.stderr = old_stderr
+        self.assertIn("Unknown top-level keys: secrets", str(ctx.exception))
 
     def test_no_deprecation_warning_for_config_version_2(self):
-        """Test that config_version 2 does not trigger deprecation warning."""
+        """Test that config_version 2 works without issues."""
         data = self._base_config()
         data["config_version"] = 2
         path = self._write_config(data)
-
-        # Capture stderr
-        old_stderr = sys.stderr
-        sys.stderr = io.StringIO()
-        try:
-            cfg = load_router_config(path)
-            warning_output = sys.stderr.getvalue()
-
-            # Verify no deprecation warning
-            self.assertEqual(warning_output, "")
-            self.assertEqual(cfg["config_version"], 2)
-        finally:
-            sys.stderr = old_stderr
+        cfg = load_router_config(path)
+        self.assertEqual(cfg["config_version"], 2)
 
     def test_no_deprecation_warning_when_version_defaults_to_2(self):
-        """Test that defaulting to version 2 does not trigger warning."""
+        """Test that defaulting to version 2 works without issues."""
         data = self._base_config()
-        # Don't specify config_version, should default to 2
         path = self._write_config(data)
-
-        # Capture stderr
-        old_stderr = sys.stderr
-        sys.stderr = io.StringIO()
-        try:
-            cfg = load_router_config(path)
-            warning_output = sys.stderr.getvalue()
-
-            # Verify no deprecation warning
-            self.assertEqual(warning_output, "")
-            self.assertEqual(cfg["config_version"], 2)
-        finally:
-            sys.stderr = old_stderr
+        cfg = load_router_config(path)
+        self.assertEqual(cfg["config_version"], 2)
 
 
 if __name__ == "__main__":

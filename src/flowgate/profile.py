@@ -8,6 +8,7 @@ from typing import Any
 
 from .config import merge_dicts
 from .observability import measure_time
+from .utils import _upstream_credentials
 
 
 def _atomic_write(path: Path, content: str) -> None:
@@ -15,27 +16,6 @@ def _atomic_write(path: Path, content: str) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(content, encoding="utf-8")
     os.replace(tmp, path)
-
-
-def _upstream_credentials(config: dict[str, Any]) -> dict[str, str]:
-    credentials = config.get("credentials", {})
-    if not isinstance(credentials, dict):
-        return {}
-
-    upstream = credentials.get("upstream", {})
-    if not isinstance(upstream, dict):
-        return {}
-
-    result: dict[str, str] = {}
-    for name, entry in upstream.items():
-        if not isinstance(name, str):
-            continue
-        if not isinstance(entry, dict):
-            continue
-        file_path = entry.get("file")
-        if isinstance(file_path, str) and file_path.strip():
-            result[name] = file_path
-    return result
 
 
 def _read_api_key_from_file(path: str) -> str:

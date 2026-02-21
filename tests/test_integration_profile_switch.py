@@ -29,7 +29,6 @@ class ProfileSwitchIntegrationTests(unittest.TestCase):
         )
         cfg["litellm_base"]["litellm_settings"] = {"num_retries": 1, "cooldown_time": 10}
         cfg["litellm_base"]["router_settings"] = {"routing_strategy": "simple-shuffle"}
-        cfg["oauth"] = {}
         cfg["secret_files"] = []
 
         self.cfg_path.write_text(json.dumps(cfg), encoding="utf-8")

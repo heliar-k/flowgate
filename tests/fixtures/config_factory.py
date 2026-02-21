@@ -83,30 +83,6 @@ class ConfigFactory:
         return config
 
     @staticmethod
-    def with_oauth(providers: Optional[List[str]] = None) -> Dict[str, Any]:
-        """Create config with legacy oauth section.
-
-        This is for testing backward compatibility with v1 config schema.
-
-        Args:
-            providers: List of provider names (default: ["codex", "copilot"])
-
-        Returns:
-            dict: Config with legacy oauth section
-        """
-        if providers is None:
-            providers = ["codex", "copilot"]
-
-        config = ConfigFactory.minimal()
-        config["oauth"] = {}
-        for provider in providers:
-            config["oauth"][provider] = {
-                "auth_url_endpoint": f"http://example.local/{provider}/auth-url",
-                "status_endpoint": f"http://example.local/{provider}/status",
-            }
-        return config
-
-    @staticmethod
     def with_credentials(upstream: Dict[str, str]) -> Dict[str, Any]:
         """Create config with upstream credential files.
 

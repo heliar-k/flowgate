@@ -4,66 +4,170 @@ CLI package for FlowGate.
 This package contains the command-line interface implementation,
 including argument parsing, command handlers, and CLI utilities.
 """
+from __future__ import annotations
 
-# Temporary: Re-export run_cli from the old cli.py module during transition
-# This allows flowgate.__init__.py to import it while we refactor
 import sys
-from pathlib import Path
+from typing import Any, Iterable, TextIO
 
-# We need to import the cli.py module which has relative imports
-# The trick is to import it as if it's part of the flowgate package
-parent_module = sys.modules.get('flowgate')
-if parent_module:
-    # Import cli.py as flowgate._cli_legacy to avoid name collision
-    import importlib.util
-    _cli_module_path = Path(__file__).parent.parent / "cli.py"
-    _spec = importlib.util.spec_from_file_location("flowgate._cli_legacy", _cli_module_path)
-    _cli_module = importlib.util.module_from_spec(_spec)
-    sys.modules['flowgate._cli_legacy'] = _cli_module
-    _spec.loader.exec_module(_cli_module)
+from .commands.auth import (
+    AuthImportCommand,
+    AuthListCommand,
+    AuthLoginCommand,
+    AuthStatusCommand,
+)
+from .commands.bootstrap import BootstrapDownloadCommand
+from .commands.health import DoctorCommand, HealthCommand, StatusCommand
+from .commands.integration import IntegrationApplyCommand, IntegrationPrintCommand
+from .commands.profile import ProfileListCommand, ProfileSetCommand
+from .commands.service import (
+    ServiceRestartCommand,
+    ServiceStartCommand,
+    ServiceStopCommand,
+)
+from .parser import build_parser
+from .utils import (
+    _load_and_resolve_config,
+    _read_state_file,
+)
 
-    # Store reference to legacy module for mock patching
-    _legacy_module = _cli_module
+from ..config import ConfigError
+from ..health import check_http_health
+from ..process import ProcessSupervisor
+from ..security import check_secret_file_permissions
+from ..utils import (
+    _is_executable_file,
+    _is_service_port_available,
+    _runtime_dependency_available,
+)
 
-    # Export main CLI function
-    run_cli = _cli_module.run_cli
+# Backward compatibility alias
+_build_parser = build_parser
 
-    # Export internal functions that tests need to mock or import
-    # Note: _build_parser was moved to parser.py as build_parser, but we keep the alias
-    _build_parser = _cli_module.build_parser  # Backward compatibility alias
-    _is_service_port_available = _cli_module._is_service_port_available
-    _is_executable_file = _cli_module._is_executable_file
-    _runtime_dependency_available = _cli_module._runtime_dependency_available
+# Command routing map
+COMMAND_MAP = {
+    "status": StatusCommand,
+    "health": HealthCommand,
+    "doctor": DoctorCommand,
+    "auth_list": AuthListCommand,
+    "auth_status": AuthStatusCommand,
+    "auth_login": AuthLoginCommand,
+    "auth_import": AuthImportCommand,
+    "profile_list": ProfileListCommand,
+    "profile_set": ProfileSetCommand,
+    "service_start": ServiceStartCommand,
+    "service_stop": ServiceStopCommand,
+    "service_restart": ServiceRestartCommand,
+    "bootstrap_download": BootstrapDownloadCommand,
+    "integration_print": IntegrationPrintCommand,
+    "integration_apply": IntegrationApplyCommand,
+}
 
-    # Export public functions that tests mock
-    # Import these directly from their source modules since cli.py no longer imports them
-    from ..process import ProcessSupervisor
-    from ..health import check_http_health
-    from ..security import check_secret_file_permissions
 
-    # Provide a way for tests to update legacy module references when mocking
-    def _update_legacy_mock(attr_name, mock_value):
-        """Update a mocked attribute in the legacy module."""
-        setattr(_legacy_module, attr_name, mock_value)
-else:
-    # Fallback if flowgate package not loaded yet
-    def run_cli(*args, **kwargs):
-        raise RuntimeError("CLI not properly initialized")
+def run_cli(
+    argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO | None = None
+) -> int:
+    stdout = stdout or sys.stdout
+    stderr = stderr or sys.stderr
+    parser = build_parser()
 
-    def _build_parser(*args, **kwargs):
-        raise RuntimeError("CLI not properly initialized")
+    try:
+        args = parser.parse_args(list(argv))
+        config = _load_and_resolve_config(args.config)
+    except ConfigError as exc:
+        print(f"Config error: {exc}", file=stderr)
+        return 2
+    except FileNotFoundError as exc:
+        print(f"Config file not found: {exc}", file=stderr)
+        return 2
 
-    def _is_service_port_available(*args, **kwargs):
-        raise RuntimeError("CLI not properly initialized")
+    # Route to new command structure if available
+    if args.command in COMMAND_MAP:
+        args.stdout = stdout
+        args.stderr = stderr
+        command_class = COMMAND_MAP[args.command]
+        command = command_class(args, config)
+        return command.execute()
 
-    def _is_executable_file(*args, **kwargs):
-        raise RuntimeError("CLI not properly initialized")
+    # Handle auth command with nested subcommands
+    if args.command == "auth":
+        args.stdout = stdout
+        args.stderr = stderr
 
-    def _runtime_dependency_available(*args, **kwargs):
-        raise RuntimeError("CLI not properly initialized")
+        auth_command_map = {
+            "list": AuthListCommand,
+            "status": AuthStatusCommand,
+            "login": AuthLoginCommand,
+            "import-headless": AuthImportCommand,
+        }
 
-    ProcessSupervisor = None
-    check_http_health = None
-    check_secret_file_permissions = None
+        provider = getattr(args, "provider", None)
+        if provider in auth_command_map:
+            command_class = auth_command_map[provider]
+            command = command_class(args, config)
+            return command.execute()
+
+    if args.command == "profile":
+        args.stdout = stdout
+        args.stderr = stderr
+
+        profile_command_map = {
+            "list": ProfileListCommand,
+            "set": ProfileSetCommand,
+        }
+
+        profile_cmd = getattr(args, "profile_cmd", None)
+        if profile_cmd in profile_command_map:
+            command_class = profile_command_map[profile_cmd]
+            command = command_class(args, config)
+            return command.execute()
+
+    if args.command == "service":
+        args.stdout = stdout
+        args.stderr = stderr
+
+        service_command_map = {
+            "start": ServiceStartCommand,
+            "stop": ServiceStopCommand,
+            "restart": ServiceRestartCommand,
+        }
+
+        service_cmd = getattr(args, "service_cmd", None)
+        if service_cmd in service_command_map:
+            command_class = service_command_map[service_cmd]
+            command = command_class(args, config)
+            return command.execute()
+
+    if args.command == "bootstrap":
+        args.stdout = stdout
+        args.stderr = stderr
+
+        bootstrap_command_map = {
+            "download": BootstrapDownloadCommand,
+        }
+
+        bootstrap_cmd = getattr(args, "bootstrap_cmd", None)
+        if bootstrap_cmd in bootstrap_command_map:
+            command_class = bootstrap_command_map[bootstrap_cmd]
+            command = command_class(args, config)
+            return command.execute()
+
+    if args.command == "integration":
+        args.stdout = stdout
+        args.stderr = stderr
+
+        integration_command_map = {
+            "print": IntegrationPrintCommand,
+            "apply": IntegrationApplyCommand,
+        }
+
+        integration_cmd = getattr(args, "integration_cmd", None)
+        if integration_cmd in integration_command_map:
+            command_class = integration_command_map[integration_cmd]
+            command = command_class(args, config)
+            return command.execute()
+
+    print("Unknown command", file=stderr)
+    return 2
+
 
 __all__ = ["run_cli"]

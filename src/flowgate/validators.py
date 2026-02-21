@@ -240,22 +240,6 @@ class ConfigValidator:
             )
 
     @staticmethod
-    def validate_oauth(oauth_config: dict[str, Any]) -> None:
-        """Validate the oauth configuration section (legacy).
-
-        Each provider must be a dictionary. This is a legacy validation
-        for backward compatibility with config version 1.
-
-        Args:
-            oauth_config: The oauth section from configuration
-
-        Raises:
-            ConfigError: If validation fails
-        """
-        for name, provider in oauth_config.items():
-            ConfigValidator._validate_type(provider, dict, f"oauth.{name}")
-
-    @staticmethod
     def validate_auth_providers(providers_config: dict[str, Any]) -> None:
         """Validate the auth.providers configuration section.
 
