@@ -1,7 +1,72 @@
 #!/usr/bin/env sh
 set -eu
 
-export UV_CACHE_DIR="${UV_CACHE_DIR:-.uv-cache}"
-export UV_TOOL_DIR="${UV_TOOL_DIR:-.uv-tools}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-uvx --from . flowgate "$@"
+show_help() {
+    cat <<'HELP'
+xgate - FlowGate CLI 快捷启动脚本
+
+用法:
+  ./scripts/xgate [全局选项] <命令> [子命令] [参数...]
+
+全局选项:
+  --config <路径>       指定配置文件路径 (默认: config/flowgate.yaml)
+
+命令:
+  status                显示当前系统状态 (活跃策略、服务运行情况、密钥权限)
+  health                检查服务健康状态
+    --verbose             显示详细健康检查信息
+  doctor                运行诊断检查 (配置验证、依赖检测、权限检查等)
+
+  profile               策略配置管理
+    list                  列出所有可用策略配置
+    set <名称>            切换活跃策略 (如 reliability/balanced/cost)
+
+  auth                  认证管理
+    list                  列出可用的 OAuth 提供商及其功能
+    status                显示当前认证状态
+    login <提供商>        执行 OAuth 登录流程 (如 codex, github-copilot)
+      --timeout <秒>        OAuth 轮询超时时间 (默认: 120)
+      --poll-interval <秒>  轮询间隔 (默认: 2)
+    import-headless <提供商>  从文件导入认证凭据 (用于非交互式环境)
+      --source <路径>       源认证文件路径 (默认: ~/.codex/auth.json)
+      --dest-dir <路径>     目标目录
+
+  service               服务生命周期管理
+    start [目标]          启动服务 (默认: all，即全部启动)
+    stop [目标]           停止服务 (默认: all)
+    restart [目标]        重启服务 (默认: all)
+                          目标可以是具体服务名或 "all"
+
+  bootstrap             运行时环境初始化
+    download              下载运行时二进制文件 (CLIProxyAPIPlus + LiteLLM 脚本)
+      --cliproxy-version <版本>  指定 CLIProxyAPIPlus 版本
+      --cliproxy-repo <仓库>     指定 GitHub 仓库地址
+
+  integration           客户端集成配置
+    print <客户端>        打印集成配置片段 (codex 或 claude-code)
+    apply <客户端>        应用集成设置到客户端配置文件
+      --target <路径>       目标配置文件路径
+                            codex 默认: ~/.codex/config.toml
+                            claude-code 默认: ~/.claude/settings.json
+
+  config                配置管理
+    migrate               将配置从 v1 迁移到 v2
+      --dry-run             仅预览变更，不实际修改
+
+示例:
+  ./scripts/xgate --config config/flowgate.yaml status
+  ./scripts/xgate --config config/flowgate.yaml profile set balanced
+  ./scripts/xgate --config config/flowgate.yaml service start all
+  ./scripts/xgate --config config/flowgate.yaml auth login codex --timeout 180
+  ./scripts/xgate --config config/flowgate.yaml bootstrap download
+  ./scripts/xgate --config config/flowgate.yaml integration apply codex
+  ./scripts/xgate --config config/flowgate.yaml doctor
+HELP
+}
+
+. "$SCRIPT_DIR/_common.sh"
+check_help "$@"
+
+run_or_help 2 uv run flowgate "$@"

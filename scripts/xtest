@@ -1,10 +1,62 @@
 #!/usr/bin/env sh
 set -eu
 
-export UV_CACHE_DIR="${UV_CACHE_DIR:-.uv-cache}"
-export UV_TOOL_DIR="${UV_TOOL_DIR:-.uv-tools}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Run pytest instead of unittest
-# By default, runs unit tests only (integration tests are skipped)
-# Use -m "" to run all tests, or -m integration to run only integration tests
-uvx --from . pytest tests/ -v "$@"
+show_help() {
+    cat <<'HELP'
+xtest - FlowGate 测试运行快捷脚本
+
+用法:
+  ./scripts/xtest [pytest 参数...]
+
+说明:
+  使用 pytest 运行测试套件，默认仅运行单元测试 (集成测试被跳过)。
+  所有额外参数会直接传递给 pytest。
+
+测试标记 (-m):
+  (无参数)              默认运行单元测试 (跳过集成测试)
+  -m unit               仅运行单元测试
+  -m integration        仅运行集成测试
+  -m ""                 运行全部测试 (单元 + 集成)
+
+常用 pytest 参数:
+  -v                    详细输出 (已默认启用)
+  -vv                   更详细的输出
+  -x                    遇到第一个失败即停止
+  -s                    显示 print 输出 (不捕获 stdout)
+  -k <表达式>           按名称筛选测试用例
+                        例: -k "test_load" 运行名称含 test_load 的用例
+  --tb=short            简短的错误回溯信息
+  --tb=long             完整的错误回溯信息
+  --tb=no               不显示错误回溯
+  --lf                  仅重跑上次失败的测试
+  --ff                  优先运行上次失败的测试
+  -q                    精简输出
+
+覆盖率:
+  --cov=src/flowgate              启用代码覆盖率统计
+  --cov-report=term-missing       在终端显示未覆盖的行号
+  --cov-report=html               生成 HTML 覆盖率报告
+
+指定测试范围:
+  tests/test_config.py                    运行指定测试文件
+  tests/test_config.py::ConfigTests       运行指定测试类
+  tests/test_config.py::ConfigTests::test_load_valid_config  运行单个用例
+
+示例:
+  ./scripts/xtest                          运行全部单元测试
+  ./scripts/xtest -m integration           仅运行集成测试
+  ./scripts/xtest -m ""                    运行全部测试
+  ./scripts/xtest -x -s                    遇到失败即停止，显示输出
+  ./scripts/xtest -k "test_load"           运行名称匹配的测试
+  ./scripts/xtest tests/test_config.py     运行指定文件的测试
+  ./scripts/xtest --cov=src/flowgate       运行测试并统计覆盖率
+  ./scripts/xtest --lf                     仅重跑上次失败的测试
+HELP
+}
+
+. "$SCRIPT_DIR/_common.sh"
+check_help "$@"
+
+run_or_help 4 uv run pytest tests/ -v "$@"
