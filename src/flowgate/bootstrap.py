@@ -13,6 +13,15 @@ DEFAULT_CLIPROXY_REPO = "router-for-me/CLIProxyAPIPlus"
 DEFAULT_CLIPROXY_VERSION = "v6.8.18-1"
 DEFAULT_LITELLM_VERSION = "1.75.8"
 
+_PREFERRED_BASENAMES = frozenset({
+    "cliproxyapiplus",
+    "cliproxyapi",
+    "cliproxyapiplus.exe",
+    "cliproxyapi.exe",
+    "cli-proxy-api-plus",
+    "cli-proxy-api-plus.exe",
+})
+
 
 def detect_platform() -> tuple[str, str]:
     os_raw = platform.system().lower()
@@ -91,21 +100,13 @@ def _http_get_bytes(url: str) -> bytes:
 
 def _extract_binary_from_bytes(data: bytes, asset_name: str) -> bytes:
     lower = asset_name.lower()
-    preferred_basenames = {
-        "cliproxyapiplus",
-        "cliproxyapi",
-        "cliproxyapiplus.exe",
-        "cliproxyapi.exe",
-        "cli-proxy-api-plus",
-        "cli-proxy-api-plus.exe",
-    }
 
     if lower.endswith(".tar.gz"):
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
             members = [m for m in tf.getmembers() if m.isfile()]
             for member in members:
                 base = Path(member.name).name.lower()
-                if base in preferred_basenames:
+                if base in _PREFERRED_BASENAMES:
                     extracted = tf.extractfile(member)
                     if extracted is None:
                         continue
@@ -125,7 +126,7 @@ def _extract_binary_from_bytes(data: bytes, asset_name: str) -> bytes:
             names = [n for n in zf.namelist() if not n.endswith("/")]
             for name in names:
                 base = Path(name).name.lower()
-                if base in preferred_basenames:
+                if base in _PREFERRED_BASENAMES:
                     return zf.read(name)
             for name in names:
                 base = Path(name).name.lower()

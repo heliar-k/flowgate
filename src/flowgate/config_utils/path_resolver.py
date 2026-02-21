@@ -6,7 +6,7 @@ across all configuration scenarios.
 
 from __future__ import annotations
 
-import json
+import copy
 from pathlib import Path
 from typing import Any
 
@@ -96,7 +96,7 @@ class PathResolver:
             '/etc/flowgate/.router'
         """
         # Deep copy to avoid modifying original config
-        cfg = json.loads(json.dumps(config))
+        cfg = copy.deepcopy(config)
 
         # 1. Resolve paths.* fields
         for key, value in cfg["paths"].items():

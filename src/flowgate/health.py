@@ -207,10 +207,9 @@ def check_port_availability(host: str, port: int) -> HealthCheckResult:
         HealthCheckResult indicating if port is available
     """
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(1.0)
-        result = sock.connect_ex((host, port))
-        sock.close()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(1.0)
+            result = sock.connect_ex((host, port))
 
         if result == 0:
             # Port is in use

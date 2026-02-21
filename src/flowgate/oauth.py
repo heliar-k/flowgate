@@ -6,6 +6,9 @@ from urllib.request import urlopen
 
 from .observability import measure_time
 
+_SUCCESS_STATES = frozenset({"success", "completed", "authorized", "ok"})
+_FAILED_STATES = frozenset({"failed", "error", "denied", "expired", "cancelled"})
+
 
 def _get_json(url: str, timeout: float) -> dict:
     with urlopen(url, timeout=timeout) as response:  # nosec B310
@@ -35,9 +38,6 @@ def poll_auth_status(
     timeout_seconds: float = 120,
     poll_interval_seconds: float = 2,
 ) -> str:
-    success_states = {"success", "completed", "authorized", "ok"}
-    failed_states = {"failed", "error", "denied", "expired", "cancelled"}
-
     deadline = time.time() + timeout_seconds
     last_status = "unknown"
     last_error: str | None = None
@@ -53,9 +53,9 @@ def poll_auth_status(
         status_raw = payload.get("status", "unknown")
         status = str(status_raw).strip().lower()
         last_status = status
-        if status in success_states:
+        if status in _SUCCESS_STATES:
             return status
-        if status in failed_states:
+        if status in _FAILED_STATES:
             raise RuntimeError(f"OAuth login failed with status: {status}")
         time.sleep(poll_interval_seconds)
 

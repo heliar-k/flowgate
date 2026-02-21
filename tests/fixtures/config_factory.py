@@ -4,8 +4,10 @@ This module provides factory methods to create test configurations,
 eliminating hardcoded config duplication across test files.
 """
 
+from __future__ import annotations
+
 import copy
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from flowgate.constants import (
     DEFAULT_READINESS_PATH,
@@ -23,7 +25,7 @@ class ConfigFactory:
     """
 
     @staticmethod
-    def minimal() -> Dict[str, Any]:
+    def minimal() -> dict[str, Any]:
         """Create minimal valid configuration.
 
         This is the baseline config that satisfies all required schema fields.
@@ -50,7 +52,7 @@ class ConfigFactory:
         }
 
     @staticmethod
-    def with_config_version(version: int) -> Dict[str, Any]:
+    def with_config_version(version: int) -> dict[str, Any]:
         """Create config with explicit config_version.
 
         Args:
@@ -64,7 +66,7 @@ class ConfigFactory:
         return config
 
     @staticmethod
-    def with_auth(providers: Optional[List[str]] = None) -> Dict[str, Any]:
+    def with_auth(providers: list[str] | None = None) -> dict[str, Any]:
         """Create config with auth providers.
 
         Args:
@@ -83,7 +85,7 @@ class ConfigFactory:
         return config
 
     @staticmethod
-    def with_credentials(upstream: Dict[str, str]) -> Dict[str, Any]:
+    def with_credentials(upstream: dict[str, str]) -> dict[str, Any]:
         """Create config with upstream credential files.
 
         Args:
@@ -101,8 +103,8 @@ class ConfigFactory:
 
     @staticmethod
     def with_profiles(
-        profile_names: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        profile_names: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Create config with multiple profiles.
 
         Args:
@@ -121,7 +123,7 @@ class ConfigFactory:
         return config
 
     @staticmethod
-    def with_secret_files(secret_files: List[str]) -> Dict[str, Any]:
+    def with_secret_files(secret_files: list[str]) -> dict[str, Any]:
         """Create config with secret_files list.
 
         Args:
@@ -135,7 +137,7 @@ class ConfigFactory:
         return config
 
     @staticmethod
-    def full_featured() -> Dict[str, Any]:
+    def full_featured() -> dict[str, Any]:
         """Create fully-featured config with all optional sections.
 
         This includes auth providers, credentials, profiles, and secret files.
@@ -170,9 +172,9 @@ class ConfigFactory:
         name: str,
         port: int,
         host: str = DEFAULT_SERVICE_HOST,
-        readiness_path: Optional[str] = None,
-        command_args: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        readiness_path: str | None = None,
+        command_args: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Create service configuration.
 
         Args:
@@ -199,7 +201,7 @@ class ConfigFactory:
         }
 
     @staticmethod
-    def litellm_base_minimal() -> Dict[str, Any]:
+    def litellm_base_minimal() -> dict[str, Any]:
         """Create minimal litellm_base configuration.
 
         Returns:
@@ -219,7 +221,7 @@ class ConfigFactory:
         }
 
     @staticmethod
-    def litellm_base_with_api_key(api_key: str = "test-api-key") -> Dict[str, Any]:
+    def litellm_base_with_api_key(api_key: str = "test-api-key") -> dict[str, Any]:
         """Create litellm_base with hardcoded API key.
 
         Args:
@@ -233,7 +235,7 @@ class ConfigFactory:
         return base
 
     @staticmethod
-    def litellm_base_with_api_key_ref(ref_name: str) -> Dict[str, Any]:
+    def litellm_base_with_api_key_ref(ref_name: str) -> dict[str, Any]:
         """Create litellm_base with api_key_ref.
 
         Args:
@@ -250,8 +252,8 @@ class ConfigFactory:
     def auth_provider(
         provider_name: str,
         method: str = "oauth_poll",
-        base_url: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        base_url: str | None = None,
+    ) -> dict[str, Any]:
         """Create auth provider configuration.
 
         Args:
@@ -275,8 +277,8 @@ class ConfigFactory:
     @staticmethod
     def profile(
         profile_name: str,
-        custom_settings: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        custom_settings: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Create profile configuration.
 
         Args:
@@ -303,10 +305,10 @@ class ConfigFactory:
     @staticmethod
     def paths(
         runtime_dir: str = ".router",
-        active_config: Optional[str] = None,
-        state_file: Optional[str] = None,
-        log_file: Optional[str] = None,
-    ) -> Dict[str, str]:
+        active_config: str | None = None,
+        state_file: str | None = None,
+        log_file: str | None = None,
+    ) -> dict[str, str]:
         """Create paths configuration.
 
         Args:

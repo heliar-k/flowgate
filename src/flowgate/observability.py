@@ -16,7 +16,7 @@ import json
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -65,8 +65,8 @@ def measure_time(operation: str) -> Callable[[F], F]:
 def log_performance_metric(
     operation: str,
     duration_ms: float,
-    function_name: Optional[str] = None,
-    context: Optional[dict[str, Any]] = None,
+    function_name: str | None = None,
+    context: dict[str, Any] | None = None,
 ) -> None:
     """Log a performance metric to the events log.
 
@@ -120,7 +120,7 @@ def log_performance_metric(
 
 
 def get_recent_metrics(
-    operation: Optional[str] = None, limit: int = 100
+    operation: str | None = None, limit: int = 100
 ) -> list[dict[str, Any]]:
     """Retrieve recent performance metrics from the events log.
 

@@ -7,12 +7,13 @@ all command handlers will inherit from.
 from __future__ import annotations
 
 from argparse import Namespace
+from typing import Any
 
 
 class BaseCommand:
     """Base class for CLI commands, providing unified command interface."""
 
-    def __init__(self, args: Namespace, config: dict):
+    def __init__(self, args: Namespace, config: dict[str, Any]):
         """
         Initialize the command with arguments and configuration.
 
