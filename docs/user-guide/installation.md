@@ -160,6 +160,21 @@ Binaries are stored in `.router/bin/` and automatically detected by platform and
 uv run flowgate --config config/flowgate.yaml bootstrap download --cliproxy-version v6.8.18-1
 ```
 
+**Updating to latest version** (recommended):
+```bash
+# Check for and apply updates (with confirmation prompt)
+uv run flowgate --config config/flowgate.yaml bootstrap update
+
+# Non-interactive update (skip confirmation)
+uv run flowgate --config config/flowgate.yaml bootstrap update --yes
+```
+
+The `bootstrap update` command automatically:
+- Checks GitHub for the latest CLIProxyAPIPlus version
+- Prompts for confirmation (unless `--yes` is used)
+- Downloads and validates the new binary
+- Restarts the service if it's running
+
 ### 4. Run Preflight Checks
 
 Verify your setup is correct:

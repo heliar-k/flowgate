@@ -82,6 +82,24 @@ This downloads:
 
 **Estimated time**: 30-60 seconds (depends on network speed)
 
+### Updating Runtime Binaries
+
+To check for and apply updates to CLIProxyAPIPlus:
+
+```bash
+# Check for updates and apply (with confirmation prompt)
+uv run flowgate --config config/flowgate.yaml bootstrap update
+
+# Non-interactive update (skip confirmation)
+uv run flowgate --config config/flowgate.yaml bootstrap update --yes
+```
+
+The update command will:
+- Check GitHub for the latest CLIProxyAPIPlus version
+- Prompt for confirmation (unless `--yes` is used)
+- Download and validate the new binary
+- Automatically restart the service if it's running
+
 ## Step 4: Verify Setup
 
 Run preflight checks:

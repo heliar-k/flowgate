@@ -39,6 +39,9 @@ chmod 600 .router/secrets/upstream_cliproxyapi_api_key
 # Download runtime binaries
 uv run flowgate --config config/flowgate.yaml bootstrap download
 
+# Check for updates (recommended)
+uv run flowgate --config config/flowgate.yaml bootstrap update
+
 # Activate profile and start services
 uv run flowgate --config config/flowgate.yaml profile set balanced
 uv run flowgate --config config/flowgate.yaml service start all
@@ -98,7 +101,7 @@ uv run pytest tests/ -v
 uv run pytest tests/ -v -m ""
 ```
 
-**Test Stats**: 394 tests (351 unit, 43 integration) | 100% passing
+**Test Stats**: 417 tests (417 unit, 43 integration) | 100% passing
 
 ## Config Migration
 
@@ -133,4 +136,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Latest Release**: [v0.3.0](docs/releases/v0.3.0.md) | **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+**Latest Release**: [v0.4.4](CHANGELOG.md#044---2026-02-21) | **Changelog**: [CHANGELOG.md](CHANGELOG.md)

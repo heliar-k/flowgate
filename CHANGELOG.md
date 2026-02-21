@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-02-21
+
+### Added
+- **Bootstrap Update Command**: New `bootstrap update` command for proactive CLIProxyAPIPlus version management
+  - Automatically detects latest version from GitHub releases
+  - Interactive confirmation prompt (can be skipped with `--yes/-y` flag)
+  - Downloads, validates, and installs the latest version
+  - Auto-restarts cliproxyapi_plus service if running
+  - Replaces manual workflow of checking releases and specifying version numbers
+- **Helper Functions**:
+  - `_check_latest_version()`: Query GitHub API directly for latest release (bypasses cache)
+  - `_confirm_update()`: Interactive user confirmation for updates
+- **Tests**: Added 9 comprehensive tests (4 unit tests for version checking, 5 CLI integration tests)
+
+### Changed
+- Updated suggestion text in `service start` and `doctor` commands to recommend `bootstrap update` instead of `bootstrap download --cliproxy-version X`
+- Enhanced Bootstrap documentation in CLAUDE.md with update command examples
+
+### Technical Details
+- Command: `flowgate bootstrap update [--yes] [--cliproxy-repo REPO]`
+- Workflow: Check version → Prompt confirmation → Download → Validate → Update version file → Auto-restart service
+- All 417 unit tests passing
+
 ## [0.4.0] - 2026-02-21
 
 **Major Release**: Performance monitoring and enhanced observability

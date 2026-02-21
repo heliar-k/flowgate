@@ -151,9 +151,15 @@ uv run flowgate --config config/flowgate.yaml <command>
 
 ### Bootstrap Runtime
 ```bash
+# Initial download
 uv run flowgate --config config/flowgate.yaml bootstrap download
 # Custom version:
 uv run flowgate --config config/flowgate.yaml bootstrap download --cliproxy-version v6.8.18-1
+
+# Check for and apply updates (recommended)
+uv run flowgate --config config/flowgate.yaml bootstrap update
+# Non-interactive update:
+uv run flowgate --config config/flowgate.yaml bootstrap update --yes
 ```
 
 ### Configuration Management
