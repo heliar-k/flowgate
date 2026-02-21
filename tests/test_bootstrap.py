@@ -16,6 +16,7 @@ from flowgate.bootstrap import (
     validate_cliproxy_binary,
     validate_litellm_runner,
 )
+from flowgate.cli.commands.bootstrap import _check_latest_version
 
 @pytest.mark.unit
 class BootstrapTests(unittest.TestCase):
@@ -112,6 +113,53 @@ class BootstrapTests(unittest.TestCase):
         tiny.write_bytes(b"MIT License")
         tiny.chmod(0o755)
         self.assertFalse(validate_cliproxy_binary(tiny))
+
+
+@pytest.mark.unit
+class CheckLatestVersionTests(unittest.TestCase):
+    def test_returns_update_info_when_newer_available(self):
+        with mock.patch(
+            "flowgate.cli.commands.bootstrap._http_get_json",
+            return_value={
+                "tag_name": "v6.8.20-1",
+                "html_url": "https://github.com/example/releases/tag/v6.8.20-1",
+            },
+        ):
+            result = _check_latest_version("v6.8.18-1", "example/repo")
+        self.assertIsNotNone(result)
+        self.assertEqual(result["current_version"], "v6.8.18-1")
+        self.assertEqual(result["latest_version"], "v6.8.20-1")
+        self.assertIn("v6.8.20-1", result["release_url"])
+
+    def test_returns_none_when_up_to_date(self):
+        with mock.patch(
+            "flowgate.cli.commands.bootstrap._http_get_json",
+            return_value={
+                "tag_name": "v6.8.18-1",
+                "html_url": "https://github.com/example/releases/tag/v6.8.18-1",
+            },
+        ):
+            result = _check_latest_version("v6.8.18-1", "example/repo")
+        self.assertIsNone(result)
+
+    def test_returns_none_when_current_is_newer(self):
+        with mock.patch(
+            "flowgate.cli.commands.bootstrap._http_get_json",
+            return_value={
+                "tag_name": "v6.8.16-0",
+                "html_url": "https://github.com/example/releases/tag/v6.8.16-0",
+            },
+        ):
+            result = _check_latest_version("v6.8.18-1", "example/repo")
+        self.assertIsNone(result)
+
+    def test_returns_none_when_tag_name_empty(self):
+        with mock.patch(
+            "flowgate.cli.commands.bootstrap._http_get_json",
+            return_value={"tag_name": "", "html_url": ""},
+        ):
+            result = _check_latest_version("v6.8.18-1", "example/repo")
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":

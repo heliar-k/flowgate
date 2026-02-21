@@ -15,7 +15,7 @@ from .commands.auth import (
     AuthLoginCommand,
     AuthStatusCommand,
 )
-from .commands.bootstrap import BootstrapDownloadCommand
+from .commands.bootstrap import BootstrapDownloadCommand, BootstrapUpdateCommand
 from .commands.health import DoctorCommand, HealthCommand, StatusCommand
 from .commands.integration import IntegrationApplyCommand, IntegrationPrintCommand
 from .commands.profile import ProfileListCommand, ProfileSetCommand
@@ -58,6 +58,7 @@ COMMAND_MAP = {
     "service_stop": ServiceStopCommand,
     "service_restart": ServiceRestartCommand,
     "bootstrap_download": BootstrapDownloadCommand,
+    "bootstrap_update": BootstrapUpdateCommand,
     "integration_print": IntegrationPrintCommand,
     "integration_apply": IntegrationApplyCommand,
 }
@@ -143,6 +144,7 @@ def run_cli(
 
         bootstrap_command_map = {
             "download": BootstrapDownloadCommand,
+            "update": BootstrapUpdateCommand,
         }
 
         bootstrap_cmd = getattr(args, "bootstrap_cmd", None)

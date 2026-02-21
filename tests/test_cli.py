@@ -843,5 +843,179 @@ class CLITests(unittest.TestCase):
         self.assertIn("not configured or derivable", err.getvalue())
 
 
+    def test_bootstrap_update_available_with_yes_flag(self):
+        out = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.read_cliproxyapiplus_installed_version",
+                return_value="v6.8.16-0",
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap._check_latest_version",
+                return_value={
+                    "current_version": "v6.8.16-0",
+                    "latest_version": "v6.8.18-1",
+                    "release_url": "https://github.com/example/releases/tag/v6.8.18-1",
+                },
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.download_cliproxyapi_plus",
+                return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
+                return_value=True,
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.write_cliproxyapiplus_installed_version",
+            ) as write_ver,
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.ProcessSupervisor",
+            ) as supervisor_cls,
+        ):
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.return_value = False
+            code = run_cli(
+                ["--config", str(self.cfg), "bootstrap", "update", "--yes"],
+                stdout=out,
+            )
+
+        self.assertEqual(code, 0)
+        text = out.getvalue()
+        self.assertIn("cliproxyapi_plus:update_available", text)
+        self.assertIn("current=v6.8.16-0", text)
+        self.assertIn("latest=v6.8.18-1", text)
+        self.assertIn("cliproxyapi_plus:updated version=v6.8.18-1", text)
+        write_ver.assert_called_once()
+
+    def test_bootstrap_update_already_up_to_date(self):
+        out = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.read_cliproxyapiplus_installed_version",
+                return_value="v6.8.18-1",
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap._check_latest_version",
+                return_value=None,
+            ),
+        ):
+            code = run_cli(
+                ["--config", str(self.cfg), "bootstrap", "update", "--yes"],
+                stdout=out,
+            )
+
+        self.assertEqual(code, 0)
+        self.assertIn("cliproxyapi_plus:up_to_date", out.getvalue())
+        self.assertIn("current=v6.8.18-1", out.getvalue())
+
+    def test_bootstrap_update_auto_restarts_running_service(self):
+        out = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.read_cliproxyapiplus_installed_version",
+                return_value="v6.8.16-0",
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap._check_latest_version",
+                return_value={
+                    "current_version": "v6.8.16-0",
+                    "latest_version": "v6.8.18-1",
+                    "release_url": "",
+                },
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.download_cliproxyapi_plus",
+                return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
+                return_value=True,
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.write_cliproxyapiplus_installed_version",
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.ProcessSupervisor",
+            ) as supervisor_cls,
+        ):
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.return_value = True
+            supervisor.restart.return_value = 9999
+            code = run_cli(
+                ["--config", str(self.cfg), "bootstrap", "update", "--yes"],
+                stdout=out,
+            )
+
+        self.assertEqual(code, 0)
+        text = out.getvalue()
+        self.assertIn("cliproxyapi_plus:restarted pid=9999", text)
+        supervisor.is_running.assert_called_once_with("cliproxyapi_plus")
+        supervisor.restart.assert_called_once()
+
+    def test_bootstrap_update_user_cancels(self):
+        out = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.read_cliproxyapiplus_installed_version",
+                return_value="v6.8.16-0",
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap._check_latest_version",
+                return_value={
+                    "current_version": "v6.8.16-0",
+                    "latest_version": "v6.8.18-1",
+                    "release_url": "",
+                },
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap._confirm_update",
+                return_value=False,
+            ),
+        ):
+            code = run_cli(
+                ["--config", str(self.cfg), "bootstrap", "update"],
+                stdout=out,
+            )
+
+        self.assertEqual(code, 0)
+        text = out.getvalue()
+        self.assertIn("cliproxyapi_plus:update_cancelled", text)
+
+    def test_bootstrap_update_validation_failure_raises(self):
+        out = io.StringIO()
+        err = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.read_cliproxyapiplus_installed_version",
+                return_value="v6.8.16-0",
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap._check_latest_version",
+                return_value={
+                    "current_version": "v6.8.16-0",
+                    "latest_version": "v6.8.18-1",
+                    "release_url": "",
+                },
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.download_cliproxyapi_plus",
+                return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
+                return_value=False,
+            ),
+        ):
+            code = run_cli(
+                ["--config", str(self.cfg), "bootstrap", "update", "--yes"],
+                stdout=out,
+                stderr=err,
+            )
+
+        self.assertNotEqual(code, 0)
+        self.assertIn("Invalid CLIProxyAPIPlus binary", err.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

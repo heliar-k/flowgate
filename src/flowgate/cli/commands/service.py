@@ -72,7 +72,7 @@ def _maybe_print_cliproxyapiplus_update(
             "cliproxyapi_plus:update_suggestion "
             "command="
             f"'uv run flowgate --config {config_path} "
-            f"bootstrap download --cliproxy-version {latest}'"
+            f"bootstrap update'"
         ),
         file=stdout,
     )
