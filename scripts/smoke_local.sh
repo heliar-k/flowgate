@@ -15,7 +15,7 @@ upstream_api_key_file() {
   uv run python - "$CONFIG_PATH" <<'PY'
 from pathlib import Path
 
-from flowgate.cli import _load_and_resolve_config
+from flowgate.cli.utils import _load_and_resolve_config
 
 cfg = _load_and_resolve_config(__import__("sys").argv[1])
 credentials = cfg.get("credentials", {})
