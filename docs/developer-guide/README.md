@@ -29,11 +29,13 @@ Welcome to the FlowGate Developer Guide! This section contains documentation for
 
 ## Useful Scripts
 
-- **`scripts/check_dependencies.sh`**: Audit dependencies for outdated packages and security issues
-- **`scripts/xgate`**: Wrapper script for running FlowGate CLI without activating venv
-- **`scripts/xtest`**: Quick test runner for development
-- **`scripts/doctor.sh`**: Preflight checks for configuration and runtime
+- **`scripts/xgate`**: FlowGate CLI 快捷启动脚本 (支持 `-h` 查看完整帮助)
+- **`scripts/xtest`**: 测试运行快捷脚本 (支持 `-h` 查看 pytest 用法)
 - **`scripts/smoke_local.sh`**: End-to-end smoke tests for all features
+- **`scripts/security_check.sh`**: Security audit (tracked secrets, file permissions, gitignore)
+- **`scripts/debug_cliproxyapi.sh`**: Debug CLIProxyAPIPlus service standalone
+- **`scripts/generate_docs.sh`**: Generate API documentation with pdoc
+- **`scripts/check_doc_links.py`**: Check markdown documentation for broken internal links
 
 ## Key Resources
 

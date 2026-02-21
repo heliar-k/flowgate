@@ -1,26 +1,34 @@
 #!/usr/bin/env sh
 set -eu
 
-export UV_CACHE_DIR="${UV_CACHE_DIR:-.uv-cache}"
-export UV_TOOL_DIR="${UV_TOOL_DIR:-.uv-tools}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-usage() {
-  cat <<'EOF'
-Usage:
+show_help() {
+    cat <<'HELP'
+debug_cliproxyapi - CLIProxyAPIPlus 独立调试脚本
+
+用法:
   ./scripts/debug_cliproxyapi.sh [start|stop] [config_path]
   ./scripts/debug_cliproxyapi.sh [config_path]
 
-Control cliproxyapi_plus service for local debugging.
-Defaults:
-  action: start
-  config_path: config/flowgate.yaml
-EOF
+说明:
+  启动或停止 cliproxyapi_plus 服务，并打印调试信息
+  (配置路径、API keys、管理页面 URL 等)。
+
+参数:
+  start|stop              操作类型 (默认: start)
+  config_path             配置文件路径 (默认: config/flowgate.yaml)
+
+示例:
+  ./scripts/debug_cliproxyapi.sh                          启动服务 (使用默认配置)
+  ./scripts/debug_cliproxyapi.sh stop                     停止服务
+  ./scripts/debug_cliproxyapi.sh start config/my.yaml     使用指定配置启动
+  ./scripts/debug_cliproxyapi.sh config/my.yaml           同上 (省略 start)
+HELP
 }
 
-if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
-  usage
-  exit 0
-fi
+. "$SCRIPT_DIR/_common.sh"
+check_help "$@"
 
 ACTION="start"
 CONFIG_PATH="config/flowgate.yaml"
@@ -44,7 +52,7 @@ if [ "$#" -ge 1 ]; then
 fi
 
 if [ "$#" -ne 0 ]; then
-  usage >&2
+  show_help >&2
   exit 2
 fi
 

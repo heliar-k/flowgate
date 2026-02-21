@@ -1,10 +1,37 @@
 #!/usr/bin/env sh
 set -eu
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+show_help() {
+    cat <<'HELP'
+security_check - FlowGate 安全审计脚本
+
+用法:
+  ./scripts/security_check.sh
+
+说明:
+  检查项目的安全状态，包括:
+  1. 是否有敏感文件被 git 跟踪 (密钥、证书、.env 等)
+  2. 密钥文件的文件权限是否过于宽松 (应为 600)
+  3. .gitignore 是否包含必要的敏感文件模式
+
+退出码:
+  0   所有检查通过
+  1   存在安全问题
+
+示例:
+  ./scripts/security_check.sh              运行完整安全审计
+  ./scripts/security_check.sh && echo OK   审计通过则打印 OK
+HELP
+}
+
+. "$SCRIPT_DIR/_common.sh"
+check_help "$@"
+
 uv run python - <<'PY'
 from __future__ import annotations
 
-import os
 import re
 import stat
 import subprocess

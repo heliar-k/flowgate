@@ -130,7 +130,7 @@ See [Architecture Diagrams](docs/architecture/diagrams.md) for visual representa
 - `tests/`: unittest suite (unit + integration tests)
 - `config/examples/`: Sample configs (copy to `config/flowgate.yaml` and `config/cliproxyapi.yaml`)
 - `.router/`: Runtime artifacts (PIDs, logs, binaries, auth files) - intentionally gitignored
-- `scripts/`: Helper scripts (`xgate`, `xtest`, `smoke_local.sh`, `doctor.sh`, `debug_cliproxyapi.sh`)
+- `scripts/`: Helper scripts (`xgate`, `xtest`, `smoke_local.sh`, `debug_cliproxyapi.sh`, `security_check.sh`, `generate_docs.sh`, `check_doc_links.py`)
 
 ## Common Development Commands
 
@@ -233,7 +233,6 @@ uv run python -m unittest discover -s tests -v
 ```bash
 # Preflight checks
 uv run flowgate --config config/flowgate.yaml doctor
-./scripts/doctor.sh config/flowgate.yaml
 
 # Smoke tests
 ./scripts/smoke_local.sh config/flowgate.yaml

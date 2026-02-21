@@ -1,11 +1,50 @@
 #!/usr/bin/env sh
 set -eu
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+show_help() {
+    cat <<'HELP'
+smoke_local - FlowGate 端到端冒烟测试
+
+用法:
+  ./scripts/smoke_local.sh [config_path]
+
+说明:
+  执行完整的端到端冒烟测试流程:
+    1. 下载运行时二进制文件 (bootstrap)
+    2. 激活策略配置 (profile)
+    3. 启动所有服务
+    4. 等待健康检查就绪
+    5. 验证就绪端点可达
+    6. 探测 Claude messages 端点
+    7. 停止所有服务
+
+参数:
+  config_path             配置文件路径 (默认: config/flowgate.yaml)
+
+环境变量:
+  PROFILE                 使用的策略配置 (默认: balanced)
+  STARTUP_TIMEOUT         启动超时秒数 (默认: 45)
+  POLL_INTERVAL           健康检查轮询间隔秒数 (默认: 2)
+  SMOKE_UPSTREAM_CLIPROXY_API_KEY
+                          用于自动创建密钥文件的 API key (默认: sk-local-test)
+
+示例:
+  ./scripts/smoke_local.sh                                   使用默认配置
+  ./scripts/smoke_local.sh config/flowgate.yaml              指定配置
+  PROFILE=reliability ./scripts/smoke_local.sh               使用 reliability 策略
+  STARTUP_TIMEOUT=60 ./scripts/smoke_local.sh                设置 60 秒超时
+HELP
+}
+
+. "$SCRIPT_DIR/_common.sh"
+check_help "$@"
+
 CONFIG_PATH="${1:-config/flowgate.yaml}"
 PROFILE="${PROFILE:-balanced}"
 STARTUP_TIMEOUT="${STARTUP_TIMEOUT:-45}"
 POLL_INTERVAL="${POLL_INTERVAL:-2}"
-export UV_CACHE_DIR="${UV_CACHE_DIR:-.uv-cache}"
 
 run_router() {
   uv run flowgate --config "$CONFIG_PATH" "$@"
@@ -118,18 +157,18 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-echo "smoke: [1/5] bootstrap runtime"
+echo "smoke: [1/7] bootstrap runtime"
 run_router bootstrap download
 
 ensure_upstream_api_key_file
 
-echo "smoke: [2/5] generate active profile ($PROFILE)"
+echo "smoke: [2/7] generate active profile ($PROFILE)"
 run_router profile set "$PROFILE"
 
-echo "smoke: [3/5] start services"
+echo "smoke: [3/7] start services"
 run_router service start all
 
-echo "smoke: [4/5] wait for health readiness"
+echo "smoke: [4/7] wait for health readiness"
 start_ts="$(date +%s)"
 while true; do
   if run_router health; then
@@ -149,7 +188,7 @@ while true; do
   sleep "$POLL_INTERVAL"
 done
 
-echo "smoke: [4.5/5] verify readiness endpoints"
+echo "smoke: [5/7] verify readiness endpoints"
 endpoints="$(list_readiness_endpoints | awk 'NF')"
 
 if command -v curl >/dev/null 2>&1; then
@@ -162,7 +201,7 @@ else
   echo "smoke: curl not found, skip direct readiness endpoint checks"
 fi
 
-echo "smoke: [4.6/6] probe Claude messages endpoint"
+echo "smoke: [6/7] probe Claude messages endpoint"
 if command -v curl >/dev/null 2>&1; then
   litellm_base="$(litellm_base_url | awk 'NF' | head -n 1)"
   if [ -n "$litellm_base" ]; then
@@ -196,7 +235,7 @@ else
   echo "smoke: curl not found, skip claude messages probe"
 fi
 
-echo "smoke: [5/6] stop services"
+echo "smoke: [7/7] stop services"
 run_router service stop all
 
-echo "smoke: [6/6] PASS"
+echo "smoke: PASS"
