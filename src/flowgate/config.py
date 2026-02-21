@@ -73,6 +73,65 @@ def _normalize_credentials(credentials: dict[str, Any]) -> dict[str, Any]:
     return {"upstream": normalized_upstream}
 
 
+def _validate_api_key_refs(config: dict[str, Any]) -> None:
+    """Validate that all api_key_ref values reference existing credentials.
+
+    Scans litellm_base.model_list and all profiles.*.model_list for api_key_ref
+    and ensures each reference exists in credentials.upstream.
+    """
+    credentials = config.get("credentials", {})
+    upstream = credentials.get("upstream", {})
+    available_refs = set(upstream.keys())
+
+    refs_to_check: list[tuple[str, str]] = []  # (ref, location)
+
+    # Scan litellm_base.model_list
+    litellm_base = config.get("litellm_base", {})
+    model_list = litellm_base.get("model_list", [])
+    if isinstance(model_list, list):
+        for idx, model in enumerate(model_list):
+            if not isinstance(model, dict):
+                continue
+            params = model.get("litellm_params", {})
+            if not isinstance(params, dict):
+                continue
+            ref = params.get("api_key_ref")
+            if ref:
+                refs_to_check.append((ref, f"litellm_base.model_list[{idx}]"))
+
+    # Scan profiles.*.model_list
+    profiles = config.get("profiles", {})
+    if isinstance(profiles, dict):
+        for profile_name, profile_config in profiles.items():
+            if not isinstance(profile_config, dict):
+                continue
+            profile_model_list = profile_config.get("model_list", [])
+            if isinstance(profile_model_list, list):
+                for idx, model in enumerate(profile_model_list):
+                    if not isinstance(model, dict):
+                        continue
+                    params = model.get("litellm_params", {})
+                    if not isinstance(params, dict):
+                        continue
+                    ref = params.get("api_key_ref")
+                    if ref:
+                        refs_to_check.append(
+                            (ref, f"profiles.{profile_name}.model_list[{idx}]")
+                        )
+
+    # Check all references
+    invalid_refs = []
+    for ref, location in refs_to_check:
+        if ref not in available_refs:
+            invalid_refs.append(f"{location}.litellm_params.api_key_ref='{ref}'")
+
+    if invalid_refs:
+        raise ConfigError(
+            f"Invalid api_key_ref values (not found in credentials.upstream): "
+            f"{', '.join(invalid_refs)}"
+        )
+
+
 @measure_time("config_normalize")
 def _normalize_legacy_fields(data: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(data)
@@ -135,6 +194,9 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
 
     secret_files = data.get("secret_files", [])
     ConfigValidator.validate_secret_files(secret_files)
+
+    # Validate api_key_ref cross-references
+    _validate_api_key_refs(data)
 
     return {
         "config_version": data["config_version"],

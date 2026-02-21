@@ -754,6 +754,94 @@ class CLITests(unittest.TestCase):
         self.assertIn("latest=v6.8.18-1", out.getvalue())
         checker.assert_called_once()
 
+    def test_auth_login_with_derived_endpoints(self):
+        """Test auth login with endpoints derived from cliproxyapi_plus service."""
+        # Remove explicit endpoints from config
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        data["auth"]["providers"]["codex"] = {}  # No endpoints
+        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+        out = io.StringIO()
+        with (
+            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.oauth.fetch_auth_url",
+                return_value="http://example.local/auth?code=xyz",
+            ) as fetch_mock,
+            mock.patch(
+                "flowgate.oauth.poll_auth_status",
+                return_value="authenticated",
+            ) as poll_mock,
+        ):
+            supervisor = supervisor_cls.return_value
+            code = run_cli(
+                ["--config", str(self.cfg), "auth", "login", "codex"],
+                stdout=out,
+            )
+
+        self.assertEqual(code, 0)
+        # Verify derived endpoints were used
+        fetch_mock.assert_called_once()
+        poll_mock.assert_called_once()
+        # Check that derived URL was used (from cliproxyapi_plus host:port)
+        call_args = fetch_mock.call_args
+        self.assertIn("127.0.0.1:8317", call_args[0][0])
+        self.assertIn("/v0/management/oauth/codex/auth-url", call_args[0][0])
+
+    def test_auth_login_explicit_endpoint_overrides_derived(self):
+        """Test that explicit endpoint configuration takes precedence over derived."""
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        # Set explicit endpoint
+        data["auth"]["providers"]["codex"] = {
+            "auth_url_endpoint": "http://explicit.example.com/auth-url",
+            "status_endpoint": "http://explicit.example.com/status",
+        }
+        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+        out = io.StringIO()
+        with (
+            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.oauth.fetch_auth_url",
+                return_value="http://example.local/auth?code=xyz",
+            ) as fetch_mock,
+            mock.patch(
+                "flowgate.oauth.poll_auth_status",
+                return_value="authenticated",
+            ),
+        ):
+            supervisor = supervisor_cls.return_value
+            code = run_cli(
+                ["--config", str(self.cfg), "auth", "login", "codex"],
+                stdout=out,
+            )
+
+        self.assertEqual(code, 0)
+        # Verify explicit endpoint was used, not derived
+        call_args = fetch_mock.call_args
+        self.assertEqual(call_args[0][0], "http://explicit.example.com/auth-url")
+
+    def test_auth_login_fails_when_endpoints_not_derivable(self):
+        """Test auth login fails when endpoints cannot be derived."""
+        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        # Remove explicit endpoints and service config
+        data["auth"]["providers"]["codex"] = {}
+        del data["services"]["cliproxyapi_plus"]["host"]
+        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+
+        out = io.StringIO()
+        err = io.StringIO()
+        with mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls:
+            supervisor = supervisor_cls.return_value
+            code = run_cli(
+                ["--config", str(self.cfg), "auth", "login", "codex"],
+                stdout=out,
+                stderr=err,
+            )
+
+        self.assertEqual(code, 2)
+        self.assertIn("not configured or derivable", err.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

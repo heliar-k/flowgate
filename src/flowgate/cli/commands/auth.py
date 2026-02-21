@@ -45,6 +45,40 @@ def _effective_secret_files(config: dict[str, Any]) -> list[str]:
     return sorted(paths)
 
 
+def _derive_auth_endpoints(
+    config: dict[str, Any], provider: str
+) -> tuple[str | None, str | None]:
+    """Derive auth endpoints from cliproxyapi_plus service config.
+
+    Returns:
+        (auth_url_endpoint, status_endpoint) or (None, None) if cannot derive
+    """
+    services = config.get("services", {})
+    cliproxy = services.get("cliproxyapi_plus", {})
+
+    host = cliproxy.get("host")
+    port = cliproxy.get("port")
+
+    if not host or not port:
+        return None, None
+
+    # Map provider name to URL path
+    provider_path_map = {
+        "codex": "codex",
+        "copilot": "github-copilot",
+    }
+
+    provider_path = provider_path_map.get(provider)
+    if not provider_path:
+        return None, None
+
+    base_url = f"http://{host}:{port}"
+    auth_url = f"{base_url}/v0/management/oauth/{provider_path}/auth-url"
+    status_url = f"{base_url}/v0/management/oauth/{provider_path}/status"
+
+    return auth_url, status_url
+
+
 class AuthListCommand(BaseCommand):
     """List available authentication providers and their capabilities."""
 
@@ -168,11 +202,23 @@ class AuthLoginCommand(BaseCommand):
         provider_cfg = providers[provider]
         auth_url_endpoint = provider_cfg.get("auth_url_endpoint")
         status_endpoint = provider_cfg.get("status_endpoint")
+
+        # If endpoints are missing, try to derive from cliproxyapi_plus service config
+        if not auth_url_endpoint or not status_endpoint:
+            derived_auth, derived_status = _derive_auth_endpoints(self.config, provider)
+            if not auth_url_endpoint:
+                auth_url_endpoint = derived_auth
+            if not status_endpoint:
+                status_endpoint = derived_status
+
         if not auth_url_endpoint or not status_endpoint:
             supervisor.record_event(
                 "oauth_login", provider=provider, result="failed", detail="endpoint-missing"
             )
-            print(f"OAuth endpoints not complete for provider={provider}", file=stderr)
+            print(
+                f"OAuth endpoints not configured or derivable for provider={provider}",
+                file=stderr
+            )
             return 2
 
         try:

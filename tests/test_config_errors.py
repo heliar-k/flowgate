@@ -345,5 +345,171 @@ class TestConfigErrorHandling(unittest.TestCase):
             load_router_config(path)
 
 
+@pytest.mark.unit
+class TestApiKeyRefValidation(unittest.TestCase):
+    """Test api_key_ref cross-reference validation."""
+
+    def _write_config(self, data: dict) -> Path:
+        """Helper to write config to temp file."""
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+        tmp.write(json.dumps(data))
+        tmp.flush()
+        tmp.close()
+        return Path(tmp.name)
+
+    def _minimal_valid_config(self) -> dict:
+        """Return minimal valid configuration."""
+        config = ConfigFactory.with_config_version(2)
+        config["profiles"] = {"default": {"litellm_settings": {"num_retries": 1}}}
+        return config
+
+    def test_api_key_ref_valid_in_base(self):
+        """Test valid api_key_ref in litellm_base.model_list."""
+        cfg = self._minimal_valid_config()
+        cfg["credentials"] = {
+            "upstream": {
+                "openai": {"file": ".router/secrets/openai.key"}
+            }
+        }
+        cfg["litellm_base"]["model_list"] = [
+            {
+                "model_name": "gpt-4",
+                "litellm_params": {
+                    "model": "gpt-4",
+                    "api_key_ref": "openai"
+                }
+            }
+        ]
+        path = self._write_config(cfg)
+        try:
+            load_router_config(path)
+        except ConfigError:
+            self.fail("Valid api_key_ref in litellm_base should not raise ConfigError")
+
+    def test_api_key_ref_valid_in_profile(self):
+        """Test valid api_key_ref in profile.model_list."""
+        cfg = self._minimal_valid_config()
+        cfg["credentials"] = {
+            "upstream": {
+                "anthropic": {"file": ".router/secrets/anthropic.key"}
+            }
+        }
+        cfg["profiles"]["default"]["model_list"] = [
+            {
+                "model_name": "claude-3",
+                "litellm_params": {
+                    "model": "claude-3-opus",
+                    "api_key_ref": "anthropic"
+                }
+            }
+        ]
+        path = self._write_config(cfg)
+        try:
+            load_router_config(path)
+        except ConfigError:
+            self.fail("Valid api_key_ref in profile should not raise ConfigError")
+
+    def test_api_key_ref_invalid_in_base(self):
+        """Test invalid api_key_ref in litellm_base.model_list."""
+        cfg = self._minimal_valid_config()
+        cfg["credentials"] = {
+            "upstream": {
+                "openai": {"file": ".router/secrets/openai.key"}
+            }
+        }
+        cfg["litellm_base"]["model_list"] = [
+            {
+                "model_name": "gpt-4",
+                "litellm_params": {
+                    "model": "gpt-4",
+                    "api_key_ref": "nonexistent"
+                }
+            }
+        ]
+        path = self._write_config(cfg)
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
+        self.assertIn("Invalid api_key_ref values", str(ctx.exception))
+        self.assertIn("nonexistent", str(ctx.exception))
+        self.assertIn("litellm_base.model_list[0]", str(ctx.exception))
+
+    def test_api_key_ref_invalid_in_profile(self):
+        """Test invalid api_key_ref in profile.model_list."""
+        cfg = self._minimal_valid_config()
+        cfg["credentials"] = {
+            "upstream": {
+                "openai": {"file": ".router/secrets/openai.key"}
+            }
+        }
+        cfg["profiles"]["default"]["model_list"] = [
+            {
+                "model_name": "claude-3",
+                "litellm_params": {
+                    "model": "claude-3-opus",
+                    "api_key_ref": "missing_cred"
+                }
+            }
+        ]
+        path = self._write_config(cfg)
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
+        self.assertIn("Invalid api_key_ref values", str(ctx.exception))
+        self.assertIn("missing_cred", str(ctx.exception))
+        self.assertIn("profiles.default.model_list[0]", str(ctx.exception))
+
+    def test_api_key_ref_no_credentials(self):
+        """Test api_key_ref when credentials section is missing."""
+        cfg = self._minimal_valid_config()
+        # No credentials section
+        cfg["litellm_base"]["model_list"] = [
+            {
+                "model_name": "gpt-4",
+                "litellm_params": {
+                    "model": "gpt-4",
+                    "api_key_ref": "openai"
+                }
+            }
+        ]
+        path = self._write_config(cfg)
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
+        self.assertIn("Invalid api_key_ref values", str(ctx.exception))
+        self.assertIn("openai", str(ctx.exception))
+
+    def test_api_key_ref_multiple_invalid(self):
+        """Test multiple invalid api_key_ref values."""
+        cfg = self._minimal_valid_config()
+        cfg["credentials"] = {
+            "upstream": {
+                "openai": {"file": ".router/secrets/openai.key"}
+            }
+        }
+        cfg["litellm_base"]["model_list"] = [
+            {
+                "model_name": "gpt-4",
+                "litellm_params": {
+                    "model": "gpt-4",
+                    "api_key_ref": "invalid1"
+                }
+            }
+        ]
+        cfg["profiles"]["default"]["model_list"] = [
+            {
+                "model_name": "claude-3",
+                "litellm_params": {
+                    "model": "claude-3-opus",
+                    "api_key_ref": "invalid2"
+                }
+            }
+        ]
+        path = self._write_config(cfg)
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
+        error_msg = str(ctx.exception)
+        self.assertIn("Invalid api_key_ref values", error_msg)
+        self.assertIn("invalid1", error_msg)
+        self.assertIn("invalid2", error_msg)
+
+
 if __name__ == "__main__":
     unittest.main()

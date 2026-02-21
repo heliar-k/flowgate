@@ -1,116 +1,111 @@
-{
-  "_comment": "FlowGate Configuration - Version 2",
-  "_comment_version": "IMPORTANT: This config uses version 2 schema. Version 1 is deprecated and will be removed in v0.3.0",
-  "_comment_migration": "To migrate from version 1: flowgate --config <path> config migrate",
-  "config_version": 2,
-  "paths": {
-    "runtime_dir": "../.router/runtime",
-    "active_config": "../.router/runtime/litellm.active.yaml",
-    "state_file": "../.router/runtime/state.json",
-    "log_file": "../.router/logs/routerctl.log"
-  },
-  "services": {
-    "litellm": {
-      "host": "127.0.0.1",
-      "port": 4000,
-      "readiness_path": "/health",
-      "command": {
-        "cwd": "..",
-        "args": [".router/runtime/bin/litellm", "--config", ".router/runtime/litellm.active.yaml"]
-      }
-    },
-    "_comment_cliproxyapi_plus": "Note: Use 'cliproxyapi_plus' (not 'cliproxyapi') in version 2",
-    "cliproxyapi_plus": {
-      "host": "127.0.0.1",
-      "port": 8317,
-      "readiness_path": "/",
-      "command": {
-        "cwd": "..",
-        "args": [".router/runtime/bin/CLIProxyAPIPlus", "-config", "config/cliproxyapi.yaml"]
-      }
-    }
-  },
-  "credentials": {
-    "upstream": {
-      "cliproxy_default": {
-        "file": "../.router/secrets/upstream_cliproxyapi_api_key"
-      }
-    }
-  },
-  "litellm_base": {
-    "model_list": [
-      {
-        "model_name": "router-default",
-        "litellm_params": {
-          "model": "openai/router-default",
-          "api_base": "http://127.0.0.1:8317/v1",
-          "api_key_ref": "cliproxy_default"
-        }
-      },
-      {
-        "model_name": "router-cheap",
-        "litellm_params": {
-          "model": "openai/gpt-4o-mini",
-          "api_base": "https://example-custom-openai/v1",
-          "api_key": "os.environ/CUSTOM_API_KEY"
-        }
-      }
-    ],
-    "router_settings": {
-      "routing_strategy": "simple-shuffle",
-      "enable_pre_call_checks": true
-    },
-    "litellm_settings": {
-      "num_retries": 1,
-      "request_timeout": 30,
-      "allowed_fails": 2,
-      "cooldown_time": 10
-    }
-  },
-  "profiles": {
-    "reliability": {
-      "litellm_settings": {
-        "num_retries": 3,
-        "allowed_fails": 1,
-        "cooldown_time": 60,
-        "fallbacks": [{"router-default": ["router-cheap"]}]
-      }
-    },
-    "balanced": {
-      "litellm_settings": {
-        "num_retries": 2,
-        "allowed_fails": 2,
-        "cooldown_time": 30,
-        "fallbacks": [{"router-default": ["router-cheap"]}]
-      }
-    },
-    "cost": {
-      "litellm_settings": {
-        "num_retries": 1,
-        "allowed_fails": 3,
-        "cooldown_time": 10,
-        "fallbacks": [{"router-cheap": ["router-default"]}]
-      }
-    }
-  },
-  "_comment_auth": "Note: Use 'auth.providers' (not 'oauth') in version 2",
-  "auth": {
-    "providers": {
-      "codex": {
-        "method": "oauth_poll",
-        "auth_url_endpoint": "http://127.0.0.1:8317/v0/management/oauth/codex/auth-url",
-        "status_endpoint": "http://127.0.0.1:8317/v0/management/oauth/codex/status"
-      },
-      "copilot": {
-        "method": "oauth_poll",
-        "auth_url_endpoint": "http://127.0.0.1:8317/v0/management/oauth/github-copilot/auth-url",
-        "status_endpoint": "http://127.0.0.1:8317/v0/management/oauth/github-copilot/status"
-      }
-    }
-  },
-  "_comment_secret_files": "Note: Use 'secret_files' (not 'secrets') in version 2",
-  "secret_files": [
-    "../.router/auths/codex.json",
-    "../.router/auths/copilot.json"
-  ]
-}
+# FlowGate Configuration - Version 2
+# IMPORTANT: This config uses version 2 schema
+# Version 1 is deprecated and will be removed in v0.3.0
+# To migrate from version 1: flowgate --config <path> config migrate
+
+config_version: 2
+
+paths:
+  runtime_dir: "../.router/runtime"
+  active_config: "../.router/runtime/litellm.active.yaml"
+  state_file: "../.router/runtime/state.json"
+  log_file: "../.router/logs/routerctl.log"
+
+services:
+  litellm:
+    host: "127.0.0.1"
+    port: 4000
+    readiness_path: "/health"
+    command:
+      cwd: ".."
+      args:
+        - ".router/runtime/bin/litellm"
+        - "--config"
+        - ".router/runtime/litellm.active.yaml"
+
+  # Note: Use 'cliproxyapi_plus' (not 'cliproxyapi') in version 2
+  cliproxyapi_plus:
+    host: "127.0.0.1"
+    port: 8317
+    readiness_path: "/"
+    command:
+      cwd: ".."
+      args:
+        - ".router/runtime/bin/CLIProxyAPIPlus"
+        - "-config"
+        - "config/cliproxyapi.yaml"
+
+credentials:
+  upstream:
+    cliproxy_default:
+      file: "../.router/secrets/upstream_cliproxyapi_api_key"
+
+litellm_base:
+  model_list:
+    - model_name: "router-default"
+      litellm_params:
+        model: "openai/router-default"
+        api_base: "http://127.0.0.1:8317/v1"
+        api_key_ref: "cliproxy_default"
+
+    - model_name: "router-cheap"
+      litellm_params:
+        model: "openai/gpt-4o-mini"
+        api_base: "https://example-custom-openai/v1"
+        api_key: "os.environ/CUSTOM_API_KEY"
+
+  router_settings:
+    routing_strategy: "simple-shuffle"
+    enable_pre_call_checks: true
+
+  litellm_settings:
+    num_retries: 1
+    request_timeout: 30
+    allowed_fails: 2
+    cooldown_time: 10
+
+profiles:
+  reliability:
+    litellm_settings:
+      num_retries: 3
+      allowed_fails: 1
+      cooldown_time: 60
+      fallbacks:
+        - router-default:
+            - "router-cheap"
+
+  balanced:
+    litellm_settings:
+      num_retries: 2
+      allowed_fails: 2
+      cooldown_time: 30
+      fallbacks:
+        - router-default:
+            - "router-cheap"
+
+  cost:
+    litellm_settings:
+      num_retries: 1
+      allowed_fails: 3
+      cooldown_time: 10
+      fallbacks:
+        - router-cheap:
+            - "router-default"
+
+# Note: Use 'auth.providers' (not 'oauth') in version 2
+auth:
+  providers:
+    codex:
+      method: "oauth_poll"
+      auth_url_endpoint: "http://127.0.0.1:8317/v0/management/oauth/codex/auth-url"
+      status_endpoint: "http://127.0.0.1:8317/v0/management/oauth/codex/status"
+
+    copilot:
+      method: "oauth_poll"
+      auth_url_endpoint: "http://127.0.0.1:8317/v0/management/oauth/github-copilot/auth-url"
+      status_endpoint: "http://127.0.0.1:8317/v0/management/oauth/github-copilot/status"
+
+# Note: Use 'secret_files' (not 'secrets') in version 2
+secret_files:
+  - "../.router/auths/codex.json"
+  - "../.router/auths/copilot.json"

@@ -105,6 +105,11 @@ class ConfigValidator:
         - command: dict with 'args' key
         - command.args: non-empty list of strings
 
+        Optional fields:
+        - host: non-empty string
+        - port: integer between 1 and 65535
+        - readiness_path: non-empty string
+
         Args:
             service_name: Name of the service (e.g., "litellm")
             service_config: Service configuration dictionary
@@ -131,6 +136,28 @@ class ConfigValidator:
         ):
             raise ConfigError(
                 f"services.{service_name}.command.args must be a non-empty string list"
+            )
+
+        # Validate host (optional field)
+        host = service_config.get("host")
+        if host is not None:
+            ConfigValidator._validate_non_empty_string(
+                host, f"services.{service_name}.host"
+            )
+
+        # Validate port (optional field)
+        port = service_config.get("port")
+        if port is not None:
+            if not isinstance(port, int) or port < 1 or port > 65535:
+                raise ConfigError(
+                    f"services.{service_name}.port must be an integer between 1 and 65535"
+                )
+
+        # Validate readiness_path (optional field)
+        readiness_path = service_config.get("readiness_path")
+        if readiness_path is not None:
+            ConfigValidator._validate_non_empty_string(
+                readiness_path, f"services.{service_name}.readiness_path"
             )
 
     @staticmethod
@@ -243,8 +270,8 @@ class ConfigValidator:
     def validate_auth_providers(providers_config: dict[str, Any]) -> None:
         """Validate the auth.providers configuration section.
 
-        Each provider must be a dictionary containing auth endpoints
-        and configuration.
+        Each provider must be a dictionary. If auth_url_endpoint or status_endpoint
+        are provided, they must be non-empty strings.
 
         Args:
             providers_config: The auth.providers section from configuration
@@ -256,6 +283,20 @@ class ConfigValidator:
             ConfigValidator._validate_type(
                 provider, dict, f"auth.providers.{name}"
             )
+
+            # Validate auth_url_endpoint (optional)
+            auth_url = provider.get("auth_url_endpoint")
+            if auth_url is not None:
+                ConfigValidator._validate_non_empty_string(
+                    auth_url, f"auth.providers.{name}.auth_url_endpoint"
+                )
+
+            # Validate status_endpoint (optional)
+            status_url = provider.get("status_endpoint")
+            if status_url is not None:
+                ConfigValidator._validate_non_empty_string(
+                    status_url, f"auth.providers.{name}.status_endpoint"
+                )
 
     @staticmethod
     def validate_secret_files(secret_files: Any) -> None:
