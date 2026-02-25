@@ -137,7 +137,7 @@ See [Architecture Diagrams](docs/architecture/diagrams.md) for visual representa
 ### Setup and Installation
 ```bash
 export UV_CACHE_DIR=.uv-cache
-uv sync --group runtime --group test
+uv sync --group test
 ```
 
 ### Running the CLI
