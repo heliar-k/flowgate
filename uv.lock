@@ -658,7 +658,7 @@ wheels = [
 
 [[package]]
 name = "flowgate"
-version = "0.4.5"
+version = "0.4.6"
 source = { editable = "." }
 dependencies = [
     { name = "litellm", extra = ["proxy"] },
@@ -1140,6 +1140,9 @@ name = "litellm-proxy-extras"
 version = "0.2.17"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/69/49/fb73d71b7cbe981ca6ca07ebcb3bfa714c6a20d1bea327546a2f4a5a8865/litellm_proxy_extras-0.2.17.tar.gz", hash = "sha256:96428ba537d440a40a7db85e615284a4fd89bada24a7fc8737ef0189932cb1ed", size = 15227, upload-time = "2025-08-14T00:43:27.795Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d0/91/44a471452457ede7f4c8b270bb598d81c44453951f9685ff01d73113a495/litellm_proxy_extras-0.2.17-py3-none-any.whl", hash = "sha256:7dbebafec0d9cd9a3766b49eddf4022b9e880c8876ac2bdcb3770728305e6cac", size = 29734, upload-time = "2026-02-21T20:03:03.673Z" },
+]
 
 [[package]]
 name = "markdown-it-py"
