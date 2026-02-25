@@ -18,7 +18,7 @@ DEFAULT_SERVICE_PORTS: MappingProxyType[str, int] = MappingProxyType(
 
 DEFAULT_SERVICE_READINESS_PATHS: MappingProxyType[str, str] = MappingProxyType(
     {
-        LITELLM_SERVICE: "/health",
+        LITELLM_SERVICE: "/health/readiness",
         CLIPROXYAPI_PLUS_SERVICE: "/",
     }
 )
