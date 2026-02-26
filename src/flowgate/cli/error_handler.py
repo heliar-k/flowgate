@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 EXIT_SUCCESS = 0
 EXIT_RUNTIME_ERROR = 1
 EXIT_CONFIG_ERROR = 2
-EXIT_PERMISSION_ERROR = 3
-EXIT_INTERNAL_ERROR = 99
+# Backward-compatible aliases (FlowGate documents 0/1/2 as the public contract).
+EXIT_PERMISSION_ERROR = EXIT_RUNTIME_ERROR
+EXIT_INTERNAL_ERROR = EXIT_RUNTIME_ERROR
 
 
 def handle_command_errors(func: Callable) -> Callable:
@@ -44,8 +45,10 @@ def handle_command_errors(func: Callable) -> Callable:
     def wrapper(*args, **kwargs) -> int:
         # Extract stderr from command instance if available (for testing)
         stderr = sys.stderr
+        debug = False
         if args and hasattr(args[0], "args"):
             stderr = getattr(args[0].args, "stderr", None) or sys.stderr
+            debug = bool(getattr(args[0].args, "debug", False))
 
         try:
             return func(*args, **kwargs)
@@ -58,16 +61,18 @@ def handle_command_errors(func: Callable) -> Callable:
             print(f"❌ Process operation failed: {exc}", file=stderr)
             return EXIT_RUNTIME_ERROR
         except PermissionError as exc:
-            logger.error("Permission denied: %s", exc)
+            logger.error("Permission denied: %s", exc, exc_info=debug)
             print(f"❌ Permission denied: {exc}", file=stderr)
-            return EXIT_PERMISSION_ERROR
+            return EXIT_RUNTIME_ERROR
         except Exception as exc:
             logger.exception("Internal error: %s", exc)
-            print(
-                f"❌ Internal error: {exc}\n"
-                "Please use --debug for more details",
-                file=stderr,
-            )
-            return EXIT_INTERNAL_ERROR
+            print(f"❌ Internal error: {exc}", file=stderr)
+            if debug:
+                import traceback
+
+                traceback.print_exc(file=stderr)
+            else:
+                print("Re-run with --debug for a stack trace.", file=stderr)
+            return EXIT_RUNTIME_ERROR
 
     return wrapper

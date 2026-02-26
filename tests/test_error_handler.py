@@ -13,8 +13,6 @@ from unittest.mock import MagicMock, patch
 from flowgate.cli.commands.base import BaseCommand
 from flowgate.cli.error_handler import (
     EXIT_CONFIG_ERROR,
-    EXIT_INTERNAL_ERROR,
-    EXIT_PERMISSION_ERROR,
     EXIT_RUNTIME_ERROR,
     EXIT_SUCCESS,
     ProcessError,
@@ -67,7 +65,7 @@ class TestErrorHandler(unittest.TestCase):
         self.assertIn("Failed to start service", stderr_output)
 
     def test_permission_error_handling(self):
-        """Test that PermissionError returns EXIT_PERMISSION_ERROR."""
+        """Test that PermissionError returns EXIT_RUNTIME_ERROR."""
         @handle_command_errors
         def command_with_permission_error():
             raise PermissionError("Access denied to file")
@@ -75,13 +73,13 @@ class TestErrorHandler(unittest.TestCase):
         with patch("sys.stderr", new_callable=io.StringIO) as mock_stderr:
             result = command_with_permission_error()
 
-        self.assertEqual(result, EXIT_PERMISSION_ERROR)
+        self.assertEqual(result, EXIT_RUNTIME_ERROR)
         stderr_output = mock_stderr.getvalue()
         self.assertIn("❌ Permission denied:", stderr_output)
         self.assertIn("Access denied to file", stderr_output)
 
     def test_generic_exception_handling(self):
-        """Test that generic Exception returns EXIT_INTERNAL_ERROR."""
+        """Test that generic Exception returns EXIT_RUNTIME_ERROR."""
         @handle_command_errors
         def command_with_generic_error():
             raise ValueError("Unexpected error")
@@ -89,11 +87,11 @@ class TestErrorHandler(unittest.TestCase):
         with patch("sys.stderr", new_callable=io.StringIO) as mock_stderr:
             result = command_with_generic_error()
 
-        self.assertEqual(result, EXIT_INTERNAL_ERROR)
+        self.assertEqual(result, EXIT_RUNTIME_ERROR)
         stderr_output = mock_stderr.getvalue()
         self.assertIn("❌ Internal error:", stderr_output)
         self.assertIn("Unexpected error", stderr_output)
-        self.assertIn("Please use --debug for more details", stderr_output)
+        self.assertIn("Re-run with --debug for a stack trace.", stderr_output)
 
     def test_decorator_preserves_function_metadata(self):
         """Test that decorator preserves original function metadata."""
@@ -227,7 +225,7 @@ class TestErrorHandler(unittest.TestCase):
             with patch("sys.stderr", new_callable=io.StringIO):
                 result = command_with_permission_error()
 
-        self.assertEqual(result, EXIT_PERMISSION_ERROR)
+        self.assertEqual(result, EXIT_RUNTIME_ERROR)
         mock_logger.error.assert_called_once()
         call_args = mock_logger.error.call_args
         self.assertIn("Permission denied", call_args[0][0])
@@ -242,7 +240,7 @@ class TestErrorHandler(unittest.TestCase):
             with patch("sys.stderr", new_callable=io.StringIO):
                 result = command_with_generic_error()
 
-        self.assertEqual(result, EXIT_INTERNAL_ERROR)
+        self.assertEqual(result, EXIT_RUNTIME_ERROR)
         mock_logger.exception.assert_called_once()
         call_args = mock_logger.exception.call_args
         self.assertIn("Internal error", call_args[0][0])

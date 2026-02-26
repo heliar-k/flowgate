@@ -6,7 +6,9 @@ including argument parsing, command handlers, and CLI utilities.
 """
 from __future__ import annotations
 
+import logging
 import sys
+import traceback
 from typing import Any, Iterable, TextIO
 
 from .commands.auth import (
@@ -24,10 +26,10 @@ from .commands.service import (
     ServiceStartCommand,
     ServiceStopCommand,
 )
+from .error_handler import EXIT_CONFIG_ERROR, EXIT_RUNTIME_ERROR
 from .parser import build_parser
 from .utils import (
     _load_and_resolve_config,
-    _read_state_file,
 )
 
 from ..observability import events_log_context, set_events_log_path
@@ -53,6 +55,8 @@ def run_cli(
 
     try:
         args = parser.parse_args(list(argv))
+        if getattr(args, "debug", False):
+            logging.basicConfig(level=logging.DEBUG)
 
         from pathlib import Path
 
@@ -162,13 +166,24 @@ def run_cli(
                 return DoctorCommand(args, config).execute()
 
             print("Unknown command", file=stderr)
-            return 2
+            return EXIT_CONFIG_ERROR
     except ConfigError as exc:
-        print(f"Config error: {exc}", file=stderr)
-        return 2
+        print(f"❌ Configuration error: {exc}", file=stderr)
+        if "args" in locals() and getattr(args, "debug", False):
+            traceback.print_exc(file=stderr)
+        return EXIT_CONFIG_ERROR
     except FileNotFoundError as exc:
-        print(f"Config file not found: {exc}", file=stderr)
-        return 2
+        print(f"❌ Configuration file not found: {exc}", file=stderr)
+        if "args" in locals() and getattr(args, "debug", False):
+            traceback.print_exc(file=stderr)
+        return EXIT_CONFIG_ERROR
+    except Exception as exc:
+        print(f"❌ Internal error: {exc}", file=stderr)
+        if "args" in locals() and getattr(args, "debug", False):
+            traceback.print_exc(file=stderr)
+        else:
+            print("Re-run with --debug for a stack trace.", file=stderr)
+        return EXIT_RUNTIME_ERROR
 
 
 __all__ = ["run_cli"]

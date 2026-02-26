@@ -16,6 +16,12 @@ def build_parser() -> argparse.ArgumentParser:
     """Build and return the argument parser for FlowGate CLI."""
     parser = argparse.ArgumentParser(prog="flowgate")
     parser.add_argument("--config", default="config/flowgate.yaml")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Show stack traces on errors and enable debug logging",
+    )
 
     sub = parser.add_subparsers(dest="command", required=True)
 
