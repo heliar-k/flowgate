@@ -8,400 +8,124 @@ FlowGate is a local control tool for managing `CLIProxyAPIPlus + LiteLLM` stacks
 
 ## Architecture
 
-FlowGate uses a modular architecture with clear separation of concerns. For detailed architecture documentation, see:
-
-- **[Architecture Overview](docs/architecture/README.md)** - System design and C4 model diagrams
-- **[Architecture Diagrams](docs/architecture/diagrams.md)** - Visual architecture representations (Mermaid)
-- **[Data Flows](docs/architecture/data-flows.md)** - Key data flow documentation
-- **[Python API Reference](docs/api/python-api.md)** - Auto-generated API documentation
+For detailed docs: [Architecture Overview](docs/architecture/README.md), [Diagrams](docs/architecture/diagrams.md), [Data Flows](docs/architecture/data-flows.md), [API Reference](docs/api/python-api.md).
 
 ### Key Components
 
-**CLI Layer** (`src/flowgate/cli/`):
-- Command routing and argument parsing
-- Uses BaseCommand pattern for all commands
-- Unified error handling via @handle_command_errors decorator
-- Entry point for all user interactions
-
-**Configuration** (`src/flowgate/config.py`, `src/flowgate/config_utils/`):
-- Schema validation (version 2)
-- Path resolution (PathResolver class in `config_utils/path_resolver.py`)
-- Credential management and reference resolution
-- Backward compatibility for legacy configs
-
-**Process Management** (`src/flowgate/process.py`):
-- Service lifecycle (start/stop/restart)
-- PID-based process tracking under `.router/runtime/pids/`
-- Port conflict detection and validation
-- Event logging to `.router/runtime/events.log`
-- Health check support
-
-**Profile Management** (`src/flowgate/profile.py`):
-- Policy profile switching (reliability/balanced/cost)
-- Config overlay merging (deep merge of base + profile)
-- Credential reference resolution (`api_key_ref` → actual keys)
-- Automatic service restart on profile change
-- Atomic file writes for config and state
-
-**Authentication** (`src/flowgate/oauth.py`, `src/flowgate/auth_methods.py`):
-- OAuth polling flow for browser-based authentication
-- Headless import support for non-interactive environments
-- Multiple provider support (Codex, GitHub Copilot)
-- Secure credential storage in `.router/auth/`
-
-**Bootstrap** (`src/flowgate/bootstrap.py`):
-- Platform-specific binary downloads from GitHub releases
-- LiteLLM runner script generation (wraps `uv run litellm`)
-- Platform detection (darwin/linux, amd64/arm64)
-
-**Integration** (`src/flowgate/integration.py`, `src/flowgate/client_apply.py`):
-- Client config snippet generation (Codex, Claude Code)
-- Automated config file updates with backup
-- Multiple client integrations
-
-### Visual Architecture
-
-See [Architecture Diagrams](docs/architecture/diagrams.md) for visual representations including:
-- **Component Diagram**: Shows main components and their relationships
-- **Profile Switch Flow**: Sequence diagram for profile activation
-- **OAuth Login Flow**: Sequence diagram for authentication
-- **Service Lifecycle**: State diagram for service management
-
-## Architecture
-
-### Core Components
-
-**CLI Layer** (`src/flowgate/cli.py`):
-- Entry point for all commands: profile, auth, service, health, bootstrap, integration
-- Parses config, resolves paths, and delegates to specialized modules
-- Uses argparse with subcommands pattern
-
-**Configuration** (`src/flowgate/config.py`):
-- Supports config schema version 2 (explicit or defaulted)
-- JSON/YAML parsing with backward compatibility for legacy keys
-- Path resolution via PathResolver class (`config_utils/path_resolver.py`)
-- Validates required top-level keys and service definitions
-
-**Path Resolution** (`src/flowgate/config_utils/path_resolver.py`):
-- Unified path resolution for all configuration paths
-- Supports absolute paths (unchanged) and relative paths (relative to config dir)
-- Handles 4 path types: paths.*, secret_files, credentials.upstream.*.file, services.*.command.cwd
-- Deep-copy configuration to avoid mutations
-
-**Bootstrap** (`src/flowgate/bootstrap.py`):
-- Downloads platform-specific CLIProxyAPIPlus binary from GitHub releases
-- Generates LiteLLM runner script that wraps `uv run litellm`
-- Platform detection for darwin/linux and amd64/arm64
-
-**Profile Management** (`src/flowgate/profile.py`):
-- Merges `litellm_base` with profile-specific overlays
-- Resolves `api_key_ref` from credential files
-- Atomically writes active config and state files
-- Automatic LiteLLM restart when switching profiles while service is running
-
-**Process Supervision** (`src/flowgate/process.py`):
-- `ProcessSupervisor` manages service lifecycle (start/stop/restart)
-- PID-based process tracking under `.router/runtime/pids/`
-- JSON event logging to `.router/runtime/events.log`
-
-**Authentication** (`src/flowgate/oauth.py`, `auth_methods.py`):
-- OAuth polling flow for Codex and GitHub Copilot
-- Headless import for device-auth flows (imports from `~/.codex/auth.json`)
-- Extensible handler registry in `auth_methods.py`
-
-**Integration** (`src/flowgate/integration.py`, `client_apply.py`):
-- Generate client config snippets (Codex, Claude Code)
-- Apply settings to client config files with backup
+- **CLI** (`src/flowgate/cli/`): BaseCommand pattern, @handle_command_errors decorator, argparse subcommands
+- **Config** (`src/flowgate/config.py`, `config_utils/`): Schema v2 validation, PathResolver for path resolution, credential management
+- **Process** (`src/flowgate/process.py`): ProcessSupervisor for service lifecycle, PID tracking in `.router/runtime/pids/`, port conflict detection
+- **Profile** (`src/flowgate/profile.py`): Policy switching (reliability/balanced/cost), deep merge base + overlay, `api_key_ref` resolution, auto-restart on change
+- **Auth** (`src/flowgate/oauth.py`, `auth_methods.py`): OAuth polling, headless import, multi-provider (Codex, GitHub Copilot)
+- **Bootstrap** (`src/flowgate/bootstrap.py`): Platform-specific binary downloads, LiteLLM runner script generation
+- **Integration** (`src/flowgate/integration.py`, `client_apply.py`): Client config snippets (Codex, Claude Code), automated config updates
 
 ### Key Data Flows
 
-1. **Profile Activation**: User runs `profile set <name>` → `profile.py` merges base + overlay → resolves credential refs → writes active config + state → auto-restarts LiteLLM if running
-2. **Service Start**: User runs `service start all` → CLI validates port availability → `ProcessSupervisor.start()` spawns processes → records PIDs → logs events
-3. **OAuth Login**: User runs `auth login codex` → fetches auth URL → polls status endpoint → writes auth artifact → records event
+1. **Profile Activation**: `profile set <name>` → merge base + overlay → resolve credentials → write active config → auto-restart LiteLLM
+2. **Service Start**: `service start all` → validate ports → spawn processes → record PIDs → log events
+3. **OAuth Login**: `auth login codex` → fetch auth URL → poll status → write auth artifact → record event
 
 ## Directory Layout
 
-- `src/flowgate/`: Main package code
-  - `config.py`: Configuration loading and validation
-  - `config_utils/`: Configuration utilities
-    - `path_resolver.py`: Unified path resolution
-  - `cli/`: Command-line interface
-  - `validators.py`: Configuration validators
-- `tests/`: unittest suite (unit + integration tests)
-- `config/examples/`: Sample configs (copy to `config/flowgate.yaml` and `config/cliproxyapi.yaml`)
-- `.router/`: Runtime artifacts (PIDs, logs, binaries, auth files) - intentionally gitignored
-- `scripts/`: Helper scripts (`xgate`, `xtest`, `smoke_local.sh`, `debug_cliproxyapi.sh`, `security_check.sh`, `generate_docs.sh`, `check_doc_links.py`)
+- `src/flowgate/`: Main package (`config.py`, `config_utils/`, `cli/`, `process.py`, `profile.py`, `oauth.py`, `bootstrap.py`, `validators.py`)
+- `tests/`: Unit + integration tests
+- `config/examples/`: Sample configs
+- `.router/`: Runtime artifacts (gitignored)
+- `scripts/`: Helper scripts (`xgate`, `xtest`, `smoke_local.sh`, `security_check.sh`, `generate_docs.sh`)
 
-## Common Development Commands
+## Common Commands
 
-### Setup and Installation
 ```bash
-export UV_CACHE_DIR=.uv-cache
+# Setup
 uv sync --group test
-```
 
-### Running the CLI
-```bash
-# With venv
+# Run CLI
 uv run flowgate --config config/flowgate.yaml <command>
 
-# Without venv activation (uvx wrapper)
-./scripts/xgate --config config/flowgate.yaml <command>
-```
-
-### Bootstrap Runtime
-```bash
-# Initial download
+# Bootstrap
 uv run flowgate --config config/flowgate.yaml bootstrap download
-# Custom version:
-uv run flowgate --config config/flowgate.yaml bootstrap download --cliproxy-version v6.8.18-1
-
-# Check for and apply updates (recommended)
-uv run flowgate --config config/flowgate.yaml bootstrap update
-# Non-interactive update:
 uv run flowgate --config config/flowgate.yaml bootstrap update --yes
-```
 
-### Configuration Management
-```bash
-# Migrate config from version 1 to version 2
-uv run flowgate --config config/flowgate.yaml config migrate
-
-# Preview migration changes without applying
-uv run flowgate --config config/flowgate.yaml config migrate --dry-run
-```
-
-### Profile Management
-```bash
+# Profile & Service
 uv run flowgate --config config/flowgate.yaml profile list
 uv run flowgate --config config/flowgate.yaml profile set balanced
-```
-
-### Service Control
-```bash
 uv run flowgate --config config/flowgate.yaml service start all
 uv run flowgate --config config/flowgate.yaml service stop all
 uv run flowgate --config config/flowgate.yaml status
 uv run flowgate --config config/flowgate.yaml health
-```
 
-### Config Migration
-```bash
-# Check if migration is needed (loads config and shows warnings)
-uv run flowgate --config config/flowgate.yaml status
-
-# Preview migration changes without applying
-uv run flowgate --config config/flowgate.yaml config migrate --dry-run
-
-# Perform migration (creates automatic backup)
-uv run flowgate --config config/flowgate.yaml config migrate
-```
-
-### OAuth and Authentication
-```bash
-uv run flowgate --config config/flowgate.yaml auth list
-uv run flowgate --config config/flowgate.yaml auth status
+# Auth
 uv run flowgate --config config/flowgate.yaml auth login codex --timeout 180
 uv run flowgate --config config/flowgate.yaml auth import-headless codex --source ~/.codex/auth.json
-```
 
-### Testing
-```bash
-# Run all unit tests (default, skips integration tests)
-uv run pytest tests/ -v
+# Config migration (v1 deprecated, removed in v0.3.0)
+uv run flowgate --config config/flowgate.yaml config migrate --dry-run
+uv run flowgate --config config/flowgate.yaml config migrate
 
-# Run only unit tests explicitly
-uv run pytest tests/ -v -m unit
+# Testing
+uv run pytest tests/ -v                    # unit tests only (default)
+uv run pytest tests/ -v -m integration     # integration tests only
+uv run pytest tests/ -v -m ""              # all tests
+uv run pytest tests/test_config.py -v      # specific file
+uv run pytest --cov=src/flowgate --cov-report=term-missing  # with coverage
 
-# Run only integration tests
-uv run pytest tests/ -v -m integration
-
-# Run all tests (unit + integration)
-uv run pytest tests/ -v -m ""
-
-# Without venv activation
-./scripts/xtest
-
-# Run specific test file
-uv run pytest tests/test_config.py -v
-
-# Run single test case
-uv run pytest tests/test_config.py::ConfigTests::test_load_valid_config -v
-
-# With coverage
-uv run pytest --cov=src/flowgate --cov-report=term-missing
-
-# Legacy unittest runner (still works)
-uv run python -m unittest discover -s tests -v
-```
-
-### Health Checks and Diagnostics
-```bash
-# Preflight checks
+# Diagnostics
 uv run flowgate --config config/flowgate.yaml doctor
-
-# Smoke tests
 ./scripts/smoke_local.sh config/flowgate.yaml
-PROFILE=reliability ./scripts/smoke_local.sh config/flowgate.yaml
-
-# Debug CLIProxyAPI standalone
-./scripts/debug_cliproxyapi.sh start
-./scripts/debug_cliproxyapi.sh stop
 ```
 
 ## Testing Strategy
 
-- **Unit tests**: Core modules marked with `@pytest.mark.unit` (351 tests)
-  - Fast, no external dependencies
-  - Tests: `test_config.py`, `test_process.py`, `test_validators.py`, `test_security.py`, etc.
-- **Integration tests**: Cross-module workflows marked with `@pytest.mark.integration` (43 tests)
-  - Real subprocess management, file I/O
-  - Located in `tests/integration/`
-  - Tests: `test_service_lifecycle.py`, `test_oauth_flow.py`, `test_concurrent_operations.py`
-- **Smoke tests**: Real runtime validation (`scripts/smoke_local.sh`)
-- Test naming convention: `test_<behavior_description>`
-- Framework: pytest with unittest.TestCase (compatible with both runners)
-- Add/update tests before changing behavior
-- PRs must include tests for affected functionality
-
-### Test Markers
-
-- `@pytest.mark.unit`: Fast unit tests (default, run by CI)
-- `@pytest.mark.integration`: Slower integration tests (skipped by default)
-
-### Running Tests
-
-```bash
-# Default: unit tests only
-pytest tests/
-
-# All tests
-pytest tests/ -m ""
-
-# Only integration tests
-pytest tests/ -m integration
-
-# Specific marker
-pytest tests/ -m unit
-```
+- **Unit tests** (`@pytest.mark.unit`): Fast, no external deps, default in CI
+- **Integration tests** (`@pytest.mark.integration`): Real subprocess/file I/O, in `tests/integration/`
+- **Smoke tests**: `scripts/smoke_local.sh`
+- Framework: pytest with unittest.TestCase
+- Naming: `test_<behavior_description>`
+- PRs must include tests for behavior changes
 
 ## Configuration Schema
 
-Current version: `config_version: 2` (recommended)
+Version: `config_version: 2` (v1 deprecated since v0.2.0, removed in v0.3.0)
 
-**IMPORTANT**: Config version 1 is deprecated as of v0.2.0 and will be removed in v0.3.0.
-Use `flowgate config migrate` to upgrade your configuration.
+Required keys: `config_version`, `paths` (runtime_dir, active_config, state_file, log_file), `services` (litellm, cliproxyapi_plus), `litellm_base` (model_list, router_settings, litellm_settings), `profiles` (at least one).
 
-Required top-level keys:
-- `config_version`: Should be set to `2` explicitly
-- `paths`: runtime_dir, active_config, state_file, log_file
-- `services`: litellm, cliproxyapi_plus (each with command.args, host, port)
-- `litellm_base`: model_list, router_settings, litellm_settings
-- `profiles`: at least one profile (reliability, balanced, cost)
+Optional: `credentials.upstream.<name>.file`, `auth.providers.<name>`, `secret_files`.
 
-Optional:
-- `credentials.upstream.<name>.file`: Path to API key credential files
-- `auth.providers.<name>`: OAuth configuration (replaces legacy `oauth`)
-- `secret_files`: Additional sensitive file paths for permission checks
-
-### Config Version Migration
-
-Version 1 configs are deprecated and will stop working in v0.3.0. Migrate using:
-
-```bash
-# Preview migration changes
-flowgate --config config/flowgate.yaml config migrate --dry-run
-
-# Perform migration (creates backup automatically)
-flowgate --config config/flowgate.yaml config migrate
-```
-
-Legacy field mappings (v1 → v2):
-- `oauth` → `auth.providers` (auto-normalized in v0.2.x)
-- `services.cliproxyapi` → `services.cliproxyapi_plus`
-- `secrets` → `secret_files`
-
-See `docs/config-version-migration.md` for detailed migration guide.
+Legacy mappings (v1 → v2): `oauth` → `auth.providers`, `services.cliproxyapi` → `services.cliproxyapi_plus`, `secrets` → `secret_files`. See `docs/config-version-migration.md`.
 
 ## Code Style
 
-- Python 3.12+ with type hints for public functions
-- 4-space indentation, `snake_case` for modules/functions, `PascalCase` for classes
-- Use explicit exceptions: `ConfigError`, `RuntimeError`, `ValueError`
-- Keep functions small and focused
-- Paths: relative to config file location by default, support absolute paths
+- Python 3.12+, type hints for public functions
+- 4-space indent, `snake_case` functions, `PascalCase` classes
+- Explicit exceptions: `ConfigError`, `RuntimeError`, `ValueError`
+- Paths relative to config file location, support absolute
 
 ## Commit and PR Guidelines
 
-**Commit format** (Conventional Commits):
-```
-type(scope): summary
+Conventional Commits: `type(scope): summary` (types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`; scopes: `bootstrap`, `cli`, `config`, `profile`, `auth`, `service`).
 
-Why this change was needed:
-...
-
-What changed:
-...
-
-Problem solved:
-...
-```
-
-Example types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`
-Example scopes: `bootstrap`, `cli`, `config`, `profile`, `auth`, `service`
-
-**PR requirements**:
-- Include test evidence (command + result)
-- Document config/migration impact if applicable
-- One focused change per commit
-- Tests must be included for behavior changes
+PRs: include test evidence, document config impact, one focused change per commit.
 
 ## Adding New Features
 
-### Adding an Auth Provider
-1. Add provider config under `auth.providers.<provider>` in config with `auth_url_endpoint`, `status_endpoint`
-2. For headless import, add handler to `headless_import_handlers()` in `auth_methods.py`
-3. Add CLI and config tests in `tests/test_cli.py` and `tests/test_config.py`
-4. Verify with `auth list` and `auth status`
+**Auth Provider**: Add config under `auth.providers.<provider>`, add handler in `auth_methods.py`, add tests, verify with `auth list`/`auth status`.
 
-### Adding a Profile Strategy
-1. Add profile name under `profiles.<name>` in config
-2. Define `litellm_settings` overrides (retries, cooldown, fallbacks)
-3. Test profile activation and LiteLLM restart behavior
-4. Update docs with use case description
+**Profile Strategy**: Add under `profiles.<name>`, define `litellm_settings` overrides, test activation and restart behavior.
 
 ## CI/CD
 
-Workflow: `.github/workflows/ci.yml`
-- Runs on: push to main, all PRs
-- Steps: `uv sync`, `pytest` (all tests including integration), CLI help checks
-- Test command: `uv run pytest tests/ -v -m ""`
-- Intentionally excludes: OAuth network flows requiring real endpoints
+`.github/workflows/ci.yml`: push to main + all PRs → `uv sync` → `uv run pytest tests/ -v -m ""` → CLI help checks.
 
 ## Security
 
-- Never commit credentials or auth artifacts
-- Secrets stored in `.router/secrets/` (gitignored)
-- Environment variables for non-file credentials (e.g., `CUSTOM_API_KEY`)
-- Run `./scripts/security_check.sh` before push to verify permissions and gitignore
+- Never commit credentials; secrets in `.router/secrets/` (gitignored)
+- Run `./scripts/security_check.sh` before push
 
 ## Observability
 
-Event logging: `.router/runtime/events.log` (JSON lines)
-- Fields: `event`, `service`, `profile`, `provider`, `result`, `detail`, `timestamp`
-- Events: `service_start`, `service_stop`, `service_restart`, `profile_switch`, `oauth_login`, `auth_import`
-
-Quick inspection:
-```bash
-tail -n 50 .router/runtime/events.log
-```
+Event log: `.router/runtime/events.log` (JSON lines). Events: `service_start/stop/restart`, `profile_switch`, `oauth_login`, `auth_import`.
 
 ## Troubleshooting
 
-See `docs/runbook-troubleshooting.md` for common issues.
-
-Start with:
-1. `uv run flowgate --config config/flowgate.yaml status`
-2. `uv run flowgate --config config/flowgate.yaml health`
-3. `tail -n 50 .router/runtime/events.log`
-4. `uv run flowgate --config config/flowgate.yaml doctor`
+See `docs/runbook-troubleshooting.md`. Start with: `status` → `health` → `events.log` → `doctor`.
