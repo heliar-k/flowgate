@@ -59,9 +59,8 @@ uv run flowgate --config config/flowgate.yaml health
 uv run flowgate --config config/flowgate.yaml auth login codex --timeout 180
 uv run flowgate --config config/flowgate.yaml auth import-headless codex --source ~/.codex/auth.json
 
-# Config migration (v1 deprecated, removed in v0.3.0)
-uv run flowgate --config config/flowgate.yaml config migrate --dry-run
-uv run flowgate --config config/flowgate.yaml config migrate
+# Config migration (config_version 1 removed since v0.3.0)
+# See docs/developer-guide/config-version-migration.md for manual steps
 
 # Testing
 uv run pytest tests/ -v                    # unit tests only (default)
@@ -92,11 +91,11 @@ Required keys: `config_version`, `paths` (runtime_dir, active_config, state_file
 
 Optional: `credentials.upstream.<name>.file`, `auth.providers.<name>`, `secret_files`.
 
-Legacy mappings (v1 → v2): `oauth` → `auth.providers`, `services.cliproxyapi` → `services.cliproxyapi_plus`, `secrets` → `secret_files`. See `docs/config-version-migration.md`.
+Legacy mappings (v1 → v2): `oauth` → `auth.providers`, `services.cliproxyapi` → `services.cliproxyapi_plus`, `secrets` → `secret_files`. See `docs/developer-guide/config-version-migration.md`.
 
 ## Code Style
 
-- Python 3.12+, type hints for public functions
+- Python 3.11+, type hints for public functions
 - 4-space indent, `snake_case` functions, `PascalCase` classes
 - Explicit exceptions: `ConfigError`, `RuntimeError`, `ValueError`
 - Paths relative to config file location, support absolute

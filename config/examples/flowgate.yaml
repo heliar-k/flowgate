@@ -1,7 +1,7 @@
 # FlowGate Configuration - Version 2
-# IMPORTANT: This config uses version 2 schema
-# Version 1 is deprecated and will be removed in v0.3.0
-# To migrate from version 1: flowgate --config <path> config migrate
+# IMPORTANT: FlowGate >=0.3.0 supports only config_version: 2
+# To migrate from config_version: 1, follow:
+#   docs/developer-guide/config-version-migration.md
 
 config_version: 2
 

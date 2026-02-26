@@ -410,19 +410,19 @@ flowgate --config config/flowgate.yaml profile list
 ## Migration FAQ
 
 **Q: Do I need to migrate immediately?**
-A: Yes, strongly recommended. Version 1 will stop working in v0.3.0.
+A: Yes, if you are running FlowGate `>=0.3.0`. Config version 1 has been removed since `v0.3.0`.
 
 **Q: Will my existing config break?**
-A: No, version 1 configs work in v0.2.x with a deprecation warning.
+A: On FlowGate `>=0.3.0`, version 1 configs fail validation. On FlowGate `<=0.2.x`, they work with a deprecation warning.
 
 **Q: Can I use both old and new field names?**
 A: No, use only version 2 field names. New names take precedence.
 
 **Q: What if migration fails?**
-A: Restore from the automatic backup file (e.g., `flowgate.yaml.backup-TIMESTAMP`).
+A: Restore from your backup copy of the config file and retry the manual key renames.
 
 **Q: Can I rollback after migration?**
-A: Yes, restore from the backup file created during migration.
+A: Yes, restore from your backup copy.
 
 ---
 

@@ -207,32 +207,18 @@ Doctor: System is ready
 
 If you're upgrading from FlowGate v0.1.x with `config_version: 1`:
 
-### Check if Migration is Needed
+FlowGate `>=0.3.0` no longer supports config version 1. Migration is manual:
 
-```bash
-uv run flowgate --config config/flowgate.yaml status
-```
-
-If you see a deprecation warning:
-```
-⚠️  WARNING: config_version 1 is deprecated and will be removed in v0.3.0
-    Detected legacy fields: oauth
-    Please run: flowgate config migrate
-```
-
-### Perform Migration
-
-**Preview changes** (dry-run):
-```bash
-uv run flowgate --config config/flowgate.yaml config migrate --dry-run
-```
-
-**Apply migration** (creates automatic backup):
-```bash
-uv run flowgate --config config/flowgate.yaml config migrate
-```
-
-Backup location: `config/flowgate.yaml.backup-YYYYMMDD-HHMMSS`
+1. Make a backup copy of your config file.
+2. Set `config_version: 2`.
+3. Rename legacy keys:
+   - `oauth` → `auth.providers`
+   - `secrets` → `secret_files`
+   - `services.cliproxyapi` → `services.cliproxyapi_plus`
+4. Validate:
+   ```bash
+   uv run flowgate --config config/flowgate.yaml doctor
+   ```
 
 See [Configuration Migration Guide](../developer-guide/config-version-migration.md) for details.
 

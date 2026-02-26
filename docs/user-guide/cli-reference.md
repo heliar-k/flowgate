@@ -5,6 +5,7 @@ This document lists the current FlowGate CLI commands and flags.
 ## Global Options
 
 - `--config <path>`: Path to FlowGate config file (default: `config/flowgate.yaml`)
+- `--debug`: Enable debug logging and show stack traces on internal errors
 
 ## Commands
 
@@ -59,9 +60,9 @@ This document lists the current FlowGate CLI commands and flags.
 
 ### `bootstrap`
 
-- `flowgate bootstrap download [--cliproxy-version <tag>] [--cliproxy-repo <owner/repo>]`
+- `flowgate bootstrap download [--cliproxy-version <tag>] [--cliproxy-repo <owner/repo>] [--require-sha256]`
   - Downloads runtime artifacts and generates the LiteLLM runner script.
-- `flowgate bootstrap update [--cliproxy-repo <owner/repo>] [--yes|-y]`
+- `flowgate bootstrap update [--cliproxy-repo <owner/repo>] [--yes|-y] [--require-sha256]`
   - Checks for a newer CLIProxyAPIPlus release, downloads it, and restarts `cliproxyapi_plus` if running.
 
 ## Exit Codes (high level)
