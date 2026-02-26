@@ -124,6 +124,32 @@ class ConfigTests(unittest.TestCase):
             "/tmp/coproxy.key",
         )
 
+    def test_load_credentials_env_schema(self):
+        data = self._base_config()
+        data["credentials"] = {
+            "upstream": {
+                "anthropic": {"env": "ANTHROPIC_API_KEY"},
+            }
+        }
+        path = self._write_config(data)
+        cfg = load_router_config(path)
+        self.assertEqual(
+            cfg["credentials"]["upstream"]["anthropic"]["env"],
+            "ANTHROPIC_API_KEY",
+        )
+
+    def test_rejects_credentials_with_both_file_and_env(self):
+        data = self._base_config()
+        data["credentials"] = {
+            "upstream": {
+                "openai": {"file": "/tmp/openai.key", "env": "OPENAI_API_KEY"},
+            }
+        }
+        path = self._write_config(data)
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
+        self.assertIn("must define exactly one of", str(ctx.exception))
+
     def test_rejects_invalid_credentials_schema(self):
         data = self._base_config()
         data["credentials"] = {"upstream": {"coproxy_local": {"file": 123}}}

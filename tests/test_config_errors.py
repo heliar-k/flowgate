@@ -79,6 +79,24 @@ class TestConfigErrorHandling(unittest.TestCase):
         self.assertIn("Unknown top-level keys", str(ctx.exception))
         self.assertIn("unknown_field", str(ctx.exception))
 
+    def test_integration_allowed(self):
+        """Test integration top-level key is allowed and validated."""
+        cfg = self._minimal_valid_config()
+        cfg["integration"] = {"default_model": "router-default", "fast_model": "router-cheap"}
+        path = self._write_config(cfg)
+        loaded = load_router_config(path)
+        self.assertEqual(loaded["integration"]["default_model"], "router-default")
+        self.assertEqual(loaded["integration"]["fast_model"], "router-cheap")
+
+    def test_integration_unknown_key_rejected(self):
+        """Test ConfigError when integration has unknown keys."""
+        cfg = self._minimal_valid_config()
+        cfg["integration"] = {"default_model": "router-default", "unknown": "x"}
+        path = self._write_config(cfg)
+        with self.assertRaises(ConfigError) as ctx:
+            load_router_config(path)
+        self.assertIn("integration has unknown keys", str(ctx.exception))
+
     def test_invalid_config_version_type(self):
         """Test ConfigError when config_version is not an integer."""
         cfg = self._minimal_valid_config()

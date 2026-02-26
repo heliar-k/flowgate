@@ -53,7 +53,10 @@ class StatusCommand(BaseCommand):
         print(f"current_profile={profile}", file=stdout)
         print(f"updated_at={updated_at}", file=stdout)
 
-        supervisor = cli_module.ProcessSupervisor(self.config["paths"]["runtime_dir"])
+        supervisor = cli_module.ProcessSupervisor(
+            self.config["paths"]["runtime_dir"],
+            events_log=self.config["paths"]["log_file"],
+        )
         for name in sorted(self.config["services"].keys()):
             running = supervisor.is_running(name)
             print(f"{name}_running={'yes' if running else 'no'}", file=stdout)
@@ -123,7 +126,10 @@ class HealthCommand(BaseCommand):
         print("", file=stdout)
 
         # Also run service health checks
-        supervisor = cli_module.ProcessSupervisor(self.config["paths"]["runtime_dir"])
+        supervisor = cli_module.ProcessSupervisor(
+            self.config["paths"]["runtime_dir"],
+            events_log=self.config["paths"]["log_file"],
+        )
         all_ok = overall == "healthy"
 
         print("Service Health:", file=stdout)

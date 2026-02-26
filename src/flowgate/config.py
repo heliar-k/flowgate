@@ -21,6 +21,7 @@ _ALLOWED_TOP_LEVEL_KEYS = {
     "profiles",
     "auth",
     "secret_files",
+    "integration",
 }
 
 _REQUIRED_TOP_LEVEL_KEYS = {
@@ -68,7 +69,13 @@ def _normalize_credentials(credentials: dict[str, Any]) -> dict[str, Any]:
     normalized_upstream: dict[str, dict[str, str]] = {}
     for name, entry in upstream.items():
         file_path = entry.get("file")
-        normalized_upstream[name] = {"file": file_path}
+        env_name = entry.get("env")
+        normalized_entry: dict[str, str] = {}
+        if file_path is not None:
+            normalized_entry["file"] = file_path
+        if env_name is not None:
+            normalized_entry["env"] = env_name
+        normalized_upstream[name] = normalized_entry
 
     return {"upstream": normalized_upstream}
 
@@ -195,6 +202,10 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     secret_files = data.get("secret_files", [])
     ConfigValidator.validate_secret_files(secret_files)
 
+    integration_raw = data.get("integration", {})
+    integration = _ensure_mapping(integration_raw, "integration")
+    ConfigValidator.validate_integration(integration)
+
     # Validate api_key_ref cross-references
     _validate_api_key_refs(data)
 
@@ -207,6 +218,7 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
         "profiles": profiles,
         "auth": {"providers": providers},
         "secret_files": secret_files,
+        "integration": integration,
     }
 
 

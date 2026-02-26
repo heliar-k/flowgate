@@ -267,26 +267,37 @@ def check_credentials(config: dict[str, Any]) -> HealthCheckResult:
             continue
 
         file_path = entry.get("file")
-        if not isinstance(file_path, str) or not file_path.strip():
+        env_name = entry.get("env")
+
+        if isinstance(file_path, str) and file_path.strip():
+            checked += 1
+            cred_path = Path(file_path)
+
+            if not cred_path.exists():
+                issues.append(f"{name}: file not found ({cred_path})")
+                continue
+
+            if not cred_path.is_file():
+                issues.append(f"{name}: not a file ({cred_path})")
+                continue
+
+            try:
+                content = cred_path.read_text(encoding="utf-8").strip()
+                if not content:
+                    issues.append(f"{name}: file is empty ({cred_path})")
+            except (OSError, IOError) as exc:
+                issues.append(f"{name}: cannot read file ({exc})")
             continue
 
-        checked += 1
-        cred_path = Path(file_path)
-
-        if not cred_path.exists():
-            issues.append(f"{name}: file not found ({cred_path})")
+        if isinstance(env_name, str) and env_name.strip():
+            checked += 1
+            value = os.environ.get(env_name, "").strip()
+            if not value:
+                issues.append(f"{name}: env var not set or empty ({env_name})")
             continue
 
-        if not cred_path.is_file():
-            issues.append(f"{name}: not a file ({cred_path})")
-            continue
-
-        try:
-            content = cred_path.read_text(encoding="utf-8").strip()
-            if not content:
-                issues.append(f"{name}: file is empty ({cred_path})")
-        except (OSError, IOError) as exc:
-            issues.append(f"{name}: cannot read file ({exc})")
+        # Unknown/empty entry, ignore (validator should have caught this).
+        continue
 
     details = {"checked": checked, "issues": len(issues), "issue_list": issues}
 

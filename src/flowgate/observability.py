@@ -14,11 +14,45 @@ Example usage:
 import functools
 import json
 import time
-from datetime import UTC, datetime
+from contextlib import contextmanager
+from contextvars import ContextVar
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])
+
+_EVENTS_LOG_PATH: ContextVar[str | None] = ContextVar(
+    "flowgate_events_log_path", default=None
+)
+
+
+def set_events_log_path(path: str | Path | None) -> None:
+    """Set the events log path for the current execution context.
+
+    When set, performance metrics are appended to this file.
+    """
+    if path is None:
+        _EVENTS_LOG_PATH.set(None)
+        return
+    _EVENTS_LOG_PATH.set(str(path))
+
+
+@contextmanager
+def events_log_context(path: str | Path | None):
+    """Temporarily override the events log path for the current context."""
+    token = _EVENTS_LOG_PATH.set(str(path) if path is not None else None)
+    try:
+        yield
+    finally:
+        _EVENTS_LOG_PATH.reset(token)
+
+
+def _events_log_path() -> Path:
+    configured = _EVENTS_LOG_PATH.get()
+    if configured:
+        return Path(configured)
+    return Path(".router/runtime/events.log")
 
 
 def measure_time(operation: str) -> Callable[[F], F]:
@@ -93,7 +127,7 @@ def log_performance_metric(
         "event": "performance_metric",
         "operation": operation,
         "duration_ms": round(duration_ms, 2),
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     if function_name:
@@ -103,8 +137,7 @@ def log_performance_metric(
         metric["context"] = context
 
     # Try to append to events log
-    # Use well-known path relative to project root
-    events_log = Path(".router/runtime/events.log")
+    events_log = _events_log_path()
 
     try:
         # Create parent directories if they don't exist
@@ -139,7 +172,7 @@ def get_recent_metrics(
         metrics = get_recent_metrics("config_load", limit=50)
         avg_ms = sum(m["duration_ms"] for m in metrics) / len(metrics)
     """
-    events_log = Path(".router/runtime/events.log")
+    events_log = _events_log_path()
 
     if not events_log.exists():
         return []

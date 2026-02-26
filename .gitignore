@@ -19,6 +19,7 @@ wheels/
 .ruff_cache/
 .coverage
 htmlcov/
+.hypothesis/
 
 # Virtual environments / tool cache
 .venv/

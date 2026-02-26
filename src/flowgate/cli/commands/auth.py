@@ -183,7 +183,10 @@ class AuthLoginCommand(BaseCommand):
         timeout = self.args.timeout
         poll_interval = self.args.poll_interval
 
-        supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
+        supervisor = ProcessSupervisor(
+            self.config["paths"]["runtime_dir"],
+            events_log=self.config["paths"]["log_file"],
+        )
         providers = _auth_providers(self.config)
         if provider not in providers:
             supervisor.record_event(
@@ -276,7 +279,10 @@ class AuthImportCommand(BaseCommand):
         except (FileNotFoundError, ValueError, OSError, RuntimeError) as exc:
             raise ConfigError(f"headless import failed: {exc}") from exc
 
-        supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
+        supervisor = ProcessSupervisor(
+            self.config["paths"]["runtime_dir"],
+            events_log=self.config["paths"]["log_file"],
+        )
         supervisor.record_event(
             "auth_import",
             provider=provider,

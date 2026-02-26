@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .config import merge_dicts
 from .observability import measure_time
-from .utils import _upstream_credentials
+from .utils import _upstream_credential_sources
 
 
 def _atomic_write(path: Path, content: str) -> None:
@@ -28,9 +28,16 @@ def _read_api_key_from_file(path: str) -> str:
     return api_key
 
 
+def _read_api_key_from_env(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise ValueError(f"Credential env var not set or empty: {name}")
+    return value
+
+
 @measure_time("credential_resolution")
 def _resolve_model_api_key_refs(
-    litellm_doc: dict[str, Any], *, upstream_credentials: dict[str, str]
+    litellm_doc: dict[str, Any], *, upstream_credentials: dict[str, dict[str, str]]
 ) -> None:
     model_list = litellm_doc.get("model_list")
     if not isinstance(model_list, list):
@@ -54,13 +61,20 @@ def _resolve_model_api_key_refs(
             )
 
         ref = ref_raw.strip()
-        file_path = upstream_credentials.get(ref)
-        if not file_path:
+        source = upstream_credentials.get(ref)
+        if not source:
             raise ValueError(f"Unknown api_key_ref: {ref}")
 
         api_key = api_key_cache.get(ref)
         if api_key is None:
-            api_key = _read_api_key_from_file(file_path)
+            file_path = source.get("file")
+            env_name = source.get("env")
+            if file_path:
+                api_key = _read_api_key_from_file(file_path)
+            elif env_name:
+                api_key = _read_api_key_from_env(env_name)
+            else:
+                raise ValueError(f"Invalid credential source for api_key_ref: {ref}")
             api_key_cache[ref] = api_key
 
         params["api_key"] = api_key
@@ -84,7 +98,7 @@ def activate_profile(
     merged = merge_dicts(litellm_base, profile_overlay)
     _resolve_model_api_key_refs(
         merged,
-        upstream_credentials=_upstream_credentials(config),
+        upstream_credentials=_upstream_credential_sources(config),
     )
 
     paths = config["paths"]
@@ -96,7 +110,7 @@ def activate_profile(
 
     _atomic_write(active_path, json.dumps(merged, indent=2, sort_keys=True))
 
-    timestamp = now_iso or datetime.now(UTC).isoformat()
+    timestamp = now_iso or datetime.now(timezone.utc).isoformat()
     state_doc = {
         "current_profile": profile_name,
         "updated_at": timestamp,

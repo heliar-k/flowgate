@@ -17,11 +17,11 @@ class ProcessError(RuntimeError):
 
 
 class ProcessSupervisor:
-    def __init__(self, runtime_dir: str | Path):
+    def __init__(self, runtime_dir: str | Path, *, events_log: str | Path | None = None):
         self.runtime_dir = Path(runtime_dir)
         self.pid_dir = self.runtime_dir / "pids"
         self.log_dir = self.runtime_dir / "process-logs"
-        self.events_log = self.runtime_dir / "events.log"
+        self.events_log = Path(events_log) if events_log is not None else (self.runtime_dir / "events.log")
         self._children: dict[str, subprocess.Popen[bytes]] = {}
         self.pid_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir.mkdir(parents=True, exist_ok=True)

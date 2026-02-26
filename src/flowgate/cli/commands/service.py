@@ -87,7 +87,10 @@ class ServiceStartCommand(BaseCommand):
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
 
-        supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
+        supervisor = ProcessSupervisor(
+            self.config["paths"]["runtime_dir"],
+            events_log=self.config["paths"]["log_file"],
+        )
         target = self.args.target
 
         names = _service_names(self.config, target)
@@ -135,7 +138,10 @@ class ServiceStopCommand(BaseCommand):
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
 
-        supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
+        supervisor = ProcessSupervisor(
+            self.config["paths"]["runtime_dir"],
+            events_log=self.config["paths"]["log_file"],
+        )
         target = self.args.target
 
         names = _service_names(self.config, target)
@@ -158,7 +164,10 @@ class ServiceRestartCommand(BaseCommand):
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
 
-        supervisor = ProcessSupervisor(self.config["paths"]["runtime_dir"])
+        supervisor = ProcessSupervisor(
+            self.config["paths"]["runtime_dir"],
+            events_log=self.config["paths"]["log_file"],
+        )
         target = self.args.target
 
         names = _service_names(self.config, target)

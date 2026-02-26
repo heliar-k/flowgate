@@ -229,7 +229,9 @@ class ConfigValidator:
         Structure:
         - Only 'upstream' key is allowed
         - upstream: dict of credential entries
-        - Each entry must have a 'file' key with non-empty string value
+        - Each entry must have exactly one of:
+          - file: path to file containing API key
+          - env: environment variable name containing API key
 
         Args:
             credentials_config: The credentials section from configuration
@@ -255,16 +257,30 @@ class ConfigValidator:
                 entry, dict, f"credentials.upstream.{name}"
             )
 
-            unknown_entry = sorted(set(entry.keys()) - {"file"})
+            unknown_entry = sorted(set(entry.keys()) - {"file", "env"})
             if unknown_entry:
                 raise ConfigError(
                     f"credentials.upstream.{name} has unknown keys: {', '.join(unknown_entry)}"
                 )
 
             file_path = entry.get("file")
-            ConfigValidator._validate_non_empty_string(
-                file_path, f"credentials.upstream.{name}.file"
-            )
+            env_name = entry.get("env")
+
+            has_file = file_path is not None
+            has_env = env_name is not None
+            if has_file == has_env:
+                raise ConfigError(
+                    f"credentials.upstream.{name} must define exactly one of: file, env"
+                )
+
+            if has_file:
+                ConfigValidator._validate_non_empty_string(
+                    file_path, f"credentials.upstream.{name}.file"
+                )
+            if has_env:
+                ConfigValidator._validate_non_empty_string(
+                    env_name, f"credentials.upstream.{name}.env"
+                )
 
     @staticmethod
     def validate_auth_providers(providers_config: dict[str, Any]) -> None:
@@ -316,3 +332,38 @@ class ConfigValidator:
             isinstance(p, str) for p in secret_files
         ):
             raise ConfigError("secret_files must be a list of string paths")
+
+    @staticmethod
+    def validate_integration(integration_config: dict[str, Any]) -> None:
+        """Validate the integration configuration section.
+
+        Supported keys:
+        - default_model: non-empty string (optional)
+        - fast_model: non-empty string (optional)
+
+        Args:
+            integration_config: The integration section from configuration
+
+        Raises:
+            ConfigError: If validation fails
+        """
+        from flowgate.config import ConfigError
+
+        unknown = sorted(
+            k for k in set(integration_config.keys()) - {"default_model", "fast_model"}
+            if not str(k).startswith("_comment")
+        )
+        if unknown:
+            raise ConfigError(f"integration has unknown keys: {', '.join(unknown)}")
+
+        default_model = integration_config.get("default_model")
+        if default_model is not None:
+            ConfigValidator._validate_non_empty_string(
+                default_model, "integration.default_model"
+            )
+
+        fast_model = integration_config.get("fast_model")
+        if fast_model is not None:
+            ConfigValidator._validate_non_empty_string(
+                fast_model, "integration.fast_model"
+            )

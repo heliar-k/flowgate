@@ -57,7 +57,10 @@ class ProfileSetCommand(BaseCommand):
             print(str(exc), file=stderr)
             return 2
 
-        supervisor = cli_module.ProcessSupervisor(self.config["paths"]["runtime_dir"])
+        supervisor = cli_module.ProcessSupervisor(
+            self.config["paths"]["runtime_dir"],
+            events_log=self.config["paths"]["log_file"],
+        )
         supervisor.record_event("profile_switch", profile=profile, result="success")
 
         print(f"profile={profile}", file=stdout)

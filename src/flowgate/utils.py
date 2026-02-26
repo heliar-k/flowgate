@@ -11,8 +11,13 @@ from pathlib import Path
 from typing import Any
 
 
-def _upstream_credentials(config: dict[str, Any]) -> dict[str, str]:
-    """Extract upstream credential file paths from config."""
+def _upstream_credential_sources(config: dict[str, Any]) -> dict[str, dict[str, str]]:
+    """Extract upstream credential sources from config.
+
+    Each entry is either:
+      - {"file": "<path>"} or
+      - {"env": "<ENV_VAR_NAME>"}
+    """
     credentials = config.get("credentials", {})
     if not isinstance(credentials, dict):
         return {}
@@ -21,15 +26,18 @@ def _upstream_credentials(config: dict[str, Any]) -> dict[str, str]:
     if not isinstance(upstream, dict):
         return {}
 
-    result: dict[str, str] = {}
+    result: dict[str, dict[str, str]] = {}
     for name, entry in upstream.items():
         if not isinstance(name, str):
             continue
         if not isinstance(entry, dict):
             continue
         file_path = entry.get("file")
+        env_name = entry.get("env")
         if isinstance(file_path, str) and file_path.strip():
-            result[name] = file_path
+            result[name] = {"file": file_path.strip()}
+        elif isinstance(env_name, str) and env_name.strip():
+            result[name] = {"env": env_name.strip()}
     return result
 
 
@@ -66,29 +74,38 @@ def _upstream_credential_issues(config: dict[str, Any]) -> list[str]:
     if not refs:
         return []
 
-    upstream = _upstream_credentials(config)
+    upstream = _upstream_credential_sources(config)
     issues: list[str] = []
     for ref in sorted(refs):
-        file_path = upstream.get(ref)
-        if not file_path:
+        source = upstream.get(ref)
+        if not source:
             issues.append(f"missing-ref:{ref}")
             continue
 
-        key_path = Path(file_path)
-        if not key_path.exists():
-            issues.append(f"missing-file:{ref}:{key_path}")
-            continue
-        if not key_path.is_file():
-            issues.append(f"not-a-file:{ref}:{key_path}")
-            continue
-        try:
-            api_key = key_path.read_text(encoding="utf-8").strip()
-        except OSError as exc:
-            issues.append(f"read-error:{ref}:{type(exc).__name__}")
-            continue
-        if not api_key:
-            issues.append(f"empty-file:{ref}:{key_path}")
-            continue
+        file_path = source.get("file")
+        env_name = source.get("env")
+        if file_path:
+            key_path = Path(file_path)
+            if not key_path.exists():
+                issues.append(f"missing-file:{ref}:{key_path}")
+                continue
+            if not key_path.is_file():
+                issues.append(f"not-a-file:{ref}:{key_path}")
+                continue
+            try:
+                api_key = key_path.read_text(encoding="utf-8").strip()
+            except OSError as exc:
+                issues.append(f"read-error:{ref}:{type(exc).__name__}")
+                continue
+            if not api_key:
+                issues.append(f"empty-file:{ref}:{key_path}")
+                continue
+        elif env_name:
+            value = os.environ.get(env_name, "").strip()
+            if not value:
+                issues.append(f"missing-env:{ref}:{env_name}")
+        else:
+            issues.append(f"invalid-credential:{ref}")
 
     return issues
 

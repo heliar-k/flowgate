@@ -415,7 +415,7 @@ class TestValidateCredentials(unittest.TestCase):
         return {
             "upstream": {
                 "openai": {"file": ".router/secrets/openai.key"},
-                "anthropic": {"file": ".router/secrets/anthropic.key"},
+                "anthropic": {"env": "ANTHROPIC_API_KEY"},
             }
         }
 
@@ -470,11 +470,34 @@ class TestValidateCredentials(unittest.TestCase):
         self.assertIn("credentials.upstream.openai has unknown keys: unknown", str(ctx.exception))
 
     def test_validate_credentials_missing_file(self):
-        """Test validate_credentials with missing file key."""
+        """Test validate_credentials with missing file/env key."""
         config = {"upstream": {"openai": {}}}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_credentials(config)
-        self.assertIn("credentials.upstream.openai.file must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "credentials.upstream.openai must define exactly one of: file, env",
+            str(ctx.exception),
+        )
+
+    def test_validate_credentials_both_file_and_env(self):
+        """Test validate_credentials with both file and env provided."""
+        config = {"upstream": {"openai": {"file": "path.key", "env": "OPENAI_API_KEY"}}}
+        with self.assertRaises(ConfigError) as ctx:
+            ConfigValidator.validate_credentials(config)
+        self.assertIn(
+            "credentials.upstream.openai must define exactly one of: file, env",
+            str(ctx.exception),
+        )
+
+    def test_validate_credentials_empty_env(self):
+        """Test validate_credentials with empty env value."""
+        config = {"upstream": {"openai": {"env": ""}}}
+        with self.assertRaises(ConfigError) as ctx:
+            ConfigValidator.validate_credentials(config)
+        self.assertIn(
+            "credentials.upstream.openai.env must be a non-empty string",
+            str(ctx.exception),
+        )
 
     def test_validate_credentials_empty_file(self):
         """Test validate_credentials with empty file value."""

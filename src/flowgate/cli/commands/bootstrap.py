@@ -148,7 +148,10 @@ class BootstrapUpdateCommand(BaseCommand):
         )
 
         # Auto-restart cliproxyapi_plus if it is running
-        supervisor = ProcessSupervisor(runtime_dir)
+        supervisor = ProcessSupervisor(
+            runtime_dir,
+            events_log=self.config["paths"]["log_file"],
+        )
         if supervisor.is_running(CLIPROXYAPI_PLUS_SERVICE):
             service_cfg = self.config["services"].get(CLIPROXYAPI_PLUS_SERVICE, {})
             args = service_cfg.get("command", {}).get("args", [])

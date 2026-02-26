@@ -60,9 +60,39 @@ def find_markdown_files(root: Path) -> list[Path]:
 
 def extract_links(content: str) -> list[str]:
     """Extract markdown links from content."""
+    # Avoid false-positives from code blocks and inline code (common in docs).
+    content = _strip_fenced_code_blocks(content)
+    content = re.sub(r"`[^`]*`", "", content)
     pattern = r"\[([^\]]*)\]\(([^\)]+)\)"
     matches = re.findall(pattern, content)
     return [url for _, url in matches]
+
+
+def _strip_fenced_code_blocks(content: str) -> str:
+    """Remove fenced code blocks (``` ... ```) from markdown content."""
+    lines = content.splitlines(keepends=True)
+    out: list[str] = []
+    in_fence = False
+    fence_marker: str | None = None
+
+    for line in lines:
+        stripped = line.lstrip()
+        is_fence = stripped.startswith("```") or stripped.startswith("~~~")
+        if is_fence:
+            marker = stripped[:3]
+            if not in_fence:
+                in_fence = True
+                fence_marker = marker
+            else:
+                if fence_marker == marker:
+                    in_fence = False
+                    fence_marker = None
+            continue
+
+        if not in_fence:
+            out.append(line)
+
+    return "".join(out)
 
 
 def is_external_link(link: str) -> bool:

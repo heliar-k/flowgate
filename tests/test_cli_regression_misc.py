@@ -263,8 +263,13 @@ class TestDiagnosticCommandRegression(unittest.TestCase):
         self.assertIn("liveness=fail", output)
         self.assertIn("readiness=fail", output)
 
+    @mock.patch("flowgate.cli._runtime_dependency_available", return_value=True)
     @mock.patch("flowgate.cli._is_executable_file")
-    def test_doctor_runtime_exists(self, mock_is_executable: mock.Mock) -> None:
+    def test_doctor_runtime_exists(
+        self,
+        mock_is_executable: mock.Mock,
+        mock_dep_available: mock.Mock,
+    ) -> None:
         """doctor command checks runtime directory and binaries"""
         mock_is_executable.return_value = True
 
