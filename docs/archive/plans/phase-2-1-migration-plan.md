@@ -452,7 +452,7 @@ $ flowgate config migrate
 - `src/flowgate/config.py`: Add deprecation checker
 - `src/flowgate/cli/commands/config.py`: New file with migrate command
 - `tests/test_config_migrate.py`: Migration tests
-- `docs/migration-guide-v0.3.md`: User migration guide
+- `docs/developer-guide/config-version-migration.md`: User migration guide
 
 **Acceptance Criteria**:
 - [ ] Deprecation warnings display for all legacy fields
@@ -603,7 +603,7 @@ class TestDeprecationWarnings(unittest.TestCase):
 
 ### 7.1 New Documents
 
-**`docs/migration-guide-v0.3.md`**:
+**`docs/developer-guide/config-version-migration.md`**:
 ```markdown
 # Migration Guide: FlowGate v0.2.x → v0.3.0
 
@@ -743,7 +743,7 @@ flowgate config migrate
 uv pip install flowgate==0.3.0
 ```
 
-See [Migration Guide](docs/migration-guide-v0.3.md) for details.
+See [Configuration Migration Guide](../../developer-guide/config-version-migration.md) for details.
 
 ## Improvements
 

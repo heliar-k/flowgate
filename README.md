@@ -136,4 +136,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Latest Release**: [v0.4.4](CHANGELOG.md#044---2026-02-21) | **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+**Latest Release**: [v0.4.6](CHANGELOG.md#046---2026-02-26) | **Changelog**: [CHANGELOG.md](CHANGELOG.md)

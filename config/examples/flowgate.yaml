@@ -9,7 +9,7 @@ paths:
   runtime_dir: "../.router/runtime"
   active_config: "../.router/runtime/litellm.active.yaml"
   state_file: "../.router/runtime/state.json"
-  log_file: "../.router/logs/routerctl.log"
+  log_file: "../.router/runtime/events.log"
 
 services:
   litellm:

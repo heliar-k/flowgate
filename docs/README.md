@@ -23,14 +23,17 @@ Documentation for contributors and developers working on FlowGate.
 - [Testing Guidelines](developer-guide/testing.md)
 - [Contributing Guide](developer-guide/contributing.md)
 - [Release Process](developer-guide/release-process.md)
+- [Path Resolution](developer-guide/path-resolution.md)
 
 ### 🏗️ [Architecture](architecture/README.md)
 System architecture, design decisions, and component documentation.
 
-- [Architecture Overview](architecture/overview.md)
-- [Component Descriptions](architecture/components.md)
 - [Data Flow Diagrams](architecture/data-flows.md)
-- [C4 Diagrams](architecture/diagrams/)
+- [Diagrams](architecture/diagrams.md)
+- [C4 Context](architecture/c4-context.md)
+- [C4 Containers](architecture/c4-containers.md)
+- [C4 Components (CLI)](architecture/c4-components-cli.md)
+- [C4 Deployment](architecture/c4-deployment.md)
 
 ### 🚀 [Operations Guide](operations/README.md)
 Documentation for deploying and operating FlowGate in production.
@@ -44,16 +47,16 @@ Documentation for deploying and operating FlowGate in production.
 API reference and generated documentation.
 
 - [CLI Reference](api/cli.md)
-- [Generated API Docs](api/_generated/) (auto-generated)
+- [Python API](api/python-api.md)
 
 ### 📋 [Release History](releases/README.md)
 Release notes and version history.
 
-- [Latest Release (v0.2.0)](releases/v0.2.0.md)
+- [Release Notes Index](releases/README.md)
 - [Changelog](../CHANGELOG.md)
 
-### 📝 [Project Plans](plans/README.md)
-Historical project planning documents and completion reports.
+### 📝 [Project Plans](archive/plans/README.md)
+Historical project planning documents and completion reports (archived).
 
 ## Quick Start
 
@@ -74,13 +77,13 @@ Historical project planning documents and completion reports.
 | Section | Status | Last Updated |
 |---------|--------|--------------|
 | User Guide | 🚧 In Progress | 2026-02-19 |
-| Developer Guide | ✅ Complete | 2026-02-19 |
+| Developer Guide | 🚧 In Progress | 2026-02-26 |
 | Architecture | ✅ Complete | 2026-02-17 |
-| Operations | 📋 Planned | - |
-| API Documentation | 🚧 In Progress | 2026-02-19 |
+| Operations | 🚧 In Progress | 2026-02-26 |
+| API Documentation | 🚧 In Progress | 2026-02-26 |
 
 ---
 
-**Documentation Version**: v0.3.0-dev
-**Last Updated**: 2026-02-19
+**Documentation Version**: v0.4.6
+**Last Updated**: 2026-02-26
 **Maintained By**: FlowGate Development Team

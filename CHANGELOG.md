@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-02-26
+
+### Fixed
+- Configuration schema and docs alignment:
+  - Allow `integration` as a first-class top-level config key
+  - Support `credentials.upstream.*.env` (env-var backed credentials)
+- Observability alignment:
+  - Performance metrics and runtime events now share a configurable events log path
+
+### Added
+- Missing documentation pages referenced by the docs index (CLI reference, profiles, developer and operations stubs)
+
 ## [0.4.4] - 2026-02-21
 
 ### Added

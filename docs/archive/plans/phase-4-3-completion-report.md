@@ -379,8 +379,8 @@ d4628a0 docs(architecture): add detailed data flow documentation
 - [Phase 4 Execution Plan](phase-4-execution-plan.md) - Overall Phase 4 plan
 - [Phase 4.1 Completion Report](phase-4-1-completion-report.md) - Documentation reorganization
 - [Phase 4.2 Completion Report](phase-4-2-completion-report.md) - Dependency management
-- [Architecture Diagrams](../architecture/diagrams.md) - The diagrams themselves
-- [Data Flows](../architecture/data-flows.md) - The flow documentation
+- [Architecture Diagrams](../../architecture/diagrams.md) - The diagrams themselves
+- [Data Flows](../../architecture/data-flows.md) - The flow documentation
 
 ---
 
