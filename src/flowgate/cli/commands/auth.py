@@ -10,7 +10,7 @@ import sys
 from typing import Any, TextIO
 
 from ...config import ConfigError
-from ...process import ProcessSupervisor
+from ...process import ProcessError, ProcessSupervisor
 from ...security import check_secret_file_permissions
 from ..error_handler import handle_command_errors
 from ..utils import _default_auth_dir
@@ -239,7 +239,7 @@ class AuthLoginCommand(BaseCommand):
             supervisor.record_event(
                 "oauth_login", provider=provider, result="failed", detail=str(exc)
             )
-            raise ConfigError(
+            raise ProcessError(
                 f"OAuth login failed: {exc} "
                 "hint=verify auth endpoints, run `auth status`, then retry with a larger --timeout if needed"
             ) from exc
@@ -277,7 +277,7 @@ class AuthImportCommand(BaseCommand):
         try:
             saved = handler(source, resolved_dest)
         except (FileNotFoundError, ValueError, OSError, RuntimeError) as exc:
-            raise ConfigError(f"headless import failed: {exc}") from exc
+            raise ProcessError(f"headless import failed: {exc}") from exc
 
         supervisor = ProcessSupervisor(
             self.config["paths"]["runtime_dir"],

@@ -10,7 +10,8 @@ import sys
 from typing import Any, TextIO
 
 from ...constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
-from ...process import ProcessError, ProcessSupervisor
+from ...config import ConfigError
+from ...process import ProcessSupervisor
 from ...utils import _is_service_port_available
 from ..error_handler import handle_command_errors
 from .base import BaseCommand
@@ -21,7 +22,7 @@ def _service_names(config: dict[str, Any], target: str) -> list[str]:
     if target == "all":
         return list(config["services"].keys())
     if target not in config["services"]:
-        raise ProcessError(f"Unknown service: {target}")
+        raise ConfigError(f"Unknown service: {target}")
     return [target]
 
 

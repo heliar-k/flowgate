@@ -1,7 +1,7 @@
 [project]
 name = "flowgate"
 version = "0.4.6"
-description = "Add your description here"
+description = "Local control tool for managing CLIProxyAPIPlus + LiteLLM stacks"
 readme = "README.md"
 license = "MIT"
 # Support Python 3.11+ for broader compatibility (no 3.12-specific features used)

@@ -29,17 +29,74 @@ class ProcessSupervisor:
     def _pid_path(self, name: str) -> Path:
         return self.pid_dir / f"{name}.pid"
 
-    def _read_pid(self, name: str) -> int | None:
+    def _read_pid_record(self, name: str) -> dict[str, object] | None:
         path = self._pid_path(name)
         if not path.exists():
             return None
         text = path.read_text(encoding="utf-8").strip()
         if not text:
             return None
+        # Backward compatibility: allow legacy plain integer pid files.
+        if text.isdigit():
+            return {"pid": int(text)}
         try:
-            return int(text)
-        except ValueError:
+            data = json.loads(text)
+        except Exception:  # noqa: BLE001
             return None
+        return data if isinstance(data, dict) else None
+
+    def _read_pid(self, name: str) -> int | None:
+        record = self._read_pid_record(name)
+        if not record:
+            return None
+        pid = record.get("pid")
+        return pid if isinstance(pid, int) else None
+
+    @staticmethod
+    def _safe_basename(value: str) -> str:
+        try:
+            return Path(value).name
+        except Exception:  # noqa: BLE001
+            return value
+
+    def _read_process_cmdline(self, pid: int) -> list[str] | None:
+        proc_cmdline = Path(f"/proc/{pid}/cmdline")
+        if proc_cmdline.exists():
+            try:
+                raw = proc_cmdline.read_bytes()
+            except OSError:
+                return None
+            parts = [p.decode("utf-8", errors="ignore") for p in raw.split(b"\x00") if p]
+            return parts or None
+
+        # Best-effort fallback for non-/proc environments.
+        try:
+            out = subprocess.check_output(
+                ["ps", "-p", str(pid), "-o", "command="],
+                stderr=subprocess.DEVNULL,
+                timeout=1.0,
+            ).decode("utf-8", errors="ignore")
+        except Exception:  # noqa: BLE001
+            return None
+        cmd = out.strip()
+        return cmd.split() if cmd else None
+
+    def _pid_matches_record(self, pid: int, record: dict[str, object]) -> bool:
+        expected = record.get("command")
+        if not isinstance(expected, list) or not expected:
+            # No expectation recorded; can't validate.
+            return True
+        if not all(isinstance(item, str) for item in expected):
+            return True
+
+        actual = self._read_process_cmdline(pid)
+        if not actual:
+            # Can't validate on this platform; fall back to pid liveness.
+            return True
+
+        expected0 = self._safe_basename(expected[0])
+        actual0 = self._safe_basename(actual[0])
+        return expected0 == actual0
 
     @staticmethod
     def _is_pid_running(pid: int) -> bool:
@@ -79,10 +136,17 @@ class ProcessSupervisor:
             return
 
     def is_running(self, name: str) -> bool:
-        pid = self._read_pid(name)
+        record = self._read_pid_record(name)
+        if not record:
+            return False
+        pid = record.get("pid")
+        if not isinstance(pid, int):
+            return False
         if pid is None:
             return False
-        return self._is_pid_running(pid)
+        if not self._is_pid_running(pid):
+            return False
+        return self._pid_matches_record(pid, record)
 
     @measure_time("service_start")
     def start(
@@ -128,7 +192,13 @@ class ProcessSupervisor:
             log_file.close()
             raise
 
-        self._pid_path(name).write_text(str(process.pid), encoding="utf-8")
+        pid_record = {
+            "pid": process.pid,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "command": list(command),
+            "cwd": str(cwd) if cwd is not None else None,
+        }
+        self._pid_path(name).write_text(json.dumps(pid_record), encoding="utf-8")
         self._children[name] = process
         log_file.close()
         self.record_event(
@@ -157,10 +227,22 @@ class ProcessSupervisor:
             self.record_event("service_stop", service=name, result="not-running")
             return True
 
+        record = self._read_pid_record(name) or {"pid": pid}
         if not self._is_pid_running(pid):
             self._pid_path(name).unlink(missing_ok=True)
             self.record_event(
                 "service_stop", service=name, result="stale-pid", detail=f"pid={pid}"
+            )
+            return True
+
+        if not self._pid_matches_record(pid, record):
+            # Safer default: don't kill a PID that doesn't look like the service we started.
+            self._pid_path(name).unlink(missing_ok=True)
+            self.record_event(
+                "service_stop",
+                service=name,
+                result="stale-pid-mismatch",
+                detail=f"pid={pid}",
             )
             return True
 

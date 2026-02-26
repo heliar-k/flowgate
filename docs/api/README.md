@@ -31,9 +31,9 @@ open docs/api/_generated/flowgate/index.html
 
 ### CI/CD Integration
 
-API documentation is automatically generated and published on every commit to `main` branch.
-
-**Published Docs**: [GitHub Pages URL] (to be configured)
+This repository's CI currently verifies tests and CLI help output. If you want
+to publish generated API docs, add a GitHub Pages workflow and deploy the
+`docs/api/_generated/` output.
 
 ## Quick Links
 

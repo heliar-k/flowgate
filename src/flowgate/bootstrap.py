@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -98,6 +99,48 @@ def _http_get_bytes(url: str) -> bytes:
         return resp.read()
 
 
+def _extract_sha256_from_checksum_text(text: str, asset_name: str) -> str | None:
+    candidate = text.strip()
+    if len(candidate) == 64 and all(ch in "0123456789abcdefABCDEF" for ch in candidate):
+        return candidate.lower()
+
+    for line in candidate.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        digest = parts[0].strip()
+        if len(digest) != 64 or not all(ch in "0123456789abcdefABCDEF" for ch in digest):
+            continue
+        if asset_name in line:
+            return digest.lower()
+    return None
+
+
+def _find_expected_sha256(assets: list[dict], asset_name: str) -> str | None:
+    for asset in assets:
+        name = str(asset.get("name", "")).lower()
+        if "sha256" not in name:
+            continue
+        url = asset.get("browser_download_url")
+        if not isinstance(url, str) or not url:
+            continue
+        try:
+            raw = _http_get_bytes(url)
+        except Exception:  # noqa: BLE001
+            continue
+        try:
+            text = raw.decode("utf-8", errors="ignore")
+        except Exception:  # noqa: BLE001
+            continue
+        digest = _extract_sha256_from_checksum_text(text, asset_name)
+        if digest:
+            return digest
+    return None
+
+
 def _extract_binary_from_bytes(data: bytes, asset_name: str) -> bytes:
     lower = asset_name.lower()
 
@@ -143,6 +186,7 @@ def download_cliproxyapi_plus(
     *,
     version: str = DEFAULT_CLIPROXY_VERSION,
     repo: str = DEFAULT_CLIPROXY_REPO,
+    require_sha256: bool = False,
 ) -> Path:
     bin_path = Path(bin_dir)
     bin_path.mkdir(parents=True, exist_ok=True)
@@ -164,6 +208,21 @@ def download_cliproxyapi_plus(
         raise RuntimeError("Chosen asset has no browser_download_url")
 
     blob = _http_get_bytes(download_url)
+
+    expected = _find_expected_sha256(assets, str(chosen.get("name", "")))
+    if expected:
+        actual = hashlib.sha256(blob).hexdigest()
+        if actual != expected:
+            raise RuntimeError(
+                "CLIProxyAPIPlus sha256 mismatch "
+                f"expected={expected} actual={actual}"
+            )
+    elif require_sha256:
+        raise RuntimeError(
+            "No sha256 checksum asset found for chosen release asset; "
+            "rerun without --require-sha256 or use a release that provides checksums."
+        )
+
     binary = _extract_binary_from_bytes(blob, str(chosen.get("name", "")))
 
     target = bin_path / "CLIProxyAPIPlus"

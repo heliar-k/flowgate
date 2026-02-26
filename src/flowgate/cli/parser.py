@@ -64,9 +64,21 @@ def build_parser() -> argparse.ArgumentParser:
     download = bootstrap_sub.add_parser("download")
     download.add_argument("--cliproxy-version", default=DEFAULT_CLIPROXY_VERSION)
     download.add_argument("--cliproxy-repo", default=DEFAULT_CLIPROXY_REPO)
+    download.add_argument(
+        "--require-sha256",
+        action="store_true",
+        default=False,
+        help="Require a sha256 checksum asset to be present for CLIProxyAPIPlus downloads",
+    )
 
     update = bootstrap_sub.add_parser("update")
     update.add_argument("--cliproxy-repo", default=DEFAULT_CLIPROXY_REPO)
     update.add_argument("--yes", "-y", action="store_true", default=False)
+    update.add_argument(
+        "--require-sha256",
+        action="store_true",
+        default=False,
+        help="Require a sha256 checksum asset to be present for CLIProxyAPIPlus downloads",
+    )
 
     return parser

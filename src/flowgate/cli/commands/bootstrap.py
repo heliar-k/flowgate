@@ -42,11 +42,13 @@ class BootstrapDownloadCommand(BaseCommand):
         runtime_bin_dir = Path(self.config["paths"]["runtime_dir"]) / "bin"
         cliproxy_version = self.args.cliproxy_version
         cliproxy_repo = self.args.cliproxy_repo
+        require_sha256 = bool(getattr(self.args, "require_sha256", False))
 
         cliproxy = download_cliproxyapi_plus(
             runtime_bin_dir,
             version=cliproxy_version,
             repo=cliproxy_repo,
+            require_sha256=require_sha256,
         )
         litellm = prepare_litellm_runner(runtime_bin_dir)
         if not validate_cliproxy_binary(cliproxy):
@@ -108,6 +110,7 @@ class BootstrapUpdateCommand(BaseCommand):
         runtime_bin_dir = Path(runtime_dir) / "bin"
         repo = self.args.cliproxy_repo
         auto_yes = self.args.yes
+        require_sha256 = bool(getattr(self.args, "require_sha256", False))
 
         current_version = read_cliproxyapiplus_installed_version(
             runtime_dir, DEFAULT_CLIPROXY_VERSION
@@ -134,7 +137,10 @@ class BootstrapUpdateCommand(BaseCommand):
             return 0
 
         cliproxy = download_cliproxyapi_plus(
-            runtime_bin_dir, version=latest_version, repo=repo
+            runtime_bin_dir,
+            version=latest_version,
+            repo=repo,
+            require_sha256=require_sha256,
         )
         if not validate_cliproxy_binary(cliproxy):
             raise RuntimeError(

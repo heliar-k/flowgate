@@ -10,6 +10,7 @@ import pytest
 
 from flowgate.bootstrap import (
     _extract_binary_from_bytes,
+    _extract_sha256_from_checksum_text,
     detect_platform,
     pick_release_asset,
     prepare_litellm_runner,
@@ -113,6 +114,16 @@ class BootstrapTests(unittest.TestCase):
         tiny.write_bytes(b"MIT License")
         tiny.chmod(0o755)
         self.assertFalse(validate_cliproxy_binary(tiny))
+
+    def test_extract_sha256_from_checksum_text(self):
+        asset = "CLIProxyAPIPlus_linux_amd64.tar.gz"
+        text = "0123456789abcdef" * 4 + f"  {asset}\n"
+        digest = _extract_sha256_from_checksum_text(text, asset)
+        self.assertEqual(digest, ("0123456789abcdef" * 4))
+
+        text2 = ("A" * 64) + "\n"
+        digest2 = _extract_sha256_from_checksum_text(text2, asset)
+        self.assertEqual(digest2, ("a" * 64))
 
 
 @pytest.mark.unit

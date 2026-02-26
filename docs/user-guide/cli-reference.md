@@ -71,3 +71,4 @@ FlowGate commands generally follow:
 - `1`: runtime failure / operation failed
 - `2`: configuration/usage error
 
+Note: `argparse`-level usage errors also exit with `2`.

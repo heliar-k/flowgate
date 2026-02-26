@@ -97,8 +97,9 @@ class TestServiceStart(IntegrationTestBase):
         try:
             pid_file = self.root / "runtime" / "pids" / "svc-f.pid"
             self.assertTrue(pid_file.exists())
-            pid_text = pid_file.read_text(encoding="utf-8").strip()
-            self.assertTrue(pid_text.isdigit())
+            pid_doc = json.loads(pid_file.read_text(encoding="utf-8"))
+            self.assertIsInstance(pid_doc, dict)
+            self.assertIsInstance(pid_doc.get("pid"), int)
         finally:
             sv.stop("svc-f", timeout=3)
 
