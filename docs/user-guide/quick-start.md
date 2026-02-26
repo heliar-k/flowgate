@@ -418,8 +418,8 @@ chmod 755 .router/runtime
 # Validate configuration
 uv run flowgate --config config/flowgate.yaml doctor
 
-# Migrate legacy config (v1 → v2)
-uv run flowgate --config config/flowgate.yaml config migrate
+# If you have an old (v1) config, migrate it manually to `config_version: 2`
+# (see: ../developer-guide/config-version-migration.md)
 ```
 
 For detailed troubleshooting, see [Troubleshooting Guide](troubleshooting.md).

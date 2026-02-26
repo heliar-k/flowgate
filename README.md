@@ -101,21 +101,19 @@ uv run pytest tests/ -v
 uv run pytest tests/ -v -m ""
 ```
 
-**Test Stats**: 417 tests (417 unit, 43 integration) | 100% passing
+CI runs the test suite on every change. Use the commands above to verify locally.
 
 ## Config Migration
 
-⚠️ **Config version 1 is deprecated** (v0.2.0) and will be removed in v0.3.0.
+FlowGate supports `config_version: 2`. Older v1 configs are no longer supported.
 
 ```bash
-# Check if migration needed
-uv run flowgate --config config/flowgate.yaml status
-
-# Migrate (creates backup)
-uv run flowgate --config config/flowgate.yaml config migrate
+# Validate configuration
+uv run flowgate --config config/flowgate.yaml doctor
 ```
 
-**See**: [Configuration Guide](docs/user-guide/configuration.md#version-migration) for details.
+**See**: [Configuration Guide](docs/user-guide/configuration.md#version-migration) and
+[Config Version Migration](docs/developer-guide/config-version-migration.md).
 
 ## Contributing
 

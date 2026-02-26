@@ -44,7 +44,7 @@ class ConfigFactory:
             "services": {
                 "litellm": ConfigFactory.service("litellm", DEFAULT_SERVICE_PORTS["litellm"]),
                 "cliproxyapi_plus": ConfigFactory.service(
-                    "cliproxyapi", DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]
+                    "cliproxyapi_plus", DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]
                 ),
             },
             "litellm_base": ConfigFactory.litellm_base_minimal(),

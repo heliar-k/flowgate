@@ -25,7 +25,7 @@ FlowGate uses versioned configuration schemas. **Version 2 is the current standa
 config_version: 2  # Always specify explicitly
 ```
 
-**Important**: Config version 1 is deprecated as of v0.2.0 and will be removed in v0.3.0.
+**Important**: FlowGate supports `config_version: 2`. Older v1 configs are no longer supported.
 
 ### Required Top-Level Keys
 
@@ -43,49 +43,15 @@ config_version: 2  # Always specify explicitly
 |-----|------|-------------|
 | `auth` | object | Authentication provider configuration |
 | `credentials` | object | Upstream API credentials |
+| `integration` | object | Client integration defaults (models) |
 | `secret_files` | array | Additional sensitive file paths |
 
 ---
 
 ## Version Migration
 
-### Deprecation Timeline
-
-| Version | Status | Action Required |
-|---------|--------|-----------------|
-| **v0.2.0** | ✅ Current | Version 1 works with warnings, migration tool available |
-| **v0.3.0** | ⚠️ Breaking | Version 1 will stop working |
-
-### Quick Migration
-
-**Check if you need to migrate:**
-
-```bash
-flowgate --config config/flowgate.yaml status
-
-# If you see this warning, migrate immediately:
-⚠️  WARNING: config_version 1 is deprecated and will be removed in v0.3.0
-```
-
-**Automated Migration (Recommended):**
-
-```bash
-# Preview changes without applying
-flowgate --config config/flowgate.yaml config migrate --dry-run
-
-# Perform migration (creates automatic backup)
-flowgate --config config/flowgate.yaml config migrate
-```
-
-### Migration Command Features
-
-The `flowgate config migrate` command provides:
-
-- ✅ **Automatic Backup**: Creates `.backup-TIMESTAMP` before changes
-- ✅ **Dry-Run Mode**: Preview changes with `--dry-run`
-- ✅ **Validation**: Validates migrated config before finalizing
-- ✅ **Idempotent**: Safe to run multiple times
-- ✅ **Rollback**: Automatic backup for easy restoration
+If you have a legacy (v1) config, migrate it manually to `config_version: 2`.
+See: [Config Version Migration](../developer-guide/config-version-migration.md).
 
 ### What Changed (v1 → v2)
 
@@ -374,12 +340,9 @@ flowgate --config config/flowgate.yaml status
 
 #### "config_version 1 is deprecated" Warning
 
-**Cause**: Using legacy config version 1
-**Solution**: Run `flowgate config migrate`
-
-```bash
-flowgate --config config/flowgate.yaml config migrate
-```
+**Cause**: Using legacy config version 1 (no longer supported)
+**Solution**: Manually migrate to `config_version: 2`.
+See: [Config Version Migration](../developer-guide/config-version-migration.md).
 
 #### "Missing required key" Error
 

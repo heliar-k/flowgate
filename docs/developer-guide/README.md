@@ -9,6 +9,7 @@ Welcome to the FlowGate Developer Guide! This section contains documentation for
 - **[Testing](testing.md)** - Testing guidelines and best practices
 - **[Contributing](contributing.md)** - Contribution workflow and guidelines
 - **[Config Internals](config-internals.md)** - Configuration system architecture
+- **[Config Version Migration](config-version-migration.md)** - Legacy schema migration notes
 - **[Path Resolution](path-resolution.md)** - Path resolution technical reference
 - **[Release Process](release-process.md)** - Release and rollback procedures
 - **[Coding Standards](coding-standards.md)** - Code style and design patterns
