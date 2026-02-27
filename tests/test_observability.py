@@ -192,7 +192,7 @@ class TestLogPerformanceMetric(unittest.TestCase):
     def test_log_with_context(self):
         """Test logging with additional context."""
         log_performance_metric(
-            "test_op", 100.0, context={"profile": "balanced", "service": "litellm"}
+            "test_op", 100.0, context={"profile": "balanced", "service": "cliproxyapi_plus"}
         )
 
         events_log = Path(".router/runtime/events.log")
@@ -200,7 +200,7 @@ class TestLogPerformanceMetric(unittest.TestCase):
         data = json.loads(content.strip())
 
         self.assertEqual(data["context"]["profile"], "balanced")
-        self.assertEqual(data["context"]["service"], "litellm")
+        self.assertEqual(data["context"]["service"], "cliproxyapi_plus")
 
     def test_log_appends_to_existing_file(self):
         """Test that logging appends to existing events log."""
@@ -322,7 +322,7 @@ class TestGetRecentMetrics(unittest.TestCase):
                 json.dumps(
                     {
                         "event": "service_start",
-                        "service": "litellm",
+                        "service": "cliproxyapi_plus",
                         "timestamp": "2024-01-01T00:00:00Z",
                     }
                 )

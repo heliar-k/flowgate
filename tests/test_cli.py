@@ -561,9 +561,7 @@ class CLITests(unittest.TestCase):
 
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
         data["paths"]["runtime_dir"] = "../.router/runtime"
-        data["paths"]["active_config"] = "../.router/runtime/litellm.active.yaml"
-        data["paths"]["state_file"] = "../.router/runtime/state.json"
-        data["paths"]["log_file"] = "../.router/logs/routerctl.log"
+        data["paths"]["log_file"] = "../.router/runtime/events.log"
         cfg_path.write_text(json.dumps(data), encoding="utf-8")
 
         out = io.StringIO()
@@ -611,7 +609,9 @@ class CLITests(unittest.TestCase):
         self.assertIn(
             "cliproxyapi_plus=/tmp/runtime/bin/CLIProxyAPIPlus", out.getvalue()
         )
-        self.assertNotIn("litellm=", out.getvalue())
+        self.assertEqual(
+            out.getvalue().strip(), "cliproxyapi_plus=/tmp/runtime/bin/CLIProxyAPIPlus"
+        )
         cliproxy_download.assert_called_once()
         cliproxy_validate.assert_called_once()
 
@@ -637,12 +637,15 @@ class CLITests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["command"], "bootstrap.download")
         self.assertIn("cliproxyapi_plus", payload["data"])
-        self.assertNotIn("litellm", payload["data"])
+        self.assertEqual(
+            set(payload["data"].keys()),
+            {"cliproxyapi_plus", "cliproxy_repo", "cliproxy_version"},
+        )
 
-    def test_bootstrap_download_rejects_litellm_version_flag(self):
+    def test_bootstrap_download_rejects_unknown_flag(self):
         parser = build_parser()
         with self.assertRaises(SystemExit) as ctx:
-            parser.parse_args(["bootstrap", "download", "--litellm-version", "1.2.3"])
+            parser.parse_args(["bootstrap", "download", "--unknown-flag", "1.2.3"])
         self.assertNotEqual(ctx.exception.code, 0)
 
     def test_parser_prog_name_is_flowgate(self):

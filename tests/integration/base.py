@@ -6,11 +6,9 @@ by default unless explicitly selected with ``pytest -m integration``.
 from __future__ import annotations
 
 import json
-import sys
-import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
+import tempfile
 
 
 class IntegrationTestBase(unittest.TestCase):
@@ -35,69 +33,6 @@ class IntegrationTestBase(unittest.TestCase):
         import shutil
 
         shutil.rmtree(self._tmpdir, ignore_errors=True)
-
-    # ------------------------------------------------------------------
-    # Config helpers
-    # ------------------------------------------------------------------
-
-    def make_config(self, extra: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Return a minimal valid FlowGate configuration rooted at ``self.root``."""
-        runtime_dir = str(self.root / "runtime")
-        cfg: dict[str, Any] = {
-            "config_version": 2,
-            "paths": {
-                "runtime_dir": runtime_dir,
-                "active_config": str(self.root / "runtime" / "litellm.active.yaml"),
-                "state_file": str(self.root / "runtime" / "state.json"),
-                "log_file": str(self.root / "runtime" / "events.log"),
-            },
-            "services": {
-                "litellm": {
-                    "command": {
-                        "args": [sys.executable, "-c", "import time; time.sleep(120)"]
-                    },
-                    "host": "127.0.0.1",
-                    "port": 14100,
-                    "readiness_path": "/health",
-                },
-                "cliproxyapi_plus": {
-                    "command": {
-                        "args": [sys.executable, "-c", "import time; time.sleep(120)"]
-                    },
-                    "host": "127.0.0.1",
-                    "port": 14101,
-                    "readiness_path": "/health",
-                },
-            },
-            "litellm_base": {
-                "model_list": [
-                    {
-                        "model_name": "router-default",
-                        "litellm_params": {"model": "openai/gpt-4o"},
-                    }
-                ],
-                "router_settings": {},
-                "litellm_settings": {"num_retries": 1},
-            },
-            "profiles": {
-                "reliability": {"litellm_settings": {"num_retries": 3, "cooldown_time": 60}},
-                "balanced": {"litellm_settings": {"num_retries": 2, "cooldown_time": 30}},
-                "cost": {"litellm_settings": {"num_retries": 1, "cooldown_time": 10}},
-            },
-            "auth": {"providers": {}},
-            "secret_files": [],
-        }
-        if extra:
-            cfg.update(extra)
-        return cfg
-
-    def write_config(self, cfg: dict[str, Any] | None = None) -> Path:
-        """Write *cfg* (or a default config) to ``self.root/flowgate.yaml``."""
-        if cfg is None:
-            cfg = self.make_config()
-        path = self.root / "flowgate.yaml"
-        path.write_text(json.dumps(cfg), encoding="utf-8")
-        return path
 
     def read_json(self, path: Path) -> Any:
         """Read and parse a JSON file."""

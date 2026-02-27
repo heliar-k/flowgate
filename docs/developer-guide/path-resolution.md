@@ -30,16 +30,12 @@ paths:
 ### 1. Top-Level Paths (`paths.*`)
 All fields under `paths` section:
 - `runtime_dir`
-- `active_config`
-- `state_file`
 - `log_file`
 
 **Example**:
 ```yaml
 paths:
   runtime_dir: .router
-  active_config: .router/runtime/active_config.yaml
-  state_file: .router/runtime/state.json
   log_file: .router/runtime/events.log
 ```
 
@@ -51,22 +47,20 @@ secret_files:
   - secrets/db.password
 ```
 
-### 3. Credential Files (`credentials.upstream.*.file`)
-Nested credential file paths:
-```yaml
-credentials:
-  upstream:
-    openai:
-      file: creds/openai.key
-```
-
-### 4. Service Working Directories (`services.*.command.cwd`)
+### 3. Service Working Directories (`services.*.command.cwd`)
 Optional service working directories:
 ```yaml
 services:
-  litellm:
+  cliproxyapi_plus:
     command:
-      cwd: runtime/litellm
+      cwd: runtime/cliproxy
+```
+
+### 4. CLIProxyAPIPlus Config (`cliproxyapi_plus.config_file`)
+The `cliproxyapi_plus.config_file` path can be relative or absolute:
+```yaml
+cliproxyapi_plus:
+  config_file: cliproxyapi.yaml
 ```
 
 ## PathResolver API
@@ -146,8 +140,8 @@ Recursively resolve all path fields in configuration.
 **Path types handled**:
 1. `paths.*` fields
 2. `secret_files` list
-3. `credentials.upstream.*.file` paths
-4. `services.*.command.cwd` paths
+3. `services.*.command.cwd` paths
+4. `cliproxyapi_plus.config_file` path
 
 **Example**:
 ```python
@@ -156,16 +150,12 @@ resolver = PathResolver(Path("/etc/flowgate/config.yaml"))
 config = {
     "paths": {"runtime_dir": ".router"},
     "secret_files": ["secrets/api.key"],
-    "credentials": {
-        "upstream": {
-            "openai": {"file": "creds/openai.key"}
-        }
-    },
     "services": {
-        "litellm": {
+        "cliproxyapi_plus": {
             "command": {"cwd": "runtime"}
         }
-    }
+    },
+    "cliproxyapi_plus": {"config_file": "cliproxyapi.yaml"},
 }
 
 resolved = resolver.resolve_config_paths(config)
@@ -173,8 +163,8 @@ resolved = resolver.resolve_config_paths(config)
 # Results:
 # resolved["paths"]["runtime_dir"] == "/etc/flowgate/.router"
 # resolved["secret_files"][0] == "/etc/flowgate/secrets/api.key"
-# resolved["credentials"]["upstream"]["openai"]["file"] == "/etc/flowgate/creds/openai.key"
-# resolved["services"]["litellm"]["command"]["cwd"] == "/etc/flowgate/runtime"
+# resolved["services"]["cliproxyapi_plus"]["command"]["cwd"] == "/etc/flowgate/runtime"
+# resolved["cliproxyapi_plus"]["config_file"] == "/etc/flowgate/cliproxyapi.yaml"
 ```
 
 ## Implementation Details
@@ -182,7 +172,7 @@ resolved = resolver.resolve_config_paths(config)
 ### Deep Copy
 `resolve_config_paths()` creates a deep copy of the configuration to avoid modifying the original:
 ```python
-cfg = json.loads(json.dumps(config))
+cfg = copy.deepcopy(config)
 ```
 
 This ensures that:
@@ -333,10 +323,10 @@ print(resolver.resolve("your/relative/path"))
 ## Performance Considerations
 
 ### Deep Copy Overhead
-Path resolution creates a deep copy of the configuration using `json.loads(json.dumps(config))`. This is:
+Path resolution creates a deep copy of the configuration using `copy.deepcopy(config)`. This is:
 - **Fast enough**: Configuration is typically small (< 1KB)
 - **Safe**: Prevents accidental mutations
-- **Simple**: Works with all JSON-serializable Python types
+- **Simple**: Works with typical config dict/list types
 
 For large configurations, this takes ~1ms, which is negligible compared to I/O operations.
 

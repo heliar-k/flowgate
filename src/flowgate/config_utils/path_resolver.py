@@ -103,26 +103,14 @@ class PathResolver:
             self.resolve(p) for p in cfg.get("secret_files", [])
         ]
 
-        # 3. Resolve credentials.upstream.*.file paths
-        credentials = cfg.get("credentials", {})
-        if isinstance(credentials, dict):
-            upstream = credentials.get("upstream", {})
-            if isinstance(upstream, dict):
-                for entry in upstream.values():
-                    if not isinstance(entry, dict):
-                        continue
-                    file_path = entry.get("file")
-                    if isinstance(file_path, str):
-                        entry["file"] = self.resolve(file_path)
-
-        # 4. Resolve services.*.command.cwd paths
+        # 3. Resolve services.*.command.cwd paths
         for service in cfg.get("services", {}).values():
             command = service.get("command", {})
             cwd = command.get("cwd")
             if isinstance(cwd, str):
                 command["cwd"] = self.resolve(cwd)
 
-        # 5. Resolve cliproxyapi_plus.config_file
+        # 4. Resolve cliproxyapi_plus.config_file
         cliproxy = cfg.get("cliproxyapi_plus", {})
         if isinstance(cliproxy, dict):
             config_file = cliproxy.get("config_file")

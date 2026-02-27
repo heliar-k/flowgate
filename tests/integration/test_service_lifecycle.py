@@ -2,7 +2,7 @@
 
 These tests exercise ProcessSupervisor with real subprocess management
 using mock commands (``python -c "import time; time.sleep(120)"``).
-They do NOT require LiteLLM or CLIProxyAPIPlus binaries.
+They do NOT require real CLIProxyAPIPlus binaries.
 
 Run with:
     pytest tests/integration/test_service_lifecycle.py -v -m integration

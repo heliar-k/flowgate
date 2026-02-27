@@ -1,3 +1,9 @@
+# (Archived) Phase 0 Test Validation - 2026-02-18
+
+This document is archived and may reference historical FlowGate versions and components (pre v3, cliproxy-only).
+
+---
+
 # Test Validation Report - Phase 0: Preparation
 **Date**: 2026-02-18
 **Task**: Task #2 - Complete Test Suite Validation

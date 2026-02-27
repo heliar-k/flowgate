@@ -120,7 +120,7 @@ class TestDiagnosticCommandRegression(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("Service Health:", output)
         self.assertIn("cliproxyapi_plus: liveness=ok readiness=ok", output)
-        self.assertNotIn("litellm:", output)
+        self.assertEqual(output.count(": liveness="), 1)
 
     @mock.patch("flowgate.cli.ProcessSupervisor")
     @mock.patch("flowgate.cli.check_http_health")

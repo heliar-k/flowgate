@@ -18,16 +18,16 @@ class ProcessSupervisorTests(unittest.TestCase):
         supervisor = ProcessSupervisor(runtime_dir)
 
         pid = supervisor.start(
-            "litellm",
+            "cliproxyapi_plus",
             [sys.executable, "-c", "import time; time.sleep(60)"],
             cwd=str(runtime_dir),
         )
         self.assertGreater(pid, 0)
-        self.assertTrue(supervisor.is_running("litellm"))
+        self.assertTrue(supervisor.is_running("cliproxyapi_plus"))
 
-        stopped = supervisor.stop("litellm", timeout=2)
+        stopped = supervisor.stop("cliproxyapi_plus", timeout=2)
         self.assertTrue(stopped)
-        self.assertFalse(supervisor.is_running("litellm"))
+        self.assertFalse(supervisor.is_running("cliproxyapi_plus"))
 
         events_file = runtime_dir / "events.log"
         self.assertTrue(events_file.exists())

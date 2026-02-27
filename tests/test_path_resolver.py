@@ -121,7 +121,7 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
         config = {
             "paths": {
                 "runtime_dir": ".router",
-                "active_config": ".router/litellm.active.yaml",
+                "active_config": ".router/active.yaml",
                 "state_file": ".router/state.json",
                 "log_file": "logs/app.log",
             }
@@ -152,34 +152,11 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
         for path in resolved["secret_files"]:
             self.assertTrue(Path(path).is_absolute())
 
-    def test_resolve_credentials_upstream_file(self):
-        """Test resolving credentials.upstream.*.file paths."""
-        config = {
-            "paths": {"runtime_dir": ".router"},
-            "credentials": {
-                "upstream": {
-                    "openai": {"file": "creds/openai.key"},
-                    "anthropic": {"file": "creds/anthropic.key"},
-                }
-            },
-        }
-
-        resolved = self.resolver.resolve_config_paths(config)
-
-        openai_file = resolved["credentials"]["upstream"]["openai"]["file"]
-        anthropic_file = resolved["credentials"]["upstream"]["anthropic"]["file"]
-
-        self.assertTrue(Path(openai_file).is_absolute())
-        self.assertTrue(Path(anthropic_file).is_absolute())
-        self.assertIn("creds/openai.key", openai_file)
-        self.assertIn("creds/anthropic.key", anthropic_file)
-
     def test_resolve_services_command_cwd(self):
         """Test resolving services.*.command.cwd paths."""
         config = {
             "paths": {"runtime_dir": ".router"},
             "services": {
-                "litellm": {"command": {"cwd": "runtime/litellm", "args": ["litellm"]}},
                 "cliproxyapi_plus": {
                     "command": {"cwd": "runtime/cliproxy", "args": ["cliproxy"]}
                 },
@@ -188,10 +165,8 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
 
         resolved = self.resolver.resolve_config_paths(config)
 
-        litellm_cwd = resolved["services"]["litellm"]["command"]["cwd"]
         cliproxy_cwd = resolved["services"]["cliproxyapi_plus"]["command"]["cwd"]
 
-        self.assertTrue(Path(litellm_cwd).is_absolute())
         self.assertTrue(Path(cliproxy_cwd).is_absolute())
 
     def test_resolve_minimal_config(self):
@@ -218,25 +193,14 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
         # Should create empty list if missing
         self.assertEqual(resolved["secret_files"], [])
 
-    def test_resolve_missing_credentials(self):
-        """Test resolving config without credentials field."""
-        config = {
-            "paths": {"runtime_dir": ".router"},
-        }
-
-        resolved = self.resolver.resolve_config_paths(config)
-
-        # Should not crash, credentials field may not exist
-        self.assertNotIn("credentials", resolved)
-
     def test_resolve_missing_services_cwd(self):
         """Test resolving services without command.cwd field."""
         config = {
             "paths": {"runtime_dir": ".router"},
             "services": {
-                "litellm": {
+                "cliproxyapi_plus": {
                     "command": {
-                        "args": ["litellm"],
+                        "args": ["cliproxy"],
                         # No cwd field
                     }
                 }
@@ -246,7 +210,7 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
         resolved = self.resolver.resolve_config_paths(config)
 
         # Should not crash, cwd is optional
-        self.assertNotIn("cwd", resolved["services"]["litellm"]["command"])
+        self.assertNotIn("cwd", resolved["services"]["cliproxyapi_plus"]["command"])
 
     def test_resolve_mixed_absolute_and_relative_paths(self):
         """Test resolving config with mixed absolute and relative paths."""
@@ -282,13 +246,8 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
                 "active_config": ".router/config.yaml",
             },
             "secret_files": ["secrets/api.key"],
-            "credentials": {
-                "upstream": {
-                    "openai": {"file": "creds/openai.key"},
-                }
-            },
             "services": {
-                "litellm": {"command": {"cwd": "runtime", "args": ["litellm"]}}
+                "cliproxyapi_plus": {"command": {"cwd": "runtime", "args": ["cliproxy"]}}
             },
         }
 
@@ -316,46 +275,6 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
 
         self.assertEqual(resolved["secret_files"], [])
 
-    def test_resolve_credentials_with_non_dict_entry(self):
-        """Test resolving credentials with non-dict upstream entry."""
-        config = {
-            "paths": {"runtime_dir": ".router"},
-            "credentials": {
-                "upstream": {
-                    "openai": {"file": "creds/openai.key"},
-                    "invalid": "not_a_dict",  # Should be skipped
-                }
-            },
-        }
-
-        resolved = self.resolver.resolve_config_paths(config)
-
-        # Valid entry should be resolved
-        self.assertTrue(
-            Path(resolved["credentials"]["upstream"]["openai"]["file"]).is_absolute()
-        )
-        # Invalid entry should remain unchanged
-        self.assertEqual(resolved["credentials"]["upstream"]["invalid"], "not_a_dict")
-
-    def test_resolve_credentials_without_file_field(self):
-        """Test resolving credentials entry without file field."""
-        config = {
-            "paths": {"runtime_dir": ".router"},
-            "credentials": {
-                "upstream": {
-                    "openai": {"api_key": "sk-xxx"},  # No file field
-                }
-            },
-        }
-
-        resolved = self.resolver.resolve_config_paths(config)
-
-        # Should not crash, file field is optional
-        self.assertNotIn("file", resolved["credentials"]["upstream"]["openai"])
-        self.assertEqual(
-            resolved["credentials"]["upstream"]["openai"]["api_key"], "sk-xxx"
-        )
-
     def test_resolve_all_path_types_together(self):
         """Test resolving all path types in a single config."""
         config = {
@@ -366,14 +285,7 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
                 "log_file": "logs/app.log",
             },
             "secret_files": ["secrets/api.key", "secrets/oauth.json"],
-            "credentials": {
-                "upstream": {
-                    "openai": {"file": "creds/openai.key"},
-                    "anthropic": {"file": "creds/anthropic.key"},
-                }
-            },
             "services": {
-                "litellm": {"command": {"cwd": "runtime/litellm", "args": ["litellm"]}},
                 "cliproxyapi_plus": {
                     "command": {"cwd": "runtime/cliproxy", "args": ["cliproxy"]}
                 },
@@ -391,12 +303,7 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
         for path in resolved["secret_files"]:
             self.assertTrue(Path(path).is_absolute())
 
-        # 3. credentials.upstream.*.file
-        for entry in resolved["credentials"]["upstream"].values():
-            if "file" in entry:
-                self.assertTrue(Path(entry["file"]).is_absolute())
-
-        # 4. services.*.command.cwd
+        # 3. services.*.command.cwd
         for service in resolved["services"].values():
             if "cwd" in service["command"]:
                 self.assertTrue(Path(service["command"]["cwd"]).is_absolute())
