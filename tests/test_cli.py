@@ -751,97 +751,85 @@ class CLITests(unittest.TestCase):
         self.assertEqual(target.read_text(encoding="utf-8"), original)
 
     def test_doctor_reports_missing_runtime_artifacts(self):
+        cfg = write_minimal_v3_config(self.root)
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+        data["paths"]["runtime_dir"] = str(self.root / "missing-runtime")
+        cfg.write_text(json.dumps(data), encoding="utf-8")
+
         out = io.StringIO()
-        with mock.patch(
-            "flowgate.cli._runtime_dependency_available", return_value=True
-        ):
-            code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
+        code = run_cli(["--config", str(cfg), "doctor"], stdout=out)
         self.assertEqual(code, 1)
         text = out.getvalue()
+        self.assertIn("doctor:cliproxy_config=pass", text)
         self.assertIn("doctor:runtime_dir=fail", text)
         self.assertIn("doctor:runtime_binaries=fail", text)
 
     def test_doctor_json_reports_missing_runtime_artifacts(self):
+        cfg = write_minimal_v3_config(self.root)
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+        data["paths"]["runtime_dir"] = str(self.root / "missing-runtime")
+        cfg.write_text(json.dumps(data), encoding="utf-8")
+
         out = io.StringIO()
-        with mock.patch("flowgate.cli._runtime_dependency_available", return_value=True):
-            code = run_cli(
-                ["--config", str(self.cfg), "--format", "json", "doctor"], stdout=out
-            )
+        code = run_cli(
+            ["--config", str(cfg), "--format", "json", "doctor"], stdout=out
+        )
         self.assertEqual(code, 1)
         payload = json.loads(out.getvalue())
         self.assertFalse(payload["ok"])
         self.assertEqual(payload["command"], "doctor")
         checks = payload["data"]["checks"]
         statuses = {c["id"]: c["status"] for c in checks}
+        self.assertEqual(statuses["cliproxy_config"], "pass")
         self.assertEqual(statuses["runtime_dir"], "fail")
         self.assertEqual(statuses["runtime_binaries"], "fail")
 
     def test_doctor_passes_when_runtime_ready(self):
-        data = json.loads(self.cfg.read_text(encoding="utf-8"))
+        cfg = write_minimal_v3_config(self.root)
+        data = json.loads(cfg.read_text(encoding="utf-8"))
         secret_dir = self.root / "auths"
         secret_dir.mkdir(parents=True, exist_ok=True)
         secret_file = secret_dir / "codex.json"
         secret_file.write_text("{}", encoding="utf-8")
         os.chmod(secret_file, 0o600)
         data["secret_files"] = [str(secret_file)]
-        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+        cfg.write_text(json.dumps(data), encoding="utf-8")
 
-        runtime_bin = self.root / "runtime" / "bin"
+        runtime_bin = self.root / "runtime-v3" / "bin"
         runtime_bin.mkdir(parents=True, exist_ok=True)
         cliproxy = runtime_bin / "CLIProxyAPIPlus"
-        litellm = runtime_bin / "litellm"
         cliproxy.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-        litellm.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         os.chmod(cliproxy, 0o755)
-        os.chmod(litellm, 0o755)
 
         out = io.StringIO()
-        with mock.patch(
-            "flowgate.cli._runtime_dependency_available", return_value=True
-        ):
-            code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
+        code = run_cli(["--config", str(cfg), "doctor"], stdout=out)
         self.assertEqual(code, 0)
         text = out.getvalue()
+        self.assertIn("doctor:cliproxy_config=pass", text)
         self.assertIn("doctor:runtime_dir=pass", text)
         self.assertIn("doctor:runtime_binaries=pass", text)
         self.assertIn("doctor:secret_permissions=pass", text)
-        self.assertIn("doctor:runtime_dependency=pass", text)
 
-    def test_doctor_fails_when_api_key_ref_credential_file_missing(self):
-        data = json.loads(self.cfg.read_text(encoding="utf-8"))
-        data["credentials"] = {
-            "upstream": {
-                "coproxy_local": {"file": str(self.root / "secrets" / "missing.key")}
-            }
-        }
-        data["litellm_base"]["model_list"] = [
-            {
-                "model_name": "router-default",
-                "litellm_params": {
-                    "model": "openai/router-default",
-                    "api_key_ref": "coproxy_local",
-                },
-            }
-        ]
-        self.cfg.write_text(json.dumps(data), encoding="utf-8")
+    def test_doctor_fails_when_cliproxy_config_missing(self):
+        cfg = write_minimal_v3_config(self.root)
 
-        runtime_bin = self.root / "runtime" / "bin"
+        # Ensure runtime is ready so we fail specifically on cliproxy config.
+        runtime_bin = self.root / "runtime-v3" / "bin"
         runtime_bin.mkdir(parents=True, exist_ok=True)
-        cliproxy = runtime_bin / "CLIProxyAPIPlus"
-        litellm = runtime_bin / "litellm"
-        cliproxy.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-        litellm.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-        os.chmod(cliproxy, 0o755)
-        os.chmod(litellm, 0o755)
+        cliproxy_bin = runtime_bin / "CLIProxyAPIPlus"
+        cliproxy_bin.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        os.chmod(cliproxy_bin, 0o755)
+
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+        cliproxy_cfg_path = Path(data["cliproxyapi_plus"]["config_file"])
+        cliproxy_cfg_path.unlink()
+        cfg.write_text(json.dumps(data), encoding="utf-8")
 
         out = io.StringIO()
-        with mock.patch(
-            "flowgate.cli._runtime_dependency_available", return_value=True
-        ):
-            code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
-        self.assertEqual(code, 1)
-        text = out.getvalue()
-        self.assertIn("doctor:upstream_credentials=fail", text)
+        err = io.StringIO()
+        code = run_cli(["--config", str(cfg), "doctor"], stdout=out, stderr=err)
+        self.assertEqual(code, 2)
+        self.assertIn("Configuration file not found", err.getvalue())
 
     def test_service_start_reports_cliproxyapiplus_update_when_available(self):
         out = TTYStringIO()
@@ -872,18 +860,16 @@ class CLITests(unittest.TestCase):
         checker.assert_called_once()
 
     def test_doctor_reports_cliproxyapiplus_update_when_available(self):
-        runtime_bin = self.root / "runtime" / "bin"
+        cfg = write_minimal_v3_config(self.root)
+
+        runtime_bin = self.root / "runtime-v3" / "bin"
         runtime_bin.mkdir(parents=True, exist_ok=True)
         cliproxy = runtime_bin / "CLIProxyAPIPlus"
-        litellm = runtime_bin / "litellm"
         cliproxy.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-        litellm.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         os.chmod(cliproxy, 0o755)
-        os.chmod(litellm, 0o755)
 
         out = TTYStringIO()
         with (
-            mock.patch("flowgate.cli._runtime_dependency_available", return_value=True),
             mock.patch(
                 "flowgate.cliproxyapiplus_update_check.read_cliproxyapiplus_installed_version",
                 return_value="v6.8.16-0",
@@ -897,7 +883,7 @@ class CLITests(unittest.TestCase):
                 },
             ) as checker,
         ):
-            code = run_cli(["--config", str(self.cfg), "doctor"], stdout=out)
+            code = run_cli(["--config", str(cfg), "doctor"], stdout=out)
 
         self.assertEqual(code, 0)
         self.assertIn("cliproxyapi_plus:update_available", out.getvalue())
