@@ -50,6 +50,46 @@ def write_config(path: Path) -> None:
     path.write_text(json.dumps(data), encoding="utf-8")
 
 
+def write_minimal_v3_config(root: Path) -> Path:
+    """Write a minimal config_version 3 config (cliproxy-only)."""
+    cfg_dir = root / "config-v3"
+    cfg_dir.mkdir(parents=True, exist_ok=True)
+
+    cliproxy_cfg = cfg_dir / "cliproxyapi.yaml"
+    cliproxy_cfg.write_text(
+        json.dumps(
+            {
+                "host": "127.0.0.1",
+                "port": 5000,
+                "api-keys": ["sk-local-test"],
+                "remote-management": {"secret-key": "x"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    runtime_dir = root / "runtime-v3"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+
+    flowgate_cfg = cfg_dir / "flowgate.yaml"
+    flowgate_cfg.write_text(
+        json.dumps(
+            {
+                "config_version": 3,
+                "paths": {
+                    "runtime_dir": str(runtime_dir),
+                    "log_file": str(runtime_dir / "events.log"),
+                },
+                "cliproxyapi_plus": {"config_file": str(cliproxy_cfg)},
+                "auth": {"providers": {}},
+                "secret_files": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return flowgate_cfg
+
+
 @pytest.mark.unit
 def test_profile_command_is_removed() -> None:
     parser = build_parser()
@@ -560,6 +600,7 @@ class CLITests(unittest.TestCase):
         handler.assert_called_once_with("/tmp/codex-auth.json", expected_dest)
 
     def test_bootstrap_download(self):
+        cfg = write_minimal_v3_config(self.root)
         out = io.StringIO()
         with (
             mock.patch(
@@ -567,30 +608,22 @@ class CLITests(unittest.TestCase):
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ) as cliproxy_download,
             mock.patch(
-                "flowgate.cli.commands.bootstrap.prepare_litellm_runner",
-                return_value=Path("/tmp/runtime/bin/litellm"),
-            ) as litellm_prepare,
-            mock.patch(
                 "flowgate.cli.commands.bootstrap.validate_cliproxy_binary", return_value=True
             ) as cliproxy_validate,
-            mock.patch(
-                "flowgate.cli.commands.bootstrap.validate_litellm_runner", return_value=True
-            ) as litellm_validate,
         ):
             code = run_cli(
-                ["--config", str(self.cfg), "bootstrap", "download"], stdout=out
+                ["--config", str(cfg), "bootstrap", "download"], stdout=out
             )
         self.assertEqual(code, 0)
         self.assertIn(
             "cliproxyapi_plus=/tmp/runtime/bin/CLIProxyAPIPlus", out.getvalue()
         )
-        self.assertIn("litellm=/tmp/runtime/bin/litellm", out.getvalue())
+        self.assertNotIn("litellm=", out.getvalue())
         cliproxy_download.assert_called_once()
-        litellm_prepare.assert_called_once()
         cliproxy_validate.assert_called_once()
-        litellm_validate.assert_called_once()
 
     def test_bootstrap_download_json(self):
+        cfg = write_minimal_v3_config(self.root)
         out = io.StringIO()
         with (
             mock.patch(
@@ -598,20 +631,12 @@ class CLITests(unittest.TestCase):
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.prepare_litellm_runner",
-                return_value=Path("/tmp/runtime/bin/litellm"),
-            ),
-            mock.patch(
                 "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
-                return_value=True,
-            ),
-            mock.patch(
-                "flowgate.cli.commands.bootstrap.validate_litellm_runner",
                 return_value=True,
             ),
         ):
             code = run_cli(
-                ["--config", str(self.cfg), "--format", "json", "bootstrap", "download"],
+                ["--config", str(cfg), "--format", "json", "bootstrap", "download"],
                 stdout=out,
             )
         self.assertEqual(code, 0)
@@ -619,6 +644,7 @@ class CLITests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["command"], "bootstrap.download")
         self.assertIn("cliproxyapi_plus", payload["data"])
+        self.assertNotIn("litellm", payload["data"])
 
     def test_bootstrap_download_rejects_litellm_version_flag(self):
         parser = build_parser()

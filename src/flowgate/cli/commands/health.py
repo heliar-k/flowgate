@@ -6,6 +6,7 @@ and status reporting.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Any, TextIO
@@ -274,6 +275,72 @@ class DoctorCommand(BaseCommand):
                 {"id": "config", "status": "pass", "path": str(config_path)}
             )
 
+            cliproxy_cfg_raw = self.config.get("cliproxyapi_plus", {}) or {}
+            cliproxy_cfg_value = (
+                cliproxy_cfg_raw.get("config_file")
+                if isinstance(cliproxy_cfg_raw, dict)
+                else None
+            )
+            cliproxy_cfg_str = (
+                str(cliproxy_cfg_value).strip() if cliproxy_cfg_value else ""
+            )
+            cliproxy_cfg_path = (
+                Path(cliproxy_cfg_str) if cliproxy_cfg_str else None
+            )
+            cliproxy_suggestion = (
+                "copy config/examples/cliproxyapi.yaml to config/cliproxyapi.yaml"
+            )
+            if cliproxy_cfg_path is None:
+                all_ok = False
+                checks_out.append(
+                    {
+                        "id": "cliproxy_config",
+                        "status": "fail",
+                        "path": "",
+                        "suggestion": cliproxy_suggestion,
+                    }
+                )
+            elif not cliproxy_cfg_path.exists():
+                all_ok = False
+                checks_out.append(
+                    {
+                        "id": "cliproxy_config",
+                        "status": "fail",
+                        "path": str(cliproxy_cfg_path),
+                        "suggestion": cliproxy_suggestion,
+                    }
+                )
+            else:
+                try:
+                    text = cliproxy_cfg_path.read_text(encoding="utf-8")
+                    try:
+                        import yaml  # type: ignore
+
+                        loaded = yaml.safe_load(text)
+                    except ModuleNotFoundError:
+                        loaded = json.loads(text)
+                    is_mapping = isinstance(loaded, dict)
+                except Exception:  # noqa: BLE001
+                    is_mapping = False
+                if is_mapping:
+                    checks_out.append(
+                        {
+                            "id": "cliproxy_config",
+                            "status": "pass",
+                            "path": str(cliproxy_cfg_path),
+                        }
+                    )
+                else:
+                    all_ok = False
+                    checks_out.append(
+                        {
+                            "id": "cliproxy_config",
+                            "status": "fail",
+                            "path": str(cliproxy_cfg_path),
+                            "suggestion": cliproxy_suggestion,
+                        }
+                    )
+
             runtime_dir = Path(self.config["paths"]["runtime_dir"])
             if runtime_dir.exists():
                 checks_out.append(
@@ -293,7 +360,6 @@ class DoctorCommand(BaseCommand):
             runtime_bin = runtime_dir / "bin"
             required_bins = {
                 "CLIProxyAPIPlus": runtime_bin / "CLIProxyAPIPlus",
-                "litellm": runtime_bin / "litellm",
             }
             missing_or_non_exec = [
                 name
@@ -348,21 +414,6 @@ class DoctorCommand(BaseCommand):
                     {"id": "upstream_credentials", "status": "pass", "issues": 0}
                 )
 
-            if cli_module._runtime_dependency_available("litellm"):
-                checks_out.append(
-                    {"id": "runtime_dependency", "status": "pass", "module": "litellm"}
-                )
-            else:
-                all_ok = False
-                checks_out.append(
-                    {
-                        "id": "runtime_dependency",
-                        "status": "fail",
-                        "module": "litellm",
-                        "suggestion": "uv sync",
-                    }
-                )
-
             output.emit_envelope(
                 {
                     "ok": bool(all_ok),
@@ -379,6 +430,60 @@ class DoctorCommand(BaseCommand):
         config_path = self.config.get("_meta", {}).get("config_path", "unknown")
         print(f"doctor:config=pass path={config_path}", file=stdout)
 
+        cliproxy_cfg_raw = self.config.get("cliproxyapi_plus", {}) or {}
+        cliproxy_cfg_value = (
+            cliproxy_cfg_raw.get("config_file")
+            if isinstance(cliproxy_cfg_raw, dict)
+            else None
+        )
+        cliproxy_cfg_str = str(cliproxy_cfg_value).strip() if cliproxy_cfg_value else ""
+        cliproxy_cfg_path = Path(cliproxy_cfg_str) if cliproxy_cfg_str else None
+        cliproxy_suggestion = (
+            "copy config/examples/cliproxyapi.yaml to config/cliproxyapi.yaml"
+        )
+        if cliproxy_cfg_path is None:
+            all_ok = False
+            print(
+                "doctor:cliproxy_config=fail "
+                "path= "
+                f"suggestion='{cliproxy_suggestion}'",
+                file=stdout,
+            )
+        elif not cliproxy_cfg_path.exists():
+            all_ok = False
+            print(
+                "doctor:cliproxy_config=fail "
+                f"path={cliproxy_cfg_path} "
+                f"suggestion='{cliproxy_suggestion}'",
+                file=stdout,
+            )
+        else:
+            try:
+                text = cliproxy_cfg_path.read_text(encoding="utf-8")
+                try:
+                    import yaml  # type: ignore
+
+                    loaded = yaml.safe_load(text)
+                except ModuleNotFoundError:
+                    loaded = json.loads(text)
+                ok = isinstance(loaded, dict)
+            except Exception:  # noqa: BLE001
+                ok = False
+
+            if ok:
+                print(
+                    f"doctor:cliproxy_config=pass path={cliproxy_cfg_path}",
+                    file=stdout,
+                )
+            else:
+                all_ok = False
+                print(
+                    "doctor:cliproxy_config=fail "
+                    f"path={cliproxy_cfg_path} "
+                    f"suggestion='{cliproxy_suggestion}'",
+                    file=stdout,
+                )
+
         runtime_dir = Path(self.config["paths"]["runtime_dir"])
         if runtime_dir.exists():
             print(f"doctor:runtime_dir=pass path={runtime_dir}", file=stdout)
@@ -394,7 +499,6 @@ class DoctorCommand(BaseCommand):
         runtime_bin = runtime_dir / "bin"
         required_bins = {
             "CLIProxyAPIPlus": runtime_bin / "CLIProxyAPIPlus",
-            "litellm": runtime_bin / "litellm",
         }
         missing_or_non_exec = [
             name
@@ -435,15 +539,6 @@ class DoctorCommand(BaseCommand):
             )
         else:
             print("doctor:upstream_credentials=pass issues=0", file=stdout)
-
-        if cli_module._runtime_dependency_available("litellm"):
-            print("doctor:runtime_dependency=pass module=litellm", file=stdout)
-        else:
-            all_ok = False
-            print(
-                "doctor:runtime_dependency=fail " "module=litellm " "suggestion='uv sync'",
-                file=stdout,
-            )
 
         # Check for CLIProxyAPIPlus updates (only if stdout is a tty)
         self._maybe_print_cliproxyapiplus_update(stdout)

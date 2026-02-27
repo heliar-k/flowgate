@@ -12,7 +12,6 @@ from urllib.request import Request, urlopen
 
 DEFAULT_CLIPROXY_REPO = "router-for-me/CLIProxyAPIPlus"
 DEFAULT_CLIPROXY_VERSION = "v6.8.18-1"
-DEFAULT_LITELLM_VERSION = "1.75.8"
 
 _PREFERRED_BASENAMES = frozenset({
     "cliproxyapiplus",
@@ -230,28 +229,6 @@ def download_cliproxyapi_plus(
     target.chmod(0o755)
     return target
 
-
-def prepare_litellm_runner(
-    bin_dir: str | Path, *, version: str = DEFAULT_LITELLM_VERSION
-) -> Path:
-    bin_path = Path(bin_dir)
-    bin_path.mkdir(parents=True, exist_ok=True)
-
-    runner = bin_path / "litellm"
-    script = (
-        "#!/usr/bin/env bash\n"
-        "set -euo pipefail\n"
-        'project_root="$(cd "$(dirname "$0")/../../.." && pwd)"\n'
-        "if grep -Eq '^[[:space:]]*runtime[[:space:]]*=[[:space:]]*\\[' \"$project_root/pyproject.toml\"; then\n"
-        '  exec uv run --project "$project_root" --group runtime litellm "$@"\n'
-        "fi\n"
-        'exec uv run --project "$project_root" litellm "$@"\n'
-    )
-    runner.write_text(script, encoding="utf-8")
-    runner.chmod(0o755)
-    return runner
-
-
 def validate_cliproxy_binary(path: str | Path) -> bool:
     target = Path(path)
     if not target.exists() or not target.is_file():
@@ -259,26 +236,5 @@ def validate_cliproxy_binary(path: str | Path) -> bool:
     if target.stat().st_size < 1_000_000:
         return False
     if not os.access(target, os.X_OK):
-        return False
-    return True
-
-
-def validate_litellm_runner(
-    path: str | Path, *, version: str = DEFAULT_LITELLM_VERSION
-) -> bool:
-    target = Path(path)
-    if not target.exists() or not target.is_file():
-        return False
-    if not os.access(target, os.X_OK):
-        return False
-
-    content = target.read_text(encoding="utf-8")
-    if "uv run --project" not in content:
-        return False
-    if 'litellm "$@"' not in content:
-        return False
-    has_runtime_group_variant = "--group runtime litellm" in content
-    has_default_variant = 'uv run --project "$project_root" litellm "$@"' in content
-    if not has_runtime_group_variant and not has_default_variant:
         return False
     return True

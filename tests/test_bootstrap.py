@@ -1,4 +1,3 @@
-import stat
 import tempfile
 import unittest
 import io
@@ -13,9 +12,7 @@ from flowgate.bootstrap import (
     _extract_sha256_from_checksum_text,
     detect_platform,
     pick_release_asset,
-    prepare_litellm_runner,
     validate_cliproxy_binary,
-    validate_litellm_runner,
 )
 from flowgate.cli.commands.bootstrap import _check_latest_version
 
@@ -52,35 +49,6 @@ class BootstrapTests(unittest.TestCase):
         ]
         picked = pick_release_asset(assets, os_name="darwin", arch="arm64")
         self.assertEqual(picked["browser_download_url"], "https://example/darwin")
-
-    def test_prepare_litellm_runner(self):
-        root = Path(tempfile.mkdtemp())
-        runner = prepare_litellm_runner(root, version="1.75.8")
-
-        self.assertTrue(runner.exists())
-        text = runner.read_text(encoding="utf-8")
-        self.assertIn("uv run --project", text)
-        self.assertIn('litellm "$@"', text)
-        self.assertIn("runtime", text)
-        mode = stat.S_IMODE(runner.stat().st_mode)
-        self.assertEqual(mode, 0o755)
-        self.assertTrue(validate_litellm_runner(runner))
-
-    def test_validate_litellm_runner_accepts_no_runtime_group_script(self):
-        root = Path(tempfile.mkdtemp())
-        runner = root / "litellm"
-        runner.write_text(
-            (
-                "#!/usr/bin/env bash\n"
-                "set -euo pipefail\n"
-                'project_root="$(cd "$(dirname "$0")/../../.." && pwd)"\n'
-                'exec uv run --project "$project_root" litellm "$@"\n'
-            ),
-            encoding="utf-8",
-        )
-        runner.chmod(0o755)
-
-        self.assertTrue(validate_litellm_runner(runner))
 
     def test_extract_binary_prefers_cli_proxy_executable(self):
         buf = io.BytesIO()

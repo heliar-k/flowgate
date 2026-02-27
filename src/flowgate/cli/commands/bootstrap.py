@@ -2,7 +2,7 @@
 Bootstrap command handlers for FlowGate CLI.
 
 This module contains command handlers for downloading and setting up
-runtime dependencies (CLIProxyAPIPlus binary and LiteLLM runner).
+runtime dependencies (CLIProxyAPIPlus binary).
 """
 from __future__ import annotations
 
@@ -16,9 +16,7 @@ from ...bootstrap import (
     DEFAULT_CLIPROXY_VERSION,
     _http_get_json,
     download_cliproxyapi_plus,
-    prepare_litellm_runner,
     validate_cliproxy_binary,
-    validate_litellm_runner,
 )
 from ...cliproxyapiplus_update_check import (
     _is_newer_version,
@@ -33,7 +31,7 @@ from .base import BaseCommand
 
 
 class BootstrapDownloadCommand(BaseCommand):
-    """Download and prepare runtime binaries (CLIProxyAPIPlus and LiteLLM)."""
+    """Download and prepare runtime binaries (CLIProxyAPIPlus)."""
 
     @handle_command_errors
     def execute(self) -> int:
@@ -58,12 +56,8 @@ class BootstrapDownloadCommand(BaseCommand):
             repo=cliproxy_repo,
             require_sha256=require_sha256,
         )
-        output.progress("bootstrap:download preparing litellm runner")
-        litellm = prepare_litellm_runner(runtime_bin_dir)
         if not validate_cliproxy_binary(cliproxy):
             raise RuntimeError(f"Invalid CLIProxyAPIPlus binary downloaded: {cliproxy}")
-        if not validate_litellm_runner(litellm):
-            raise RuntimeError(f"Invalid litellm runner generated: {litellm}")
 
         write_cliproxyapiplus_installed_version(
             self.config["paths"]["runtime_dir"], cliproxy_version
@@ -77,7 +71,6 @@ class BootstrapDownloadCommand(BaseCommand):
                         "cliproxyapi_plus": str(cliproxy),
                         "cliproxy_version": str(cliproxy_version),
                         "cliproxy_repo": str(cliproxy_repo),
-                        "litellm": str(litellm),
                     },
                     "warnings": [],
                     "errors": [],
@@ -86,7 +79,6 @@ class BootstrapDownloadCommand(BaseCommand):
             return 0
 
         print(f"cliproxyapi_plus={cliproxy}", file=stdout)
-        print(f"litellm={litellm}", file=stdout)
         return 0
 
 
