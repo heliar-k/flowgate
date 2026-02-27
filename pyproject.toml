@@ -1,13 +1,12 @@
 [project]
 name = "flowgate"
 version = "0.4.7"
-description = "Local control tool for managing CLIProxyAPIPlus + LiteLLM stacks"
+description = "Local control tool for managing CLIProxyAPIPlus"
 readme = "README.md"
 license = "MIT"
 # Support Python 3.11+ for broader compatibility (no 3.12-specific features used)
 requires-python = ">=3.11"
-# Allow minor updates for LiteLLM while preventing breaking changes (semver)
-dependencies = ["litellm[proxy]>=1.75.8,<2.0.0", "pyyaml>=6,<7"]
+dependencies = ["pyyaml>=6,<7"]
 
 [project.scripts]
 flowgate = "flowgate:main"

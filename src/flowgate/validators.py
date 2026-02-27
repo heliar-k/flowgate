@@ -111,7 +111,7 @@ class ConfigValidator:
         - readiness_path: non-empty string
 
         Args:
-            service_name: Name of the service (e.g., "litellm")
+            service_name: Name of the service (e.g., "cliproxyapi_plus")
             service_config: Service configuration dictionary
 
         Raises:
@@ -181,81 +181,6 @@ class ConfigValidator:
             if name.startswith("_comment"):
                 continue
             ConfigValidator.validate_service(name, svc)
-
-    @staticmethod
-    def validate_litellm_base(config: dict[str, Any]) -> None:
-        """Validate the litellm_base configuration section.
-
-        Currently validates that it's a dictionary. Additional validation
-        for model_list and settings can be added as needed.
-
-        Args:
-            config: The litellm_base section from configuration
-
-        Raises:
-            ConfigError: If validation fails
-        """
-        ConfigValidator._validate_type(config, dict, "litellm_base")
-
-    @staticmethod
-    def validate_credentials(credentials_config: dict[str, Any]) -> None:
-        """Validate the credentials configuration section.
-
-        Structure:
-        - Only 'upstream' key is allowed
-        - upstream: dict of credential entries
-        - Each entry must have exactly one of:
-          - file: path to file containing API key
-          - env: environment variable name containing API key
-
-        Args:
-            credentials_config: The credentials section from configuration
-
-        Raises:
-            ConfigError: If validation fails
-        """
-        from flowgate.config import ConfigError
-
-        unknown = sorted(set(credentials_config.keys()) - {"upstream"})
-        if unknown:
-            raise ConfigError(f"credentials has unknown keys: {', '.join(unknown)}")
-
-        upstream = credentials_config.get("upstream", {})
-        ConfigValidator._validate_type(upstream, dict, "credentials.upstream")
-
-        for name, entry in upstream.items():
-            if not isinstance(name, str) or not name:
-                raise ConfigError(
-                    "credentials.upstream keys must be non-empty strings"
-                )
-            ConfigValidator._validate_type(
-                entry, dict, f"credentials.upstream.{name}"
-            )
-
-            unknown_entry = sorted(set(entry.keys()) - {"file", "env"})
-            if unknown_entry:
-                raise ConfigError(
-                    f"credentials.upstream.{name} has unknown keys: {', '.join(unknown_entry)}"
-                )
-
-            file_path = entry.get("file")
-            env_name = entry.get("env")
-
-            has_file = file_path is not None
-            has_env = env_name is not None
-            if has_file == has_env:
-                raise ConfigError(
-                    f"credentials.upstream.{name} must define exactly one of: file, env"
-                )
-
-            if has_file:
-                ConfigValidator._validate_non_empty_string(
-                    file_path, f"credentials.upstream.{name}.file"
-                )
-            if has_env:
-                ConfigValidator._validate_non_empty_string(
-                    env_name, f"credentials.upstream.{name}.env"
-                )
 
     @staticmethod
     def validate_auth_providers(providers_config: dict[str, Any]) -> None:

@@ -661,7 +661,7 @@ name = "flowgate"
 version = "0.4.7"
 source = { editable = "." }
 dependencies = [
-    { name = "litellm", extra = ["proxy"] },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -674,7 +674,7 @@ test = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "litellm", extras = ["proxy"], specifier = ">=1.75.8,<2.0.0" }]
+requires-dist = [{ name = "pyyaml", specifier = ">=6,<7" }]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pdoc", specifier = ">=14.0.0,<15" }]

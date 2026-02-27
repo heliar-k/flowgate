@@ -13,7 +13,6 @@ from typing import Any, TextIO
 
 from ...constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from ...security import check_secret_file_permissions
-from ...utils import _upstream_credential_issues
 from ..error_handler import handle_command_errors
 from ..output import Output, command_id_from_args
 from .base import BaseCommand
@@ -398,22 +397,6 @@ class DoctorCommand(BaseCommand):
                     {"id": "secret_permissions", "status": "pass", "issues": 0}
                 )
 
-            upstream_issues = _upstream_credential_issues(self.config)
-            if upstream_issues:
-                all_ok = False
-                checks_out.append(
-                    {
-                        "id": "upstream_credentials",
-                        "status": "fail",
-                        "issues": len(upstream_issues),
-                        "suggestion": "define credentials.upstream entries and ensure each api_key_ref file exists with non-empty content",
-                    }
-                )
-            else:
-                checks_out.append(
-                    {"id": "upstream_credentials", "status": "pass", "issues": 0}
-                )
-
             output.emit_envelope(
                 {
                     "ok": bool(all_ok),
@@ -527,18 +510,6 @@ class DoctorCommand(BaseCommand):
             )
         else:
             print("doctor:secret_permissions=pass issues=0", file=stdout)
-
-        upstream_issues = _upstream_credential_issues(self.config)
-        if upstream_issues:
-            all_ok = False
-            print(
-                "doctor:upstream_credentials=fail "
-                f"issues={len(upstream_issues)} "
-                "suggestion='define credentials.upstream entries and ensure each api_key_ref file exists with non-empty content'",
-                file=stdout,
-            )
-        else:
-            print("doctor:upstream_credentials=pass issues=0", file=stdout)
 
         # Check for CLIProxyAPIPlus updates (only if stdout is a tty)
         self._maybe_print_cliproxyapiplus_update(stdout)

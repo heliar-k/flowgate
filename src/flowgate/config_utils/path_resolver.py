@@ -72,21 +72,16 @@ class PathResolver:
         Path types handled:
             1. paths.* - Top-level path fields (runtime_dir, log_file, etc.)
             2. secret_files - List of secret file paths
-            3. credentials.upstream.*.file - Nested credential file paths
-            4. services.*.command.cwd - Optional service working directories
+            3. services.*.command.cwd - Optional service working directories
+            4. cliproxyapi_plus.config_file - CLIProxyAPIPlus config path
 
         Examples:
             >>> resolver = PathResolver(Path("/etc/flowgate/config.yaml"))
             >>> config = {
             ...     "paths": {"runtime_dir": ".router"},
             ...     "secret_files": ["secrets/api.key"],
-            ...     "credentials": {
-            ...         "upstream": {
-            ...             "openai": {"file": "creds/openai.key"}
-            ...         }
-            ...     },
             ...     "services": {
-            ...         "litellm": {
+            ...         "cliproxyapi_plus": {
             ...             "command": {"cwd": "runtime"}
             ...         }
             ...     }
