@@ -6,6 +6,7 @@ from typing import Any
 
 from flowgate.observability import measure_time
 from flowgate.validators import ConfigValidator
+from flowgate.constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 
 
 class ConfigError(ValueError):
@@ -15,10 +16,7 @@ class ConfigError(ValueError):
 _ALLOWED_TOP_LEVEL_KEYS = {
     "config_version",
     "paths",
-    "services",
-    "credentials",
-    "litellm_base",
-    "profiles",
+    "cliproxyapi_plus",
     "auth",
     "secret_files",
     "integration",
@@ -26,13 +24,11 @@ _ALLOWED_TOP_LEVEL_KEYS = {
 
 _REQUIRED_TOP_LEVEL_KEYS = {
     "paths",
-    "services",
-    "litellm_base",
-    "profiles",
+    "cliproxyapi_plus",
 }
 
-_LATEST_CONFIG_VERSION = 2
-_SUPPORTED_CONFIG_VERSIONS = {2}
+_LATEST_CONFIG_VERSION = 3
+_SUPPORTED_CONFIG_VERSIONS = {3}
 
 
 def _parse_yaml_like(path: Path) -> dict[str, Any]:
@@ -60,83 +56,52 @@ def _ensure_mapping(value: Any, name: str) -> dict[str, Any]:
     return value
 
 
+def _resolve_path_relative_to_config(config_path: Path, raw: str) -> Path:
+    p = Path(raw).expanduser()
+    if p.is_absolute():
+        return p
+    return (config_path.parent / p).resolve()
 
 
-def _normalize_credentials(credentials: dict[str, Any]) -> dict[str, Any]:
-    ConfigValidator.validate_credentials(credentials)
+def _derive_cliproxy_service(
+    *, flowgate_config_path: Path, paths: dict[str, Any], cliproxy_section: dict[str, Any]
+) -> tuple[dict[str, Any], Path]:
+    config_file_raw = cliproxy_section.get("config_file")
+    if not isinstance(config_file_raw, str) or not config_file_raw.strip():
+        raise ConfigError("cliproxyapi_plus.config_file must be a non-empty string")
 
-    upstream = credentials.get("upstream", {})
-    normalized_upstream: dict[str, dict[str, str]] = {}
-    for name, entry in upstream.items():
-        file_path = entry.get("file")
-        env_name = entry.get("env")
-        normalized_entry: dict[str, str] = {}
-        if file_path is not None:
-            normalized_entry["file"] = file_path
-        if env_name is not None:
-            normalized_entry["env"] = env_name
-        normalized_upstream[name] = normalized_entry
+    cliproxy_cfg_path = _resolve_path_relative_to_config(
+        flowgate_config_path, config_file_raw.strip()
+    )
+    cliproxy_cfg = _parse_yaml_like(cliproxy_cfg_path)
 
-    return {"upstream": normalized_upstream}
+    host_raw = cliproxy_cfg.get("host", DEFAULT_SERVICE_HOST)
+    host = str(host_raw).strip() if host_raw is not None else DEFAULT_SERVICE_HOST
+    if not host:
+        host = DEFAULT_SERVICE_HOST
 
+    port = cliproxy_cfg.get("port")
+    if not isinstance(port, int):
+        raise ConfigError("CLIProxyAPIPlus config 'port' must be an integer")
 
-def _validate_api_key_refs(config: dict[str, Any]) -> None:
-    """Validate that all api_key_ref values reference existing credentials.
+    runtime_dir = paths.get("runtime_dir")
+    if not isinstance(runtime_dir, str) or not runtime_dir.strip():
+        raise ConfigError("paths.runtime_dir must be a non-empty string")
+    runtime_dir = runtime_dir.strip()
 
-    Scans litellm_base.model_list and all profiles.*.model_list for api_key_ref
-    and ensures each reference exists in credentials.upstream.
-    """
-    credentials = config.get("credentials", {})
-    upstream = credentials.get("upstream", {})
-    available_refs = set(upstream.keys())
+    project_root = flowgate_config_path.parent.resolve().parent
+    binary = str((Path(runtime_dir) / "bin" / "CLIProxyAPIPlus"))
 
-    refs_to_check: list[tuple[str, str]] = []  # (ref, location)
-
-    # Scan litellm_base.model_list
-    litellm_base = config.get("litellm_base", {})
-    model_list = litellm_base.get("model_list", [])
-    if isinstance(model_list, list):
-        for idx, model in enumerate(model_list):
-            if not isinstance(model, dict):
-                continue
-            params = model.get("litellm_params", {})
-            if not isinstance(params, dict):
-                continue
-            ref = params.get("api_key_ref")
-            if ref:
-                refs_to_check.append((ref, f"litellm_base.model_list[{idx}]"))
-
-    # Scan profiles.*.model_list
-    profiles = config.get("profiles", {})
-    if isinstance(profiles, dict):
-        for profile_name, profile_config in profiles.items():
-            if not isinstance(profile_config, dict):
-                continue
-            profile_model_list = profile_config.get("model_list", [])
-            if isinstance(profile_model_list, list):
-                for idx, model in enumerate(profile_model_list):
-                    if not isinstance(model, dict):
-                        continue
-                    params = model.get("litellm_params", {})
-                    if not isinstance(params, dict):
-                        continue
-                    ref = params.get("api_key_ref")
-                    if ref:
-                        refs_to_check.append(
-                            (ref, f"profiles.{profile_name}.model_list[{idx}]")
-                        )
-
-    # Check all references
-    invalid_refs = []
-    for ref, location in refs_to_check:
-        if ref not in available_refs:
-            invalid_refs.append(f"{location}.litellm_params.api_key_ref='{ref}'")
-
-    if invalid_refs:
-        raise ConfigError(
-            f"Invalid api_key_ref values (not found in credentials.upstream): "
-            f"{', '.join(invalid_refs)}"
-        )
+    service = {
+        "host": host,
+        "port": port,
+        "readiness_path": DEFAULT_READINESS_PATH,
+        "command": {
+            "cwd": str(project_root),
+            "args": [binary, "-config", str(cliproxy_cfg_path)],
+        },
+    }
+    return service, cliproxy_cfg_path
 
 
 @measure_time("config_normalize")
@@ -180,18 +145,16 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
         raise ConfigError(f"Missing required top-level keys: {', '.join(missing)}")
 
     paths = _ensure_mapping(data["paths"], "paths")
-    services = _ensure_mapping(data["services"], "services")
-    litellm_base = _ensure_mapping(data["litellm_base"], "litellm_base")
-    profiles = _ensure_mapping(data["profiles"], "profiles")
-
     ConfigValidator.validate_paths(paths)
-    ConfigValidator.validate_services(services)
-    ConfigValidator.validate_litellm_base(litellm_base)
-    ConfigValidator.validate_profiles(profiles)
 
-    credentials_raw = data.get("credentials", {})
-    credentials_map = _ensure_mapping(credentials_raw, "credentials")
-    credentials = _normalize_credentials(credentials_map)
+    cliproxy_section = _ensure_mapping(data["cliproxyapi_plus"], "cliproxyapi_plus")
+    cliproxy_service, cliproxy_cfg_path = _derive_cliproxy_service(
+        flowgate_config_path=path_obj,
+        paths=paths,
+        cliproxy_section=cliproxy_section,
+    )
+    services = {"cliproxyapi_plus": cliproxy_service}
+    ConfigValidator.validate_services(services)
 
     auth_raw = data.get("auth", {})
     auth_map = _ensure_mapping(auth_raw, "auth")
@@ -206,16 +169,11 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     integration = _ensure_mapping(integration_raw, "integration")
     ConfigValidator.validate_integration(integration)
 
-    # Validate api_key_ref cross-references
-    _validate_api_key_refs(data)
-
     return {
         "config_version": data["config_version"],
         "paths": paths,
         "services": services,
-        "credentials": credentials,
-        "litellm_base": litellm_base,
-        "profiles": profiles,
+        "cliproxyapi_plus": {"config_file": str(cliproxy_cfg_path)},
         "auth": {"providers": providers},
         "secret_files": secret_files,
         "integration": integration,

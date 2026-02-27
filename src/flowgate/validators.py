@@ -86,7 +86,7 @@ class ConfigValidator:
     def validate_paths(paths_config: dict[str, Any]) -> None:
         """Validate the paths configuration section.
 
-        Required keys: runtime_dir, active_config, state_file, log_file
+        Required keys (config_version 3): runtime_dir, log_file
 
         Args:
             paths_config: The paths section from configuration
@@ -94,7 +94,7 @@ class ConfigValidator:
         Raises:
             ConfigError: If validation fails
         """
-        required = {"runtime_dir", "active_config", "state_file", "log_file"}
+        required = {"runtime_dir", "log_file"}
         ConfigValidator._require_keys(paths_config, required, "paths")
 
     @staticmethod
@@ -164,7 +164,7 @@ class ConfigValidator:
     def validate_services(services_config: dict[str, Any]) -> None:
         """Validate the services configuration section.
 
-        Required services: litellm, cliproxyapi_plus
+        Required services (config_version 3): cliproxyapi_plus
         Each service must have valid command configuration.
 
         Args:
@@ -173,7 +173,7 @@ class ConfigValidator:
         Raises:
             ConfigError: If validation fails
         """
-        required = {"litellm", "cliproxyapi_plus"}
+        required = {"cliproxyapi_plus"}
         ConfigValidator._require_keys(services_config, required, "services")
 
         for name, svc in services_config.items():
