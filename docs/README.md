@@ -1,6 +1,6 @@
 # FlowGate Documentation
 
-Welcome to FlowGate documentation! This guide will help you get started with FlowGate, a local control tool for managing CLIProxyAPIPlus + LiteLLM stacks.
+Welcome to FlowGate documentation! This guide will help you get started with FlowGate, a local control tool for managing CLIProxyAPIPlus.
 
 ## Documentation Structure
 
@@ -10,7 +10,6 @@ End-user documentation for installing, configuring, and using FlowGate.
 - [Installation Guide](user-guide/installation.md)
 - [Quick Start](user-guide/quick-start.md)
 - [Configuration Reference](user-guide/configuration.md)
-- [Profile Management](user-guide/profiles.md)
 - [Authentication Setup](user-guide/authentication.md)
 - [CLI Command Reference](user-guide/cli-reference.md)
 - [Troubleshooting](user-guide/troubleshooting.md)

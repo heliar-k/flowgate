@@ -14,14 +14,10 @@ xgate - FlowGate CLI 快捷启动脚本
   --config <路径>       指定配置文件路径 (默认: config/flowgate.yaml)
 
 命令:
-  status                显示当前系统状态 (活跃策略、服务运行情况、密钥权限)
+  status                显示当前系统状态 (服务运行情况、密钥权限)
   health                检查服务健康状态
     --verbose             显示详细健康检查信息
   doctor                运行诊断检查 (配置验证、依赖检测、权限检查等)
-
-  profile               策略配置管理
-    list                  列出所有可用策略配置
-    set <名称>            切换活跃策略 (如 reliability/balanced/cost)
 
   auth                  认证管理
     list                  列出可用的 OAuth 提供商及其功能
@@ -40,7 +36,7 @@ xgate - FlowGate CLI 快捷启动脚本
                           目标可以是具体服务名或 "all"
 
   bootstrap             运行时环境初始化
-    download              下载运行时二进制文件 (CLIProxyAPIPlus + LiteLLM 脚本)
+    download              下载运行时二进制文件 (CLIProxyAPIPlus)
       --cliproxy-version <版本>  指定 CLIProxyAPIPlus 版本
       --cliproxy-repo <仓库>     指定 GitHub 仓库地址
 
@@ -51,13 +47,8 @@ xgate - FlowGate CLI 快捷启动脚本
                             codex 默认: ~/.codex/config.toml
                             claude-code 默认: ~/.claude/settings.json
 
-  config                配置管理
-    migrate               将配置从 v1 迁移到 v2
-      --dry-run             仅预览变更，不实际修改
-
 示例:
   ./scripts/xgate --config config/flowgate.yaml status
-  ./scripts/xgate --config config/flowgate.yaml profile set balanced
   ./scripts/xgate --config config/flowgate.yaml service start all
   ./scripts/xgate --config config/flowgate.yaml auth login codex --timeout 180
   ./scripts/xgate --config config/flowgate.yaml bootstrap download

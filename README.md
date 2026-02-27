@@ -4,14 +4,14 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A local control tool for managing **CLIProxyAPIPlus + LiteLLM** stacks with policy profile switching and unified CLI.
+A local control tool for managing **CLIProxyAPIPlus** with a unified CLI (bootstrap/service/auth/integration/health/doctor).
 
 ## What It Does
 
-- **Unified Gateway**: LiteLLM as northbound OpenAI-compatible endpoint
-- **OAuth Integration**: CLIProxyAPIPlus for Codex, GitHub Copilot providers
-- **Policy Profiles**: Switch between `reliability`, `balanced`, `cost` strategies
-- **Lifecycle Management**: Health checks, service control, and observability
+- **Easy-to-configure wrapper**: FlowGate owns a small config and delegates proxy behavior to CLIProxyAPIPlus
+- **OAuth Integration**: CLIProxyAPIPlus for Codex and GitHub Copilot
+- **Lifecycle Management**: Bootstrap, health/doctor, service control, and observability
+- **Client Integration**: Print/apply snippets for Codex and Claude Code
 
 ## Quick Start
 
@@ -27,10 +27,9 @@ uv sync --group test --group dev
 ### 2. Configure
 
 ```bash
-mkdir -p config .router/secrets
+mkdir -p config
 cp config/examples/flowgate.yaml config/flowgate.yaml
-printf '%s\n' "sk-..." > .router/secrets/upstream_cliproxyapi_api_key
-chmod 600 .router/secrets/upstream_cliproxyapi_api_key
+cp config/examples/cliproxyapi.yaml config/cliproxyapi.yaml
 ```
 
 ### 3. Bootstrap & Start
@@ -42,8 +41,7 @@ uv run flowgate --config config/flowgate.yaml bootstrap download
 # Check for updates (recommended)
 uv run flowgate --config config/flowgate.yaml bootstrap update
 
-# Activate profile and start services
-uv run flowgate --config config/flowgate.yaml profile set balanced
+# Start services
 uv run flowgate --config config/flowgate.yaml service start all
 uv run flowgate --config config/flowgate.yaml health
 ```
@@ -78,13 +76,13 @@ uv run flowgate --config config/flowgate.yaml health
 
 ```bash
 # Service management
-flowgate service {start|stop|restart} {all|litellm|cliproxyapi_plus}
-
-# Profile switching
-flowgate profile set {reliability|balanced|cost}
+flowgate service {start|stop|restart} {all|cliproxyapi_plus}
 
 # Health & diagnostics
 flowgate {status|health|doctor}
+
+# Auth
+flowgate auth {list|status|login|import-headless} ...
 ```
 
 **Note**: Prefix commands with `uv run` or use `./scripts/xgate` wrapper.
@@ -105,15 +103,14 @@ CI runs the test suite on every change. Use the commands above to verify locally
 
 ## Config Migration
 
-FlowGate supports `config_version: 2`. Older v1 configs are no longer supported.
+FlowGate supports `config_version: 3` (cliproxy-only).
 
 ```bash
 # Validate configuration
 uv run flowgate --config config/flowgate.yaml doctor
 ```
 
-**See**: [Configuration Guide](docs/user-guide/configuration.md#version-migration) and
-[Config Version Migration](docs/developer-guide/config-version-migration.md).
+**See**: [Configuration Guide](docs/user-guide/configuration.md#version-migration).
 
 ## Contributing
 

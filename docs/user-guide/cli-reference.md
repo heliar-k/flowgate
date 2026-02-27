@@ -16,26 +16,18 @@ This document lists the current FlowGate CLI commands and flags.
 
 ## Commands
 
-### `profile`
-
-- `flowgate profile list`
-  - Lists available profiles.
-- `flowgate profile set <name>`
-  - Activates a profile by writing the merged LiteLLM config to `paths.active_config` and updating `paths.state_file`.
-  - If `litellm` is running, FlowGate restarts it to apply changes immediately.
-
 ### `service`
 
 - `flowgate service start [all|<service>]`
 - `flowgate service stop [all|<service>]`
 - `flowgate service restart [all|<service>]`
 
-`<service>` is one of the keys under `services.*` in your config (typically `litellm` and `cliproxyapi_plus`).
+In `config_version: 3`, FlowGate only manages a single service: `cliproxyapi_plus`.
 
 ### `status`
 
 - `flowgate status`
-  - Prints current profile (from state file), per-service running status (via PID files), and secret permission issues.
+  - Prints per-service running status (via PID files), cliproxy config path, and secret permission issues.
 
 ### `health`
 
@@ -45,7 +37,7 @@ This document lists the current FlowGate CLI commands and flags.
 ### `doctor`
 
 - `flowgate doctor`
-  - Runs diagnostics for runtime directories/binaries, secret file permissions, upstream credential references, and runtime dependencies.
+  - Runs diagnostics for runtime directories/binaries, secret file permissions, and cliproxy config readability.
 
 ### `auth`
 
@@ -69,7 +61,7 @@ This document lists the current FlowGate CLI commands and flags.
 ### `bootstrap`
 
 - `flowgate bootstrap download [--cliproxy-version <tag>] [--cliproxy-repo <owner/repo>] [--require-sha256]`
-  - Downloads runtime artifacts and generates the LiteLLM runner script.
+  - Downloads runtime artifacts (CLIProxyAPIPlus binary).
 - `flowgate bootstrap update [--cliproxy-repo <owner/repo>] [--yes|-y] [--require-sha256]`
   - Checks for a newer CLIProxyAPIPlus release, downloads it, and restarts `cliproxyapi_plus` if running.
   - In non-interactive runs, use `--yes` to apply updates (otherwise FlowGate exits with code `2`).

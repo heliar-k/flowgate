@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FlowGate is a local control tool for managing `CLIProxyAPIPlus + LiteLLM` stacks. It provides unified management of LiteLLM (northbound OpenAI-compatible endpoint) and CLIProxyAPIPlus (OAuth-backed providers like Codex, GitHub Copilot) with policy profile switching and service lifecycle management.
+FlowGate is a local control tool for managing `CLIProxyAPIPlus`. It focuses on being an easy-to-configure wrapper around CLIProxyAPIPlus with unified CLI for bootstrap/service/auth/integration/health/doctor.
 
 ## Architecture
 
@@ -13,22 +13,21 @@ For detailed docs: [Architecture Overview](docs/architecture/README.md), [Diagra
 ### Key Components
 
 - **CLI** (`src/flowgate/cli/`): BaseCommand pattern, @handle_command_errors decorator, argparse subcommands
-- **Config** (`src/flowgate/config.py`, `config_utils/`): Schema v2 validation, PathResolver for path resolution, credential management
+- **Config** (`src/flowgate/config.py`, `config_utils/`): Schema v3 validation, PathResolver for path resolution
 - **Process** (`src/flowgate/process.py`): ProcessSupervisor for service lifecycle, PID tracking in `.router/runtime/pids/`, port conflict detection
-- **Profile** (`src/flowgate/profile.py`): Policy switching (reliability/balanced/cost), deep merge base + overlay, `api_key_ref` resolution, auto-restart on change
 - **Auth** (`src/flowgate/oauth.py`, `auth_methods.py`): OAuth polling, headless import, multi-provider (Codex, GitHub Copilot)
-- **Bootstrap** (`src/flowgate/bootstrap.py`): Platform-specific binary downloads, LiteLLM runner script generation
+- **Bootstrap** (`src/flowgate/bootstrap.py`): Platform-specific binary downloads (CLIProxyAPIPlus)
 - **Integration** (`src/flowgate/integration.py`, `client_apply.py`): Client config snippets (Codex, Claude Code), automated config updates
 
 ### Key Data Flows
 
-1. **Profile Activation**: `profile set <name>` → merge base + overlay → resolve credentials → write active config → auto-restart LiteLLM
-2. **Service Start**: `service start all` → validate ports → spawn processes → record PIDs → log events
+1. **Config Load**: load FlowGate config → parse CLIProxyAPIPlus config → derive `services.cliproxyapi_plus` (host/port/command) for reuse by commands
+2. **Service Start**: `service start all` → validate ports → spawn process → record PID → log events
 3. **OAuth Login**: `auth login codex` → fetch auth URL → poll status → write auth artifact → record event
 
 ## Directory Layout
 
-- `src/flowgate/`: Main package (`config.py`, `config_utils/`, `cli/`, `process.py`, `profile.py`, `oauth.py`, `bootstrap.py`, `validators.py`)
+- `src/flowgate/`: Main package (`config.py`, `config_utils/`, `cli/`, `process.py`, `oauth.py`, `bootstrap.py`, `validators.py`)
 - `tests/`: Unit + integration tests
 - `config/examples/`: Sample configs
 - `.router/`: Runtime artifacts (gitignored)
@@ -47,9 +46,7 @@ uv run flowgate --config config/flowgate.yaml <command>
 uv run flowgate --config config/flowgate.yaml bootstrap download
 uv run flowgate --config config/flowgate.yaml bootstrap update --yes
 
-# Profile & Service
-uv run flowgate --config config/flowgate.yaml profile list
-uv run flowgate --config config/flowgate.yaml profile set balanced
+# Service
 uv run flowgate --config config/flowgate.yaml service start all
 uv run flowgate --config config/flowgate.yaml service stop all
 uv run flowgate --config config/flowgate.yaml status
@@ -85,13 +82,11 @@ uv run flowgate --config config/flowgate.yaml doctor
 
 ## Configuration Schema
 
-Version: `config_version: 2` (v1 deprecated since v0.2.0, removed in v0.3.0)
+Version: `config_version: 3`
 
-Required keys: `config_version`, `paths` (runtime_dir, active_config, state_file, log_file), `services` (litellm, cliproxyapi_plus), `litellm_base` (model_list, router_settings, litellm_settings), `profiles` (at least one).
+Required keys: `config_version`, `paths` (runtime_dir, log_file), `cliproxyapi_plus.config_file`.
 
-Optional: `credentials.upstream.<name>.file`, `auth.providers.<name>`, `secret_files`.
-
-Legacy mappings (v1 → v2): `oauth` → `auth.providers`, `services.cliproxyapi` → `services.cliproxyapi_plus`, `secrets` → `secret_files`. See `docs/developer-guide/config-version-migration.md`.
+Optional: `auth.providers.<name>`, `secret_files`, `integration`.
 
 ## Code Style
 
@@ -110,15 +105,13 @@ PRs: include test evidence, document config impact, one focused change per commi
 
 **Auth Provider**: Add config under `auth.providers.<provider>`, add handler in `auth_methods.py`, add tests, verify with `auth list`/`auth status`.
 
-**Profile Strategy**: Add under `profiles.<name>`, define `litellm_settings` overrides, test activation and restart behavior.
-
 ## CI/CD
 
 `.github/workflows/ci.yml`: push to main + all PRs → `uv sync` → `uv run pytest tests/ -v -m ""` → CLI help checks.
 
 ## Security
 
-- Never commit credentials; secrets in `.router/secrets/` (gitignored)
+- Never commit credentials; auth artifacts in `.router/auths/` (gitignored)
 - Run `./scripts/security_check.sh` before push
 
 ## Observability
@@ -127,4 +120,4 @@ Event log: `.router/runtime/events.log` (JSON lines). Events: `service_start/sto
 
 ## Troubleshooting
 
-See `docs/runbook-troubleshooting.md`. Start with: `status` → `health` → `events.log` → `doctor`.
+See `docs/user-guide/troubleshooting.md`. Start with: `status` → `health` → `events.log` → `doctor`.

@@ -7,8 +7,7 @@ Welcome to the FlowGate User Guide! This section contains documentation for end 
 - **[Installation](installation.md)** - How to install and set up FlowGate
 - **[Quick Start](quick-start.md)** - Get started quickly with basic usage
 - **[Configuration](configuration.md)** - Configuration reference and migration guides
-- **[Profiles](profiles.md)** - Profile management and switching
-- **[Authentication](authentication.md)** - OAuth setup and credential management
+- **[Authentication](authentication.md)** - OAuth setup and auth artifacts
 - **[CLI Reference](cli-reference.md)** - Complete command-line interface reference
 - **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
 

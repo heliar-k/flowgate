@@ -9,7 +9,6 @@ To view the authoritative help output on your machine:
 
 ```bash
 flowgate --help
-flowgate profile --help
 flowgate service --help
+flowgate auth --help
 ```
-

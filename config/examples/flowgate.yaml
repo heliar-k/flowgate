@@ -1,6 +1,6 @@
 # FlowGate Configuration - Version 3 (cliproxy-only)
 #
-# v3 removes LiteLLM/profile/credential sections and derives the running
+# v3 removes legacy profile/credential sections and derives the running
 # cliproxyapi_plus service from the CLIProxyAPIPlus config file.
 
 config_version: 3
