@@ -27,6 +27,7 @@ from .commands.service import (
     ServiceStopCommand,
 )
 from .error_handler import EXIT_CONFIG_ERROR, EXIT_RUNTIME_ERROR
+from .output import Output
 from .parser import build_parser
 from .utils import (
     _load_and_resolve_config,
@@ -57,6 +58,9 @@ def run_cli(
         args = parser.parse_args(list(argv))
         if getattr(args, "debug", False):
             logging.basicConfig(level=logging.DEBUG)
+        args.stdout = stdout
+        args.stderr = stderr
+        args._output = Output.from_args(args, stdout=stdout, stderr=stderr)
 
         from pathlib import Path
 
@@ -70,12 +74,12 @@ def run_cli(
 
             stdout = stdout or sys.stdout
             stderr = stderr or sys.stderr
+            args.stdout = stdout
+            args.stderr = stderr
+            args._output = Output.from_args(args, stdout=stdout, stderr=stderr)
 
             # Handle auth command with nested subcommands
             if args.command == "auth":
-                args.stdout = stdout
-                args.stderr = stderr
-
                 auth_command_map = {
                     "list": AuthListCommand,
                     "status": AuthStatusCommand,
@@ -90,9 +94,6 @@ def run_cli(
                     return command.execute()
 
             if args.command == "profile":
-                args.stdout = stdout
-                args.stderr = stderr
-
                 profile_command_map = {
                     "list": ProfileListCommand,
                     "set": ProfileSetCommand,
@@ -105,9 +106,6 @@ def run_cli(
                     return command.execute()
 
             if args.command == "service":
-                args.stdout = stdout
-                args.stderr = stderr
-
                 service_command_map = {
                     "start": ServiceStartCommand,
                     "stop": ServiceStopCommand,
@@ -121,9 +119,6 @@ def run_cli(
                     return command.execute()
 
             if args.command == "bootstrap":
-                args.stdout = stdout
-                args.stderr = stderr
-
                 bootstrap_command_map = {
                     "download": BootstrapDownloadCommand,
                     "update": BootstrapUpdateCommand,
@@ -136,9 +131,6 @@ def run_cli(
                     return command.execute()
 
             if args.command == "integration":
-                args.stdout = stdout
-                args.stderr = stderr
-
                 integration_command_map = {
                     "print": IntegrationPrintCommand,
                     "apply": IntegrationApplyCommand,
@@ -151,33 +143,66 @@ def run_cli(
                     return command.execute()
 
             if args.command == "status":
-                args.stdout = stdout
-                args.stderr = stderr
                 return StatusCommand(args, config).execute()
 
             if args.command == "health":
-                args.stdout = stdout
-                args.stderr = stderr
                 return HealthCommand(args, config).execute()
 
             if args.command == "doctor":
-                args.stdout = stdout
-                args.stderr = stderr
                 return DoctorCommand(args, config).execute()
 
             print("Unknown command", file=stderr)
             return EXIT_CONFIG_ERROR
     except ConfigError as exc:
+        fmt = "legacy"
+        if "args" in locals():
+            fmt = str(getattr(args, "_output").format)
+        if fmt != "legacy" and "args" in locals():
+            getattr(args, "_output").emit_envelope(
+                {
+                    "ok": False,
+                    "command": "config",
+                    "data": {},
+                    "warnings": [],
+                    "errors": [{"type": "ConfigError", "message": str(exc)}],
+                }
+            )
         print(f"❌ Configuration error: {exc}", file=stderr)
         if "args" in locals() and getattr(args, "debug", False):
             traceback.print_exc(file=stderr)
         return EXIT_CONFIG_ERROR
     except FileNotFoundError as exc:
+        fmt = "legacy"
+        if "args" in locals():
+            fmt = str(getattr(args, "_output").format)
+        if fmt != "legacy" and "args" in locals():
+            getattr(args, "_output").emit_envelope(
+                {
+                    "ok": False,
+                    "command": "config",
+                    "data": {},
+                    "warnings": [],
+                    "errors": [{"type": "FileNotFoundError", "message": str(exc)}],
+                }
+            )
         print(f"❌ Configuration file not found: {exc}", file=stderr)
         if "args" in locals() and getattr(args, "debug", False):
             traceback.print_exc(file=stderr)
         return EXIT_CONFIG_ERROR
     except Exception as exc:
+        fmt = "legacy"
+        if "args" in locals():
+            fmt = str(getattr(args, "_output").format)
+        if fmt != "legacy" and "args" in locals():
+            getattr(args, "_output").emit_envelope(
+                {
+                    "ok": False,
+                    "command": "internal",
+                    "data": {},
+                    "warnings": [],
+                    "errors": [{"type": type(exc).__name__, "message": str(exc)}],
+                }
+            )
         print(f"❌ Internal error: {exc}", file=stderr)
         if "args" in locals() and getattr(args, "debug", False):
             traceback.print_exc(file=stderr)

@@ -13,6 +13,7 @@ from typing import Callable
 
 from ..config import ConfigError
 from ..process import ProcessError
+from .output import Output, command_id_from_args
 
 logger = logging.getLogger(__name__)
 
@@ -45,27 +46,76 @@ def handle_command_errors(func: Callable) -> Callable:
     def wrapper(*args, **kwargs) -> int:
         # Extract stderr from command instance if available (for testing)
         stderr = sys.stderr
+        stdout = sys.stdout
         debug = False
+        output: Output | None = None
         if args and hasattr(args[0], "args"):
+            stdout = getattr(args[0].args, "stdout", None) or sys.stdout
             stderr = getattr(args[0].args, "stderr", None) or sys.stderr
             debug = bool(getattr(args[0].args, "debug", False))
+            try:
+                output = getattr(args[0].args, "_output", None)
+                if output is None:
+                    output = Output.from_args(args[0].args, stdout=stdout, stderr=stderr)
+            except Exception:
+                output = None
 
         try:
             return func(*args, **kwargs)
         except ConfigError as exc:
             logger.error("Configuration error: %s", exc)
+            if output is not None:
+                output.emit_envelope(
+                    {
+                        "ok": False,
+                        "command": command_id_from_args(getattr(args[0], "args", None)),
+                        "data": {},
+                        "warnings": [],
+                        "errors": [{"type": "ConfigError", "message": str(exc)}],
+                    }
+                )
             print(f"❌ Configuration error: {exc}", file=stderr)
             return EXIT_CONFIG_ERROR
         except ProcessError as exc:
             logger.error("Process operation failed: %s", exc, exc_info=True)
+            if output is not None:
+                output.emit_envelope(
+                    {
+                        "ok": False,
+                        "command": command_id_from_args(getattr(args[0], "args", None)),
+                        "data": {},
+                        "warnings": [],
+                        "errors": [{"type": "ProcessError", "message": str(exc)}],
+                    }
+                )
             print(f"❌ Process operation failed: {exc}", file=stderr)
             return EXIT_RUNTIME_ERROR
         except PermissionError as exc:
             logger.error("Permission denied: %s", exc, exc_info=debug)
+            if output is not None:
+                output.emit_envelope(
+                    {
+                        "ok": False,
+                        "command": command_id_from_args(getattr(args[0], "args", None)),
+                        "data": {},
+                        "warnings": [],
+                        "errors": [{"type": "PermissionError", "message": str(exc)}],
+                    }
+                )
             print(f"❌ Permission denied: {exc}", file=stderr)
             return EXIT_RUNTIME_ERROR
         except Exception as exc:
             logger.exception("Internal error: %s", exc)
+            if output is not None:
+                output.emit_envelope(
+                    {
+                        "ok": False,
+                        "command": command_id_from_args(getattr(args[0], "args", None)),
+                        "data": {},
+                        "warnings": [],
+                        "errors": [{"type": type(exc).__name__, "message": str(exc)}],
+                    }
+                )
             print(f"❌ Internal error: {exc}", file=stderr)
             if debug:
                 import traceback

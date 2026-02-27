@@ -22,6 +22,24 @@ def build_parser() -> argparse.ArgumentParser:
         default=False,
         help="Show stack traces on errors and enable debug logging",
     )
+    parser.add_argument(
+        "--format",
+        default="legacy",
+        choices=["auto", "legacy", "kv", "json"],
+        help="Output format (default: legacy). Use json/kv for scripts.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        default=False,
+        help="Reduce non-essential output (progress messages, hints)",
+    )
+    parser.add_argument(
+        "--plain",
+        action="store_true",
+        default=False,
+        help="Avoid unicode status icons in legacy output",
+    )
 
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -43,6 +61,19 @@ def build_parser() -> argparse.ArgumentParser:
     integration_apply = integration_sub.add_parser("apply")
     integration_apply.add_argument("client", choices=["codex", "claude-code"])
     integration_apply.add_argument("--target", default="")
+    integration_apply.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Show planned changes without modifying files",
+    )
+    integration_apply.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        default=False,
+        help="Skip confirmation prompts for non-interactive runs",
+    )
 
     auth = sub.add_parser("auth")
     auth_sub = auth.add_subparsers(dest="provider", required=True)
