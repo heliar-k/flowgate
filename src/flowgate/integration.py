@@ -5,24 +5,24 @@ from typing import Any
 from .constants import DEFAULT_SERVICE_HOST
 
 
-def _litellm_base_url(config: dict[str, Any]) -> str:
+def _cliproxy_base_url(config: dict[str, Any]) -> str:
     services = config.get("services", {})
     if not isinstance(services, dict):
         raise ValueError("services must be a mapping/object")
 
-    litellm = services.get("litellm", {})
-    if not isinstance(litellm, dict):
-        raise ValueError("services.litellm must be a mapping/object")
+    cliproxy = services.get("cliproxyapi_plus", {})
+    if not isinstance(cliproxy, dict):
+        raise ValueError("services.cliproxyapi_plus must be a mapping/object")
 
-    host = litellm.get("host", DEFAULT_SERVICE_HOST)
-    port = litellm.get("port")
+    host = cliproxy.get("host", DEFAULT_SERVICE_HOST)
+    port = cliproxy.get("port")
     if not isinstance(port, int):
-        raise ValueError("services.litellm.port must be an integer")
+        raise ValueError("services.cliproxyapi_plus.port must be an integer")
     return f"http://{host}:{port}"
 
 
 def build_integration_specs(config: dict[str, Any]) -> dict[str, Any]:
-    base_url = _litellm_base_url(config)
+    base_url = _cliproxy_base_url(config)
 
     integration = config.get("integration", {})
     if not isinstance(integration, dict):

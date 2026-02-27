@@ -657,10 +657,11 @@ class CLITests(unittest.TestCase):
         self.assertIn("flowgate", parser.format_usage())
 
     def test_integration_print_codex(self):
+        cfg = write_minimal_v3_config(self.root)
         out = io.StringIO()
 
         code = run_cli(
-            ["--config", str(self.cfg), "integration", "print", "codex"],
+            ["--config", str(cfg), "integration", "print", "codex"],
             stdout=out,
         )
 
@@ -668,13 +669,14 @@ class CLITests(unittest.TestCase):
         text = out.getvalue()
         self.assertIn('model_provider = "flowgate"', text)
         self.assertIn("[model_providers.flowgate]", text)
-        self.assertIn('base_url = "http://127.0.0.1:4000/v1"', text)
+        self.assertIn('base_url = "http://127.0.0.1:5000/v1"', text)
         self.assertIn('model = "router-default"', text)
 
     def test_integration_print_codex_json(self):
+        cfg = write_minimal_v3_config(self.root)
         out = io.StringIO()
         code = run_cli(
-            ["--config", str(self.cfg), "--format", "json", "integration", "print", "codex"],
+            ["--config", str(cfg), "--format", "json", "integration", "print", "codex"],
             stdout=out,
         )
         self.assertEqual(code, 0)
@@ -685,21 +687,23 @@ class CLITests(unittest.TestCase):
         self.assertIn('model_provider = "flowgate"', payload["data"]["snippet"])
 
     def test_integration_print_claude_code(self):
+        cfg = write_minimal_v3_config(self.root)
         out = io.StringIO()
 
         code = run_cli(
-            ["--config", str(self.cfg), "integration", "print", "claude-code"],
+            ["--config", str(cfg), "integration", "print", "claude-code"],
             stdout=out,
         )
 
         self.assertEqual(code, 0)
         text = out.getvalue()
-        self.assertIn("ANTHROPIC_BASE_URL=http://127.0.0.1:4000", text)
+        self.assertIn("ANTHROPIC_BASE_URL=http://127.0.0.1:5000", text)
         self.assertIn("ANTHROPIC_AUTH_TOKEN=your-gateway-token", text)
         self.assertIn("ANTHROPIC_DEFAULT_SONNET_MODEL=router-default", text)
         self.assertIn("ANTHROPIC_DEFAULT_HAIKU_MODEL=router-default", text)
 
     def test_integration_apply_claude_code(self):
+        cfg = write_minimal_v3_config(self.root)
         target = self.root / "claude-settings.json"
         target.write_text(
             json.dumps({"env": {"ANTHROPIC_AUTH_TOKEN": "old"}}),
@@ -710,7 +714,7 @@ class CLITests(unittest.TestCase):
         code = run_cli(
             [
                 "--config",
-                str(self.cfg),
+                str(cfg),
                 "integration",
                 "apply",
                 "claude-code",
@@ -723,10 +727,11 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn(f"saved_path={target}", out.getvalue())
         saved = json.loads(target.read_text(encoding="utf-8"))
-        self.assertEqual(saved["env"]["ANTHROPIC_BASE_URL"], "http://127.0.0.1:4000")
+        self.assertEqual(saved["env"]["ANTHROPIC_BASE_URL"], "http://127.0.0.1:5000")
         self.assertEqual(saved["env"]["ANTHROPIC_AUTH_TOKEN"], "your-gateway-token")
 
     def test_integration_apply_dry_run_does_not_modify_file(self):
+        cfg = write_minimal_v3_config(self.root)
         target = self.root / "claude-settings-dry-run.json"
         original = json.dumps({"env": {"ANTHROPIC_AUTH_TOKEN": "old"}}, sort_keys=True)
         target.write_text(original, encoding="utf-8")
@@ -735,7 +740,7 @@ class CLITests(unittest.TestCase):
         code = run_cli(
             [
                 "--config",
-                str(self.cfg),
+                str(cfg),
                 "integration",
                 "apply",
                 "claude-code",

@@ -9,9 +9,9 @@ import pytest
 
 @pytest.mark.unit
 class IntegrationSpecTests(unittest.TestCase):
-    def test_build_integration_specs_from_litellm_service(self):
+    def test_build_integration_specs_from_cliproxy_service(self):
         cfg = {
-            "services": {"litellm": {"host": "127.0.0.1", "port": 4000}},
+            "services": {"cliproxyapi_plus": {"host": "127.0.0.1", "port": 4000}},
             "integration": {
                 "default_model": "router-default",
                 "fast_model": "router-cheap",
@@ -34,7 +34,7 @@ class IntegrationSpecTests(unittest.TestCase):
 
     def test_build_integration_specs_defaults_fast_model_to_default_model(self):
         cfg = {
-            "services": {"litellm": {"port": 4000}},
+            "services": {"cliproxyapi_plus": {"port": 4000}},
             "integration": {"default_model": "router-default"},
         }
 
