@@ -1,6 +1,6 @@
 [project]
 name = "flowgate"
-version = "0.4.7"
+version = "0.5.0"
 description = "Local control tool for managing CLIProxyAPIPlus"
 readme = "README.md"
 license = "MIT"
