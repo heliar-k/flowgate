@@ -6,6 +6,13 @@ This document lists the current FlowGate CLI commands and flags.
 
 - `--config <path>`: Path to FlowGate config file (default: `config/flowgate.yaml`)
 - `--debug`: Enable debug logging and show stack traces on internal errors
+- `--format {auto,legacy,kv,json}`: Output format (default: `legacy`)
+  - `legacy`: current human-oriented output per command
+  - `kv`: machine-friendly `key=value` (values are JSON scalars)
+  - `json`: machine-friendly single JSON object
+  - `auto`: `legacy` when stdout is a TTY, otherwise `kv`
+- `--quiet`: Reduce non-essential output (progress messages, hints)
+- `--plain`: Avoid unicode status icons in legacy output
 
 ## Commands
 
@@ -55,8 +62,9 @@ This document lists the current FlowGate CLI commands and flags.
 
 - `flowgate integration print {codex|claude-code}`
   - Prints client configuration snippets.
-- `flowgate integration apply {codex|claude-code} [--target <path>]`
+- `flowgate integration apply {codex|claude-code} [--target <path>] [--dry-run] [--yes|-y]`
   - Applies integration settings to the target config file and creates a timestamped backup.
+  - `--dry-run` previews changes without modifying files.
 
 ### `bootstrap`
 
@@ -64,6 +72,7 @@ This document lists the current FlowGate CLI commands and flags.
   - Downloads runtime artifacts and generates the LiteLLM runner script.
 - `flowgate bootstrap update [--cliproxy-repo <owner/repo>] [--yes|-y] [--require-sha256]`
   - Checks for a newer CLIProxyAPIPlus release, downloads it, and restarts `cliproxyapi_plus` if running.
+  - In non-interactive runs, use `--yes` to apply updates (otherwise FlowGate exits with code `2`).
 
 ## Exit Codes (high level)
 

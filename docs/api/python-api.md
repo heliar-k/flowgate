@@ -82,8 +82,8 @@ uv run pdoc --output-dir docs/api/_generated src/flowgate
 - `apply_config_to_client(client: str, config: dict, backup: bool) -> None` - Apply config
 
 **`flowgate.client_apply`** - Client configuration application
-- `apply_codex_config(settings: dict) -> None` - Apply settings to Codex CLI
-- `apply_claude_code_config(settings: dict) -> None` - Apply settings to Claude Code
+- `apply_codex_config(target: str | Path, spec: dict, *, dry_run: bool = False) -> dict` - Apply FlowGate settings to Codex CLI config
+- `apply_claude_code_settings(target: str | Path, spec: dict, *, dry_run: bool = False) -> dict` - Apply FlowGate settings to Claude Code settings JSON
 
 ### CLI Commands
 
