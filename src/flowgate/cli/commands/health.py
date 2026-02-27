@@ -14,6 +14,7 @@ from ...constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from ...security import check_secret_file_permissions
 from ...utils import _upstream_credential_issues
 from ..error_handler import handle_command_errors
+from ..output import Output, command_id_from_args
 from ..utils import _read_state_file
 from .base import BaseCommand
 
@@ -45,27 +46,48 @@ class StatusCommand(BaseCommand):
         from ... import cli as cli_module
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
+        stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         state = _read_state_file(Path(self.config["paths"]["state_file"]))
         profile = state.get("current_profile", "unknown")
         updated_at = state.get("updated_at", "unknown")
 
-        print(f"current_profile={profile}", file=stdout)
-        print(f"updated_at={updated_at}", file=stdout)
-
         supervisor = cli_module.ProcessSupervisor(
             self.config["paths"]["runtime_dir"],
             events_log=self.config["paths"]["log_file"],
         )
+        services: dict[str, bool] = {}
         for name in sorted(self.config["services"].keys()):
-            running = supervisor.is_running(name)
-            print(f"{name}_running={'yes' if running else 'no'}", file=stdout)
+            services[name] = bool(supervisor.is_running(name))
 
         issues = check_secret_file_permissions(_effective_secret_files(self.config))
-        if issues:
-            print(f"secret_permission_issues={len(issues)}", file=stdout)
-        else:
-            print("secret_permission_issues=0", file=stdout)
+        secret_issue_count = len(issues)
+
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": True,
+                    "command": command_id_from_args(self.args),
+                    "data": {
+                        "current_profile": profile,
+                        "updated_at": updated_at,
+                        "services": services,
+                        "secret_permission_issues": secret_issue_count,
+                    },
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
+            return 0
+
+        print(f"current_profile={profile}", file=stdout)
+        print(f"updated_at={updated_at}", file=stdout)
+        for name in sorted(services.keys()):
+            print(f"{name}_running={'yes' if services[name] else 'no'}", file=stdout)
+        print(f"secret_permission_issues={secret_issue_count}", file=stdout)
 
         return 0
 
@@ -81,6 +103,10 @@ class HealthCommand(BaseCommand):
         from ...health import comprehensive_health_check
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
+        stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
         verbose = getattr(self.args, "verbose", False)
 
         # Run comprehensive health check
@@ -89,41 +115,49 @@ class HealthCommand(BaseCommand):
         # Print overall status
         overall = health_result["overall_status"]
         counts = health_result["status_counts"]
-        print(
-            f"Overall Status: {overall.upper()} "
-            f"(✓ {counts['healthy']} healthy, "
-            f"⚠ {counts['degraded']} degraded, "
-            f"✗ {counts['unhealthy']} unhealthy)",
-            file=stdout,
-        )
-        print("", file=stdout)
+        if output.format == "legacy":
+            ok_icon = "✓" if not output.plain else "+"
+            warn_icon = "⚠" if not output.plain else "!"
+            bad_icon = "✗" if not output.plain else "x"
+            print(
+                f"Overall Status: {overall.upper()} "
+                f"({ok_icon} {counts['healthy']} healthy, "
+                f"{warn_icon} {counts['degraded']} degraded, "
+                f"{bad_icon} {counts['unhealthy']} unhealthy)",
+                file=stdout,
+            )
+            print("", file=stdout)
 
         # Print individual check results
         checks = health_result["checks"]
-        for check_name, result in checks.items():
-            status = result["status"]
-            message = result["message"]
+        if output.format == "legacy":
+            for check_name, result in checks.items():
+                status = result["status"]
+                message = result["message"]
 
-            # Status icon
-            if status == "healthy":
-                icon = "✓"
-            elif status == "degraded":
-                icon = "⚠"
-            else:
-                icon = "✗"
+                # Status icon
+                if status == "healthy":
+                    icon = "✓"
+                elif status == "degraded":
+                    icon = "⚠"
+                else:
+                    icon = "✗"
 
-            print(f"{icon} {check_name}: {message}", file=stdout)
+                if output.plain:
+                    icon = {"✓": "+", "⚠": "!", "✗": "x"}.get(icon, icon)
 
-            # Print details in verbose mode
-            if verbose and result.get("details"):
-                details = result["details"]
-                for key, value in details.items():
-                    if isinstance(value, (list, dict)) and value:
-                        print(f"  {key}: {value}", file=stdout)
-                    elif not isinstance(value, (list, dict)):
-                        print(f"  {key}: {value}", file=stdout)
+                print(f"{icon} {check_name}: {message}", file=stdout)
 
-        print("", file=stdout)
+                # Print details in verbose mode
+                if verbose and result.get("details"):
+                    details = result["details"]
+                    for key, value in details.items():
+                        if isinstance(value, (list, dict)) and value:
+                            print(f"  {key}: {value}", file=stdout)
+                        elif not isinstance(value, (list, dict)):
+                            print(f"  {key}: {value}", file=stdout)
+
+            print("", file=stdout)
 
         # Also run service health checks
         supervisor = cli_module.ProcessSupervisor(
@@ -132,7 +166,9 @@ class HealthCommand(BaseCommand):
         )
         all_ok = overall == "healthy"
 
-        print("Service Health:", file=stdout)
+        if output.format == "legacy":
+            print("Service Health:", file=stdout)
+        service_results: list[dict[str, Any]] = []
         for name, service in sorted(self.config["services"].items()):
             running = supervisor.is_running(name)
             liveness_ok = running
@@ -153,6 +189,17 @@ class HealthCommand(BaseCommand):
                 readiness = {"ok": False, "status_code": None, "error": "missing-port"}
 
             readiness_ok = bool(readiness["ok"])
+            service_results.append(
+                {
+                    "name": name,
+                    "running": bool(running),
+                    "liveness_ok": bool(liveness_ok),
+                    "readiness_ok": bool(readiness_ok),
+                    "readiness_url": readiness_url,
+                    "readiness_code": readiness.get("status_code"),
+                    "readiness_error": readiness.get("error"),
+                }
+            )
 
             # Status icon
             if liveness_ok and readiness_ok:
@@ -160,25 +207,43 @@ class HealthCommand(BaseCommand):
             else:
                 icon = "✗"
 
-            print(
-                f"{icon} {name}: "
-                f"liveness={'ok' if liveness_ok else 'fail'} "
-                f"readiness={'ok' if readiness_ok else 'fail'}",
-                file=stdout,
-            )
+            if output.format == "legacy":
+                if output.plain:
+                    icon = "+" if icon == "✓" else "x"
+                print(
+                    f"{icon} {name}: "
+                    f"liveness={'ok' if liveness_ok else 'fail'} "
+                    f"readiness={'ok' if readiness_ok else 'fail'}",
+                    file=stdout,
+                )
 
-            if verbose:
-                code = readiness["status_code"]
-                error = readiness["error"]
-                print(f"  running: {'yes' if running else 'no'}", file=stdout)
-                print(f"  readiness_url: {readiness_url}", file=stdout)
-                if code is not None:
-                    print(f"  readiness_code: {code}", file=stdout)
-                if error:
-                    print(f"  readiness_error: {error}", file=stdout)
+                if verbose:
+                    code = readiness["status_code"]
+                    error = readiness["error"]
+                    print(f"  running: {'yes' if running else 'no'}", file=stdout)
+                    print(f"  readiness_url: {readiness_url}", file=stdout)
+                    if code is not None:
+                        print(f"  readiness_code: {code}", file=stdout)
+                    if error:
+                        print(f"  readiness_error: {error}", file=stdout)
 
             all_ok = all_ok and liveness_ok and readiness_ok
 
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": bool(all_ok),
+                    "command": command_id_from_args(self.args),
+                    "data": {
+                        "overall_status": overall,
+                        "status_counts": counts,
+                        "checks": checks,
+                        "services": service_results,
+                    },
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
         return 0 if all_ok else 1
 
 
@@ -192,6 +257,120 @@ class DoctorCommand(BaseCommand):
         from ... import cli as cli_module
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
+        stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
+
+        if output.format != "legacy":
+            all_ok = True
+            checks_out: list[dict[str, Any]] = []
+
+            config_path = self.config.get("_meta", {}).get("config_path", "unknown")
+            checks_out.append(
+                {"id": "config", "status": "pass", "path": str(config_path)}
+            )
+
+            runtime_dir = Path(self.config["paths"]["runtime_dir"])
+            if runtime_dir.exists():
+                checks_out.append(
+                    {"id": "runtime_dir", "status": "pass", "path": str(runtime_dir)}
+                )
+            else:
+                all_ok = False
+                checks_out.append(
+                    {
+                        "id": "runtime_dir",
+                        "status": "fail",
+                        "path": str(runtime_dir),
+                        "suggestion": "run bootstrap download to create runtime artifacts",
+                    }
+                )
+
+            runtime_bin = runtime_dir / "bin"
+            required_bins = {
+                "CLIProxyAPIPlus": runtime_bin / "CLIProxyAPIPlus",
+                "litellm": runtime_bin / "litellm",
+            }
+            missing_or_non_exec = [
+                name
+                for name, binary_path in required_bins.items()
+                if not cli_module._is_executable_file(binary_path)
+            ]
+            if missing_or_non_exec:
+                all_ok = False
+                checks_out.append(
+                    {
+                        "id": "runtime_binaries",
+                        "status": "fail",
+                        "path": str(runtime_bin),
+                        "missing": missing_or_non_exec,
+                        "suggestion": "uv run flowgate --config config/flowgate.yaml bootstrap download",
+                    }
+                )
+            else:
+                checks_out.append(
+                    {"id": "runtime_binaries", "status": "pass", "path": str(runtime_bin)}
+                )
+
+            issues = check_secret_file_permissions(_effective_secret_files(self.config))
+            if issues:
+                all_ok = False
+                checks_out.append(
+                    {
+                        "id": "secret_permissions",
+                        "status": "fail",
+                        "issues": len(issues),
+                        "suggestion": "chmod 600 <secret-file>",
+                    }
+                )
+            else:
+                checks_out.append(
+                    {"id": "secret_permissions", "status": "pass", "issues": 0}
+                )
+
+            upstream_issues = _upstream_credential_issues(self.config)
+            if upstream_issues:
+                all_ok = False
+                checks_out.append(
+                    {
+                        "id": "upstream_credentials",
+                        "status": "fail",
+                        "issues": len(upstream_issues),
+                        "suggestion": "define credentials.upstream entries and ensure each api_key_ref file exists with non-empty content",
+                    }
+                )
+            else:
+                checks_out.append(
+                    {"id": "upstream_credentials", "status": "pass", "issues": 0}
+                )
+
+            if cli_module._runtime_dependency_available("litellm"):
+                checks_out.append(
+                    {"id": "runtime_dependency", "status": "pass", "module": "litellm"}
+                )
+            else:
+                all_ok = False
+                checks_out.append(
+                    {
+                        "id": "runtime_dependency",
+                        "status": "fail",
+                        "module": "litellm",
+                        "suggestion": "uv sync",
+                    }
+                )
+
+            output.emit_envelope(
+                {
+                    "ok": bool(all_ok),
+                    "command": command_id_from_args(self.args),
+                    "data": {"checks": checks_out},
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
+            return 0 if all_ok else 1
+
         all_ok = True
 
         config_path = self.config.get("_meta", {}).get("config_path", "unknown")

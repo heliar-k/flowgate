@@ -13,6 +13,7 @@ from ...config import ConfigError
 from ...process import ProcessError, ProcessSupervisor
 from ...security import check_secret_file_permissions
 from ..error_handler import handle_command_errors
+from ..output import Output, command_id_from_args
 from ..utils import _default_auth_dir
 from .base import BaseCommand
 
@@ -89,16 +90,37 @@ class AuthListCommand(BaseCommand):
         from ...auth_methods import headless_import_handlers
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
+        stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         providers_map = _auth_providers(self.config)
         providers = sorted(str(name) for name in providers_map.keys())
         handlers = headless_import_handlers()
 
         if not providers:
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": True,
+                        "command": command_id_from_args(self.args),
+                        "data": {
+                            "providers": [],
+                            "oauth_providers": [],
+                            "headless_import_providers": [],
+                        },
+                        "warnings": [],
+                        "errors": [],
+                    }
+                )
+                return 0
+
             print("oauth_providers=none", file=stdout)
             print("headless_import_providers=none", file=stdout)
             return 0
 
+        provider_rows: list[dict[str, Any]] = []
         for provider in providers:
             provider_cfg = providers_map.get(provider, {})
             oauth_supported = bool(
@@ -107,12 +129,36 @@ class AuthListCommand(BaseCommand):
                 and provider_cfg.get("status_endpoint")
             )
             headless = "yes" if provider in handlers else "no"
-            print(
-                f"provider={provider} oauth_login={'yes' if oauth_supported else 'no'} headless_import={headless}",
-                file=stdout,
+            provider_rows.append(
+                {
+                    "provider": provider,
+                    "oauth_login": bool(oauth_supported),
+                    "headless_import": provider in handlers,
+                }
             )
+            if output.format == "legacy":
+                print(
+                    f"provider={provider} oauth_login={'yes' if oauth_supported else 'no'} headless_import={headless}",
+                    file=stdout,
+                )
 
         supported = sorted(provider for provider in providers if provider in handlers)
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": True,
+                    "command": command_id_from_args(self.args),
+                    "data": {
+                        "providers": provider_rows,
+                        "oauth_providers": providers,
+                        "headless_import_providers": supported,
+                    },
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
+            return 0
+
         print(f"oauth_providers={','.join(providers)}", file=stdout)
         print(
             f"headless_import_providers={','.join(supported) if supported else 'none'}",
@@ -131,14 +177,57 @@ class AuthStatusCommand(BaseCommand):
         from ...auth_methods import headless_import_handlers
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
+        stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         providers_map = _auth_providers(self.config)
         providers = sorted(str(name) for name in providers_map.keys())
         handlers = headless_import_handlers()
 
-        print(f"default_auth_dir={_default_auth_dir(self.config)}", file=stdout)
         issues = check_secret_file_permissions(_effective_secret_files(self.config))
-        print(f"secret_permission_issues={len(issues)}", file=stdout)
+        default_dir = _default_auth_dir(self.config)
+        secret_issue_count = len(issues)
+
+        if output.format != "legacy":
+            provider_rows: list[dict[str, Any]] = []
+            for provider in providers:
+                provider_cfg = providers_map.get(provider, {})
+                method = "unknown"
+                oauth_supported = False
+                if isinstance(provider_cfg, dict):
+                    method = str(provider_cfg.get("method", "oauth_poll"))
+                    oauth_supported = bool(
+                        provider_cfg.get("auth_url_endpoint")
+                        and provider_cfg.get("status_endpoint")
+                    )
+                provider_rows.append(
+                    {
+                        "provider": provider,
+                        "method": method,
+                        "oauth_login": bool(oauth_supported),
+                        "headless_import": provider in handlers,
+                    }
+                )
+
+            output.emit_envelope(
+                {
+                    "ok": True,
+                    "command": command_id_from_args(self.args),
+                    "data": {
+                        "default_auth_dir": default_dir,
+                        "secret_permission_issues": secret_issue_count,
+                        "providers": provider_rows,
+                    },
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
+            return 0
+
+        print(f"default_auth_dir={default_dir}", file=stdout)
+        print(f"secret_permission_issues={secret_issue_count}", file=stdout)
 
         if not providers:
             print("providers=none", file=stdout)
@@ -178,6 +267,9 @@ class AuthLoginCommand(BaseCommand):
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         provider = self.args.login_provider
         timeout = self.args.timeout
@@ -196,6 +288,16 @@ class AuthLoginCommand(BaseCommand):
                 detail="provider-not-configured",
             )
             available = ",".join(sorted(str(k) for k in providers.keys())) or "none"
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": False,
+                        "command": command_id_from_args(self.args),
+                        "data": {"provider": provider, "available": available.split(",") if available != "none" else []},
+                        "warnings": [],
+                        "errors": [{"type": "ConfigError", "message": f"OAuth provider not configured: {provider}"}],
+                    }
+                )
             print(
                 f"OAuth provider not configured: {provider}; available={available}",
                 file=stderr,
@@ -218,21 +320,51 @@ class AuthLoginCommand(BaseCommand):
             supervisor.record_event(
                 "oauth_login", provider=provider, result="failed", detail="endpoint-missing"
             )
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": False,
+                        "command": command_id_from_args(self.args),
+                        "data": {"provider": provider},
+                        "warnings": [],
+                        "errors": [
+                            {
+                                "type": "ConfigError",
+                                "message": f"OAuth endpoints not configured or derivable for provider={provider}",
+                            }
+                        ],
+                    }
+                )
             print(
                 f"OAuth endpoints not configured or derivable for provider={provider}",
-                file=stderr
+                file=stderr,
             )
             return 2
 
         try:
+            output.progress(
+                f"auth:login provider={provider} polling every={poll_interval}s timeout={timeout}s"
+            )
             url = fetch_auth_url(auth_url_endpoint, timeout=5)
-            print(f"login_url={url}", file=stdout)
             status = poll_auth_status(
                 status_endpoint,
                 timeout_seconds=timeout,
                 poll_interval_seconds=poll_interval,
             )
             supervisor.record_event("oauth_login", provider=provider, result="success")
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": True,
+                        "command": command_id_from_args(self.args),
+                        "data": {"provider": provider, "login_url": url, "oauth_status": status},
+                        "warnings": [],
+                        "errors": [],
+                    }
+                )
+                return 0
+
+            print(f"login_url={url}", file=stdout)
             print(f"oauth_status={status}", file=stdout)
             return 0
         except (TimeoutError, RuntimeError, ValueError, OSError) as exc:
@@ -256,6 +388,9 @@ class AuthImportCommand(BaseCommand):
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         provider = self.args.import_provider
         source = self.args.source
@@ -264,6 +399,21 @@ class AuthImportCommand(BaseCommand):
         handler = get_headless_import_handler(provider)
         if handler is None:
             supported = ",".join(sorted(headless_import_handlers().keys())) or "none"
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": False,
+                        "command": command_id_from_args(self.args),
+                        "data": {"provider": provider, "supported": supported.split(",") if supported != "none" else []},
+                        "warnings": [],
+                        "errors": [
+                            {
+                                "type": "ConfigError",
+                                "message": f"headless import not supported for provider={provider}",
+                            }
+                        ],
+                    }
+                )
             print(
                 f"headless import not supported for provider={provider}; supported={supported}",
                 file=stderr,
@@ -289,5 +439,17 @@ class AuthImportCommand(BaseCommand):
             result="success",
             detail=f"method=headless path={saved}",
         )
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": True,
+                    "command": command_id_from_args(self.args),
+                    "data": {"provider": provider, "saved_auth": saved, "dest_dir": resolved_dest},
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
+            return 0
+
         print(f"saved_auth={saved}", file=stdout)
         return 0

@@ -13,22 +13,24 @@ CLAUDE_MANAGED_MODEL_ENV_KEYS: tuple[str, ...] = (
     "ANTHROPIC_DEFAULT_HAIKU_MODEL",
 )
 
-
-def _backup_file(path: Path) -> Path | None:
+def _backup_file_maybe(path: Path, *, dry_run: bool) -> Path | None:
+    """Create a backup file, or return the path that would be used in dry-run."""
     if not path.exists():
         return None
     backup = path.with_name(f"{path.name}.backup.{int(time.time())}")
-    backup.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    if not dry_run:
+        backup.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
     return backup
 
 
 def apply_claude_code_settings(
-    target: str | Path, spec: dict[str, Any]
-) -> dict[str, str | None]:
+    target: str | Path, spec: dict[str, Any], *, dry_run: bool = False
+) -> dict[str, str | None | bool]:
     target_path = Path(target).expanduser()
-    target_path.parent.mkdir(parents=True, exist_ok=True)
+    if not dry_run:
+        target_path.parent.mkdir(parents=True, exist_ok=True)
 
-    backup = _backup_file(target_path)
+    backup = _backup_file_maybe(target_path, dry_run=dry_run)
 
     doc: dict[str, Any] = {}
     if target_path.exists():
@@ -59,13 +61,18 @@ def apply_claude_code_settings(
     if "ANTHROPIC_AUTH_TOKEN" in env:
         env["ANTHROPIC_AUTH_TOKEN"] = "your-gateway-token"
 
-    target_path.write_text(
-        json.dumps(doc, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    updated_text = json.dumps(doc, indent=2, sort_keys=True) + "\n"
+    existing_text = target_path.read_text(encoding="utf-8") if target_path.exists() else ""
+    changed = existing_text != updated_text
+
+    if not dry_run:
+        target_path.write_text(updated_text, encoding="utf-8")
+
     return {
         "path": str(target_path),
         "backup_path": str(backup) if backup else None,
+        "dry_run": bool(dry_run),
+        "changed": bool(changed),
     }
 
 
@@ -118,12 +125,13 @@ def _upsert_provider_base_url(config_text: str, provider: str, base_url: str) ->
 
 
 def apply_codex_config(
-    target: str | Path, spec: dict[str, Any]
-) -> dict[str, str | None]:
+    target: str | Path, spec: dict[str, Any], *, dry_run: bool = False
+) -> dict[str, str | None | bool]:
     target_path = Path(target).expanduser()
-    target_path.parent.mkdir(parents=True, exist_ok=True)
+    if not dry_run:
+        target_path.parent.mkdir(parents=True, exist_ok=True)
 
-    backup = _backup_file(target_path)
+    backup = _backup_file_maybe(target_path, dry_run=dry_run)
     config_text = (
         target_path.read_text(encoding="utf-8") if target_path.exists() else ""
     )
@@ -148,8 +156,12 @@ def apply_codex_config(
 
     updated = _upsert_provider_base_url(updated, provider, base_url)
 
-    target_path.write_text(updated, encoding="utf-8")
+    changed = config_text != updated
+    if not dry_run:
+        target_path.write_text(updated, encoding="utf-8")
     return {
         "path": str(target_path),
         "backup_path": str(backup) if backup else None,
+        "dry_run": bool(dry_run),
+        "changed": bool(changed),
     }

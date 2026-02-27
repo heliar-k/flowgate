@@ -12,6 +12,7 @@ from typing import Any, TextIO
 from ...client_apply import apply_claude_code_settings, apply_codex_config
 from ...integration import build_integration_specs
 from ..error_handler import handle_command_errors
+from ..output import Output, command_id_from_args
 from .base import BaseCommand
 
 
@@ -64,18 +65,43 @@ class IntegrationPrintCommand(BaseCommand):
         """Execute integration print command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         client = self.args.client
 
         specs = build_integration_specs(self.config)
 
         if client == "codex":
-            print(_render_codex_integration(specs.get("codex", {})), file=stdout)
+            snippet = _render_codex_integration(specs.get("codex", {}))
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": True,
+                        "command": command_id_from_args(self.args),
+                        "data": {"client": client, "snippet": snippet},
+                        "warnings": [],
+                        "errors": [],
+                    }
+                )
+                return 0
+            print(snippet, file=stdout)
             return 0
         if client == "claude-code":
-            print(
-                _render_claude_code_integration(specs.get("claude_code", {})), file=stdout
-            )
+            snippet = _render_claude_code_integration(specs.get("claude_code", {}))
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": True,
+                        "command": command_id_from_args(self.args),
+                        "data": {"client": client, "snippet": snippet},
+                        "warnings": [],
+                        "errors": [],
+                    }
+                )
+                return 0
+            print(snippet, file=stdout)
             return 0
 
         print(f"Unknown integration client: {client}", file=stderr)
@@ -90,9 +116,14 @@ class IntegrationApplyCommand(BaseCommand):
         """Execute integration apply command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         client = self.args.client
         target = self.args.target if self.args.target else None
+        dry_run = bool(getattr(self.args, "dry_run", False))
+        auto_yes = bool(getattr(self.args, "yes", False))
 
         specs = build_integration_specs(self.config)
 
@@ -100,21 +131,90 @@ class IntegrationApplyCommand(BaseCommand):
             resolved_target = target or "~/.codex/config.toml"
             spec = specs.get("codex", {})
             if not isinstance(spec, dict):
+                if output.format != "legacy":
+                    output.emit_envelope(
+                        {
+                            "ok": False,
+                            "command": command_id_from_args(self.args),
+                            "data": {"client": client},
+                            "warnings": [],
+                            "errors": [{"type": "RuntimeError", "message": "integration spec missing codex block"}],
+                        }
+                    )
+                    return 1
                 print("integration spec missing codex block", file=stderr)
                 return 1
-            result = apply_codex_config(resolved_target, spec)
+            if output.interactive and not auto_yes and not dry_run and output.format == "legacy":
+                print(
+                    f"About to modify {resolved_target}. Proceed? [y/N] ",
+                    end="",
+                    file=stdout,
+                    flush=True,
+                )
+                try:
+                    answer = input().strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    return 2
+                if answer not in ("y", "yes"):
+                    return 0
+            result = apply_codex_config(resolved_target, spec, dry_run=dry_run)
         elif client == "claude-code":
             resolved_target = target or "~/.claude/settings.json"
             spec = specs.get("claude_code", {})
             if not isinstance(spec, dict):
+                if output.format != "legacy":
+                    output.emit_envelope(
+                        {
+                            "ok": False,
+                            "command": command_id_from_args(self.args),
+                            "data": {"client": client},
+                            "warnings": [],
+                            "errors": [{"type": "RuntimeError", "message": "integration spec missing claude_code block"}],
+                        }
+                    )
+                    return 1
                 print("integration spec missing claude_code block", file=stderr)
                 return 1
-            result = apply_claude_code_settings(resolved_target, spec)
+            if output.interactive and not auto_yes and not dry_run and output.format == "legacy":
+                print(
+                    f"About to modify {resolved_target}. Proceed? [y/N] ",
+                    end="",
+                    file=stdout,
+                    flush=True,
+                )
+                try:
+                    answer = input().strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    return 2
+                if answer not in ("y", "yes"):
+                    return 0
+            result = apply_claude_code_settings(resolved_target, spec, dry_run=dry_run)
         else:
             print(f"Unknown integration client: {client}", file=stderr)
             return 2
 
-        print(f"saved_path={result['path']}", file=stdout)
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": True,
+                    "command": command_id_from_args(self.args),
+                    "data": {
+                        "client": client,
+                        "path": result["path"],
+                        "backup_path": result.get("backup_path"),
+                        "dry_run": bool(result.get("dry_run", False)),
+                        "changed": bool(result.get("changed", True)),
+                    },
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
+            return 0
+
+        if dry_run:
+            print(f"planned_path={result['path']}", file=stdout)
+        else:
+            print(f"saved_path={result['path']}", file=stdout)
         backup_path = result.get("backup_path")
         if backup_path:
             print(f"backup_path={backup_path}", file=stdout)

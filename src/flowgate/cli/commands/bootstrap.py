@@ -28,6 +28,7 @@ from ...cliproxyapiplus_update_check import (
 from ...constants import CLIPROXYAPI_PLUS_SERVICE
 from ...process import ProcessSupervisor
 from ..error_handler import handle_command_errors
+from ..output import Output, command_id_from_args
 from .base import BaseCommand
 
 
@@ -38,18 +39,26 @@ class BootstrapDownloadCommand(BaseCommand):
     def execute(self) -> int:
         """Execute bootstrap download command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
+        stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         runtime_bin_dir = Path(self.config["paths"]["runtime_dir"]) / "bin"
         cliproxy_version = self.args.cliproxy_version
         cliproxy_repo = self.args.cliproxy_repo
         require_sha256 = bool(getattr(self.args, "require_sha256", False))
 
+        output.progress(
+            f"bootstrap:download cliproxy_repo={cliproxy_repo} cliproxy_version={cliproxy_version}"
+        )
         cliproxy = download_cliproxyapi_plus(
             runtime_bin_dir,
             version=cliproxy_version,
             repo=cliproxy_repo,
             require_sha256=require_sha256,
         )
+        output.progress("bootstrap:download preparing litellm runner")
         litellm = prepare_litellm_runner(runtime_bin_dir)
         if not validate_cliproxy_binary(cliproxy):
             raise RuntimeError(f"Invalid CLIProxyAPIPlus binary downloaded: {cliproxy}")
@@ -59,6 +68,23 @@ class BootstrapDownloadCommand(BaseCommand):
         write_cliproxyapiplus_installed_version(
             self.config["paths"]["runtime_dir"], cliproxy_version
         )
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": True,
+                    "command": command_id_from_args(self.args),
+                    "data": {
+                        "cliproxyapi_plus": str(cliproxy),
+                        "cliproxy_version": str(cliproxy_version),
+                        "cliproxy_repo": str(cliproxy_repo),
+                        "litellm": str(litellm),
+                    },
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
+            return 0
+
         print(f"cliproxyapi_plus={cliproxy}", file=stdout)
         print(f"litellm={litellm}", file=stdout)
         return 0
@@ -105,6 +131,9 @@ class BootstrapUpdateCommand(BaseCommand):
         """Execute bootstrap update command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         runtime_dir = self.config["paths"]["runtime_dir"]
         runtime_bin_dir = Path(runtime_dir) / "bin"
@@ -119,6 +148,22 @@ class BootstrapUpdateCommand(BaseCommand):
         update_info = _check_latest_version(current_version, repo)
 
         if update_info is None:
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": True,
+                        "command": command_id_from_args(self.args),
+                        "data": {
+                            "updated": False,
+                            "current_version": current_version,
+                            "latest_version": current_version,
+                            "repo": repo,
+                        },
+                        "warnings": [],
+                        "errors": [],
+                    }
+                )
+                return 0
             print(
                 f"cliproxyapi_plus:up_to_date current={current_version}",
                 file=stdout,
@@ -132,10 +177,36 @@ class BootstrapUpdateCommand(BaseCommand):
             file=stdout,
         )
 
-        if not auto_yes and not _confirm_update(stdout, stderr):
-            print("cliproxyapi_plus:update_cancelled", file=stdout)
-            return 0
+        if not auto_yes:
+            if output.format != "legacy":
+                output.emit_envelope(
+                    {
+                        "ok": False,
+                        "command": command_id_from_args(self.args),
+                        "data": {
+                            "updated": False,
+                            "current_version": current_version,
+                            "latest_version": latest_version,
+                            "repo": repo,
+                        },
+                        "warnings": [],
+                        "errors": [
+                            {
+                                "type": "ConfigError",
+                                "message": "bootstrap update requires --yes in non-legacy output formats",
+                            }
+                        ],
+                    }
+                )
+                return 2
+            if not output.interactive:
+                print("bootstrap update requires --yes in non-interactive mode", file=stderr)
+                return 2
+            if not _confirm_update(stdout, stderr):
+                print("cliproxyapi_plus:update_cancelled", file=stdout)
+                return 0
 
+        output.progress(f"bootstrap:update downloading version={latest_version} repo={repo}")
         cliproxy = download_cliproxyapi_plus(
             runtime_bin_dir,
             version=latest_version,
@@ -148,10 +219,7 @@ class BootstrapUpdateCommand(BaseCommand):
             )
 
         write_cliproxyapiplus_installed_version(runtime_dir, latest_version)
-        print(
-            f"cliproxyapi_plus:updated version={latest_version}",
-            file=stdout,
-        )
+        restarted_pid: int | None = None
 
         # Auto-restart cliproxyapi_plus if it is running
         supervisor = ProcessSupervisor(
@@ -163,8 +231,34 @@ class BootstrapUpdateCommand(BaseCommand):
             args = service_cfg.get("command", {}).get("args", [])
             cwd = service_cfg.get("command", {}).get("cwd") or os.getcwd()
             pid = supervisor.restart(CLIPROXYAPI_PLUS_SERVICE, args, cwd=cwd)
+            restarted_pid = int(pid)
+
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": True,
+                    "command": command_id_from_args(self.args),
+                    "data": {
+                        "updated": True,
+                        "current_version": current_version,
+                        "latest_version": latest_version,
+                        "repo": repo,
+                        "cliproxyapi_plus": str(cliproxy),
+                        "restarted_pid": restarted_pid,
+                    },
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
+            return 0
+
+        print(
+            f"cliproxyapi_plus:updated version={latest_version}",
+            file=stdout,
+        )
+        if restarted_pid is not None:
             print(
-                f"{CLIPROXYAPI_PLUS_SERVICE}:restarted pid={pid}",
+                f"{CLIPROXYAPI_PLUS_SERVICE}:restarted pid={restarted_pid}",
                 file=stdout,
             )
 

@@ -14,6 +14,7 @@ from ...config import ConfigError
 from ...process import ProcessSupervisor
 from ...utils import _is_service_port_available
 from ..error_handler import handle_command_errors
+from ..output import Output, command_id_from_args
 from .base import BaseCommand
 
 
@@ -87,6 +88,9 @@ class ServiceStartCommand(BaseCommand):
         """Execute service start command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         supervisor = ProcessSupervisor(
             self.config["paths"]["runtime_dir"],
@@ -98,6 +102,7 @@ class ServiceStartCommand(BaseCommand):
 
         ok = True
         started_cliproxy = False
+        results: list[dict[str, Any]] = []
 
         for name in names:
             service = self.config["services"][name]
@@ -113,20 +118,52 @@ class ServiceStartCommand(BaseCommand):
                 running = supervisor.is_running(name)
                 if not running and not _is_service_port_available(host, port):
                     ok = False
-                    print(
-                        f"{name}:start-failed reason=port-in-use host={host} port={port}",
-                        file=stderr,
+                    results.append(
+                        {
+                            "service": name,
+                            "action": "start",
+                            "ok": False,
+                            "reason": "port-in-use",
+                            "host": host,
+                            "port": port,
+                        }
                     )
+                    if output.format == "legacy":
+                        print(
+                            f"{name}:start-failed reason=port-in-use host={host} port={port}",
+                            file=stderr,
+                        )
                     continue
 
             pid = supervisor.start(name, args, cwd=cwd)
-            print(f"{name}:started pid={pid}", file=stdout)
+            results.append(
+                {
+                    "service": name,
+                    "action": "start",
+                    "ok": True,
+                    "pid": pid,
+                    "host": host,
+                    "port": port,
+                }
+            )
+            if output.format == "legacy":
+                print(f"{name}:started pid={pid}", file=stdout)
             if name == CLIPROXYAPI_PLUS_SERVICE:
                 started_cliproxy = True
 
-        if started_cliproxy:
+        if output.format == "legacy" and started_cliproxy:
             _maybe_print_cliproxyapiplus_update(self.config, stdout=stdout)
 
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": bool(ok),
+                    "command": command_id_from_args(self.args),
+                    "data": {"results": results},
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
         return 0 if ok else 1
 
 
@@ -138,6 +175,9 @@ class ServiceStopCommand(BaseCommand):
         """Execute service stop command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         supervisor = ProcessSupervisor(
             self.config["paths"]["runtime_dir"],
@@ -148,11 +188,33 @@ class ServiceStopCommand(BaseCommand):
         names = _service_names(self.config, target)
 
         ok = True
+        results: list[dict[str, Any]] = []
         for name in names:
             stopped = supervisor.stop(name)
-            print(f"{name}:{'stopped' if stopped else 'stop-failed'}", file=stdout)
+            results.append(
+                {
+                    "service": name,
+                    "action": "stop",
+                    "ok": bool(stopped),
+                }
+            )
+            if output.format == "legacy":
+                print(
+                    f"{name}:{'stopped' if stopped else 'stop-failed'}",
+                    file=stdout,
+                )
             ok = ok and stopped
 
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": bool(ok),
+                    "command": command_id_from_args(self.args),
+                    "data": {"results": results},
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
         return 0 if ok else 1
 
 
@@ -164,6 +226,9 @@ class ServiceRestartCommand(BaseCommand):
         """Execute service restart command."""
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
+        output: Output = getattr(self.args, "_output", None) or Output.from_args(
+            self.args, stdout=stdout, stderr=stderr
+        )
 
         supervisor = ProcessSupervisor(
             self.config["paths"]["runtime_dir"],
@@ -174,6 +239,7 @@ class ServiceRestartCommand(BaseCommand):
         names = _service_names(self.config, target)
 
         ok = True
+        results: list[dict[str, Any]] = []
         for name in names:
             service = self.config["services"][name]
             args = service["command"]["args"]
@@ -188,13 +254,45 @@ class ServiceRestartCommand(BaseCommand):
                 running = supervisor.is_running(name)
                 if not running and not _is_service_port_available(host, port):
                     ok = False
-                    print(
-                        f"{name}:restart-failed reason=port-in-use host={host} port={port}",
-                        file=stderr,
+                    results.append(
+                        {
+                            "service": name,
+                            "action": "restart",
+                            "ok": False,
+                            "reason": "port-in-use",
+                            "host": host,
+                            "port": port,
+                        }
                     )
+                    if output.format == "legacy":
+                        print(
+                            f"{name}:restart-failed reason=port-in-use host={host} port={port}",
+                            file=stderr,
+                        )
                     continue
 
             pid = supervisor.restart(name, args, cwd=cwd)
-            print(f"{name}:restarted pid={pid}", file=stdout)
+            results.append(
+                {
+                    "service": name,
+                    "action": "restart",
+                    "ok": True,
+                    "pid": pid,
+                    "host": host,
+                    "port": port,
+                }
+            )
+            if output.format == "legacy":
+                print(f"{name}:restarted pid={pid}", file=stdout)
 
+        if output.format != "legacy":
+            output.emit_envelope(
+                {
+                    "ok": bool(ok),
+                    "command": command_id_from_args(self.args),
+                    "data": {"results": results},
+                    "warnings": [],
+                    "errors": [],
+                }
+            )
         return 0 if ok else 1
