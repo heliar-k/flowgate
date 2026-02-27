@@ -919,7 +919,7 @@ class CLITests(unittest.TestCase):
         poll_mock.assert_called_once()
         # Check that derived URL was used (from cliproxyapi_plus host:port)
         call_args = fetch_mock.call_args
-        self.assertIn("127.0.0.1:8317", call_args[0][0])
+        self.assertIn("127.0.0.1:5000", call_args[0][0])
         self.assertIn("/v0/management/oauth/codex/auth-url", call_args[0][0])
 
     def test_auth_login_explicit_endpoint_overrides_derived(self):
@@ -958,9 +958,8 @@ class CLITests(unittest.TestCase):
     def test_auth_login_fails_when_endpoints_not_derivable(self):
         """Test auth login fails when endpoints cannot be derived."""
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
-        # Remove explicit endpoints and service config
-        data["auth"]["providers"]["codex"] = {}
-        del data["services"]["cliproxyapi_plus"]["host"]
+        # Configure a provider name that FlowGate cannot derive management endpoints for
+        data["auth"]["providers"] = {"custom": {}}
         self.cfg.write_text(json.dumps(data), encoding="utf-8")
 
         out = io.StringIO()
@@ -968,7 +967,7 @@ class CLITests(unittest.TestCase):
         with mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             code = run_cli(
-                ["--config", str(self.cfg), "auth", "login", "codex"],
+                ["--config", str(self.cfg), "auth", "login", "custom"],
                 stdout=out,
                 stderr=err,
             )

@@ -16,56 +16,65 @@ from flowgate.cli import run_cli
 import pytest
 
 
-def write_minimal_config(path: Path) -> None:
-    """Create a minimal test configuration file"""
-    data = {
-        "paths": {
-            "runtime_dir": str(path.parent / "runtime"),
-            "active_config": str(path.parent / "runtime" / "litellm.active.yaml"),
-            "state_file": str(path.parent / "runtime" / "state.json"),
-            "log_file": str(path.parent / "logs" / "routerctl.log"),
-        },
-        "services": {
-            "litellm": {
-                "host": "127.0.0.1",
-                "port": 4000,
-                "command": {"args": ["litellm"]},
-            },
-            "cliproxyapi_plus": {
+def write_minimal_v3_config(root: Path) -> Path:
+    """Create a minimal v3 config + cliproxyapi.yaml so load_router_config() succeeds."""
+    cfg_dir = root / "config"
+    cfg_dir.mkdir(parents=True, exist_ok=True)
+
+    cliproxy_cfg = cfg_dir / "cliproxyapi.yaml"
+    cliproxy_cfg.write_text(
+        json.dumps(
+            {
                 "host": "127.0.0.1",
                 "port": 5000,
-                "command": {"args": ["CLIProxyAPIPlus"]},
-            },
-        },
-        "litellm_base": {"litellm_settings": {"num_retries": 1}},
-        "profiles": {
-            "reliability": {"litellm_settings": {"num_retries": 3}},
-        },
-        "auth": {
-            "providers": {
-                "codex": {
-                    "auth_url_endpoint": "http://example.local/codex/auth-url",
-                    "status_endpoint": "http://example.local/codex/status",
-                },
-                "copilot": {
-                    "auth_url_endpoint": "http://example.local/copilot/auth-url",
-                    "status_endpoint": "http://example.local/copilot/status",
-                },
+                "api-keys": ["sk-local-test"],
+                "remote-management": {"secret-key": "x"},
             }
-        },
-        "secret_files": [],
-    }
-    path.parent.mkdir(parents=True, exist_ok=True)
+        ),
+        encoding="utf-8",
+    )
 
-    path.write_text(json.dumps(data), encoding="utf-8")
+    runtime_dir = root / "runtime"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+
+    flowgate_cfg = cfg_dir / "flowgate.yaml"
+    flowgate_cfg.write_text(
+        json.dumps(
+            {
+                "config_version": 3,
+                "paths": {
+                    "runtime_dir": str(runtime_dir),
+                    "log_file": str(runtime_dir / "events.log"),
+                },
+                "cliproxyapi_plus": {"config_file": str(cliproxy_cfg)},
+                "auth": {
+                    "providers": {
+                        "codex": {
+                            "method": "oauth_poll",
+                            "auth_url_endpoint": "http://example.local/codex/auth-url",
+                            "status_endpoint": "http://example.local/codex/status",
+                        },
+                        "copilot": {
+                            "method": "oauth_poll",
+                            "auth_url_endpoint": "http://example.local/copilot/auth-url",
+                            "status_endpoint": "http://example.local/copilot/status",
+                        },
+                    }
+                },
+                "secret_files": [],
+                "integration": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    return flowgate_cfg
 @pytest.mark.unit
 class TestAuthCommandExitCodes(unittest.TestCase):
     """Regression tests for auth command exit codes"""
 
     def setUp(self) -> None:
         self.root = Path(tempfile.mkdtemp())
-        self.cfg = self.root / "flowgate.yaml"
-        write_minimal_config(self.cfg)
+        self.cfg = write_minimal_v3_config(self.root)
 
     def test_auth_list_success_exit_code(self) -> None:
         """auth list returns exit code 0 on success"""
@@ -215,8 +224,7 @@ class TestAuthCommandOutput(unittest.TestCase):
 
     def setUp(self) -> None:
         self.root = Path(tempfile.mkdtemp())
-        self.cfg = self.root / "flowgate.yaml"
-        write_minimal_config(self.cfg)
+        self.cfg = write_minimal_v3_config(self.root)
 
     def test_auth_list_output_format(self) -> None:
         """auth list output includes providers and capability information"""

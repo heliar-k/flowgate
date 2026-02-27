@@ -280,8 +280,9 @@ class TestValidateServices(unittest.TestCase):
     def _valid_services_config(self):
         """Return a valid services configuration."""
         return {
-            "litellm": ConfigFactory.service("litellm", 4000),
-            "cliproxyapi_plus": ConfigFactory.service("cliproxyapi", 9000),
+            "cliproxyapi_plus": ConfigFactory.service(
+                "cliproxyapi_plus", 9000, readiness_path="/"
+            ),
         }
 
     def test_validate_services_valid(self):
@@ -292,22 +293,11 @@ class TestValidateServices(unittest.TestCase):
         except ConfigError:
             self.fail("Valid services config should not raise ConfigError")
 
-    def test_validate_services_missing_litellm(self):
-        """Test validate_services with missing litellm."""
-        config = {
-            "cliproxyapi_plus": {
-                "command": {"args": ["/path/to/cliproxyapi"]},
-            }
-        }
-        with self.assertRaises(ConfigError) as ctx:
-            ConfigValidator.validate_services(config)
-        self.assertIn("services is missing required keys: litellm", str(ctx.exception))
-
     def test_validate_services_missing_cliproxyapi_plus(self):
         """Test validate_services with missing cliproxyapi_plus."""
         config = {
-            "litellm": {
-                "command": {"args": ["/path/to/litellm"]},
+            "some_other_service": {
+                "command": {"args": ["/path/to/other"]},
             }
         }
         with self.assertRaises(ConfigError) as ctx:
@@ -317,11 +307,14 @@ class TestValidateServices(unittest.TestCase):
     def test_validate_services_invalid_service(self):
         """Test validate_services with invalid service config."""
         config = self._valid_services_config()
-        config["litellm"]["command"]["args"] = []  # Invalid: empty args
+        config["cliproxyapi_plus"]["command"]["args"] = []  # Invalid: empty args
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_services(config)
 
-        self.assertIn("services.litellm.command.args must be a non-empty string list", str(ctx.exception))
+        self.assertIn(
+            "services.cliproxyapi_plus.command.args must be a non-empty string list",
+            str(ctx.exception),
+        )
 @pytest.mark.unit
 class TestValidateLitellmBase(unittest.TestCase):
     """Test validate_litellm_base method."""

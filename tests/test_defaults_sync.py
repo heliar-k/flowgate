@@ -6,24 +6,26 @@ import pytest
 
 from flowgate.config import load_router_config
 from flowgate.constants import (
+    DEFAULT_READINESS_PATH,
     DEFAULT_SERVICE_HOST,
     DEFAULT_SERVICE_PORTS,
-    DEFAULT_SERVICE_READINESS_PATHS,
 )
 
 
 @pytest.mark.unit
 class DefaultsSyncTests(unittest.TestCase):
-    def test_example_flowgate_services_match_constants(self):
+    def test_example_flowgate_service_matches_constants(self):
         cfg = load_router_config(Path("config/examples/flowgate.yaml"))
         services = cfg["services"]
 
-        for service_name, port in DEFAULT_SERVICE_PORTS.items():
-            self.assertEqual(services[service_name]["port"], port)
-            path = services[service_name].get("readiness_path") or services[
-                service_name
-            ].get("health_path")
-            self.assertEqual(path, DEFAULT_SERVICE_READINESS_PATHS[service_name])
+        self.assertEqual(list(services.keys()), ["cliproxyapi_plus"])
+        self.assertEqual(
+            services["cliproxyapi_plus"]["port"], DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]
+        )
+        self.assertEqual(services["cliproxyapi_plus"]["host"], DEFAULT_SERVICE_HOST)
+        self.assertEqual(
+            services["cliproxyapi_plus"]["readiness_path"], DEFAULT_READINESS_PATH
+        )
 
     def test_example_cliproxyapi_port_matches_constants(self):
         text = Path("config/examples/cliproxyapi.yaml").read_text(encoding="utf-8")
@@ -35,16 +37,9 @@ class DefaultsSyncTests(unittest.TestCase):
         self.assertIsNotNone(match)
         self.assertEqual(int(match.group(1)), DEFAULT_SERVICE_PORTS["cliproxyapi_plus"])
 
-    def test_example_flowgate_urls_use_cliproxy_port(self):
+    def test_example_flowgate_auth_urls_use_cliproxy_port(self):
         cfg = load_router_config(Path("config/examples/flowgate.yaml"))
         cliproxy_port = DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]
-
-        model_list = cfg.get("litellm_base", {}).get("model_list", [])
-        default_model = next(
-            model for model in model_list if model.get("model_name") == "router-default"
-        )
-        api_base = default_model.get("litellm_params", {}).get("api_base")
-        self.assertEqual(api_base, f"http://{DEFAULT_SERVICE_HOST}:{cliproxy_port}/v1")
 
         providers = cfg.get("auth", {}).get("providers", {})
         self.assertEqual(
