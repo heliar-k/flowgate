@@ -12,6 +12,12 @@
 
 ## Summary / Success Criteria
 
+## Tradeoffs / What We’re Intentionally Dropping
+
+- **No OpenAI-compatible “router layer” owned by FlowGate**: 不再通过 LiteLLM 提供统一的模型路由、（可选的）fallback/负载均衡、请求级别的策略拼装等；FlowGate 只负责启动/停止/健康检查/集成输出，真正的转发与策略能力以 CLIProxyAPIPlus 为准。
+- **No profile-based policy switching**: 移除 `profile`（可靠性/均衡/成本）策略切换与 “active config/state file” 维护逻辑；如需多上游/重试/超时/路由策略，统一在 `cliproxyapi.yaml` 中配置。
+- **Config version hard break**: 采用 `config_version: 3` 作为“只支持 cliproxy” 的新 schema；不做 v2 兼容与自动迁移（按计划提供文档迁移说明）。
+
 ### 用户可见行为（最终态）
 
 - `flowgate profile ...` **不存在**（argparse 报错退出码 2）。
@@ -33,6 +39,8 @@
 
 - Run: `uv run pytest tests/ -v`
 - Expected: PASS
+
+> 如果本地环境无法 `uv sync`（例如离线/无网络），先使用现有虚拟环境直接跑：`python -m pytest -p no:rerunfailures tests/ -v`。
 
 2) 最小运行（本地手动）：
 
