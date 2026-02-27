@@ -20,7 +20,6 @@ from .commands.auth import (
 from .commands.bootstrap import BootstrapDownloadCommand, BootstrapUpdateCommand
 from .commands.health import DoctorCommand, HealthCommand, StatusCommand
 from .commands.integration import IntegrationApplyCommand, IntegrationPrintCommand
-from .commands.profile import ProfileListCommand, ProfileSetCommand
 from .commands.service import (
     ServiceRestartCommand,
     ServiceStartCommand,
@@ -90,18 +89,6 @@ def run_cli(
                 provider = getattr(args, "provider", None)
                 if provider in auth_command_map:
                     command_class = auth_command_map[provider]
-                    command = command_class(args, config)
-                    return command.execute()
-
-            if args.command == "profile":
-                profile_command_map = {
-                    "list": ProfileListCommand,
-                    "set": ProfileSetCommand,
-                }
-
-                profile_cmd = getattr(args, "profile_cmd", None)
-                if profile_cmd in profile_command_map:
-                    command_class = profile_command_map[profile_cmd]
                     command = command_class(args, config)
                     return command.execute()
 

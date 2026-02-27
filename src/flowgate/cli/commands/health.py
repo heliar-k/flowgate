@@ -15,7 +15,6 @@ from ...security import check_secret_file_permissions
 from ...utils import _upstream_credential_issues
 from ..error_handler import handle_command_errors
 from ..output import Output, command_id_from_args
-from ..utils import _read_state_file
 from .base import BaseCommand
 
 
@@ -37,7 +36,7 @@ def _effective_secret_files(config: dict[str, Any]) -> list[str]:
 
 
 class StatusCommand(BaseCommand):
-    """Display current profile and service status."""
+    """Display service status."""
 
     @handle_command_errors
     def execute(self) -> int:
@@ -50,10 +49,6 @@ class StatusCommand(BaseCommand):
         output: Output = getattr(self.args, "_output", None) or Output.from_args(
             self.args, stdout=stdout, stderr=stderr
         )
-
-        state = _read_state_file(Path(self.config["paths"]["state_file"]))
-        profile = state.get("current_profile", "unknown")
-        updated_at = state.get("updated_at", "unknown")
 
         supervisor = cli_module.ProcessSupervisor(
             self.config["paths"]["runtime_dir"],
@@ -72,8 +67,6 @@ class StatusCommand(BaseCommand):
                     "ok": True,
                     "command": command_id_from_args(self.args),
                     "data": {
-                        "current_profile": profile,
-                        "updated_at": updated_at,
                         "services": services,
                         "secret_permission_issues": secret_issue_count,
                     },
@@ -83,8 +76,6 @@ class StatusCommand(BaseCommand):
             )
             return 0
 
-        print(f"current_profile={profile}", file=stdout)
-        print(f"updated_at={updated_at}", file=stdout)
         for name in sorted(services.keys()):
             print(f"{name}_running={'yes' if services[name] else 'no'}", file=stdout)
         print(f"secret_permission_issues={secret_issue_count}", file=stdout)

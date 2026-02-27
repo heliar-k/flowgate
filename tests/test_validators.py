@@ -360,53 +360,6 @@ class TestValidateLitellmBase(unittest.TestCase):
 
         self.assertIn("litellm_base must be a dict", str(ctx.exception))
 @pytest.mark.unit
-class TestValidateProfiles(unittest.TestCase):
-    """Test validate_profiles method."""
-
-    def _valid_profiles_config(self):
-        """Return a valid profiles configuration."""
-        return {
-            "reliability": ConfigFactory.profile("reliability"),
-            "balanced": ConfigFactory.profile("balanced"),
-            "cost": ConfigFactory.profile("cost"),
-        }
-
-    def test_validate_profiles_valid(self):
-        """Test validate_profiles with valid config."""
-        config = self._valid_profiles_config()
-        try:
-            ConfigValidator.validate_profiles(config)
-        except ConfigError:
-            self.fail("Valid profiles config should not raise ConfigError")
-
-    def test_validate_profiles_empty(self):
-        """Test validate_profiles with empty dict."""
-        with self.assertRaises(ConfigError) as ctx:
-            ConfigValidator.validate_profiles({})
-        self.assertIn("profiles must not be empty", str(ctx.exception))
-
-    def test_validate_profiles_empty_name(self):
-        """Test validate_profiles with empty profile name."""
-        config = {"": {"litellm_settings": {}}}
-        with self.assertRaises(ConfigError) as ctx:
-            ConfigValidator.validate_profiles(config)
-        self.assertIn("profile names must be non-empty strings", str(ctx.exception))
-
-    def test_validate_profiles_non_string_name(self):
-        """Test validate_profiles with non-string profile name."""
-        config = {123: {"litellm_settings": {}}}
-        with self.assertRaises(ConfigError) as ctx:
-            ConfigValidator.validate_profiles(config)
-        self.assertIn("profile names must be non-empty strings", str(ctx.exception))
-
-    def test_validate_profiles_non_dict_value(self):
-        """Test validate_profiles with non-dict profile value."""
-        config = {"reliability": "not_a_dict"}
-        with self.assertRaises(ConfigError) as ctx:
-            ConfigValidator.validate_profiles(config)
-
-        self.assertIn("profiles.reliability must be a dict", str(ctx.exception))
-@pytest.mark.unit
 class TestValidateCredentials(unittest.TestCase):
     """Test validate_credentials method."""
 

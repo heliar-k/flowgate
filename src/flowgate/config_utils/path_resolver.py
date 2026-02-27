@@ -70,7 +70,7 @@ class PathResolver:
             New configuration dictionary with all paths resolved
 
         Path types handled:
-            1. paths.* - Top-level path fields (runtime_dir, active_config, etc.)
+            1. paths.* - Top-level path fields (runtime_dir, log_file, etc.)
             2. secret_files - List of secret file paths
             3. credentials.upstream.*.file - Nested credential file paths
             4. services.*.command.cwd - Optional service working directories

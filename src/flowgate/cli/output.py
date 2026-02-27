@@ -38,10 +38,6 @@ def command_id_from_args(args: Any) -> str:
         sub = getattr(args, "service_cmd", None)
         if sub:
             return f"service.{sub}"
-    if command == "profile":
-        sub = getattr(args, "profile_cmd", None)
-        if sub:
-            return f"profile.{sub}"
     if command == "auth":
         sub = getattr(args, "provider", None)
         if sub:
@@ -144,4 +140,3 @@ class Output:
                     continue
                 print(f"{key}={_kv_value(value)}", file=self.stdout)
             return
-

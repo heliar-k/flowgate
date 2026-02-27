@@ -198,31 +198,6 @@ class ConfigValidator:
         ConfigValidator._validate_type(config, dict, "litellm_base")
 
     @staticmethod
-    def validate_profiles(profiles_config: dict[str, Any]) -> None:
-        """Validate the profiles configuration section.
-
-        Requirements:
-        - Must not be empty
-        - All profile names must be non-empty strings
-        - All profile values must be dictionaries
-
-        Args:
-            profiles_config: The profiles section from configuration
-
-        Raises:
-            ConfigError: If validation fails
-        """
-        from flowgate.config import ConfigError
-
-        if not profiles_config:
-            raise ConfigError("profiles must not be empty")
-
-        for key, value in profiles_config.items():
-            if not isinstance(key, str) or not key:
-                raise ConfigError("profile names must be non-empty strings")
-            ConfigValidator._validate_type(value, dict, f"profiles.{key}")
-
-    @staticmethod
     def validate_credentials(credentials_config: dict[str, Any]) -> None:
         """Validate the credentials configuration section.
 

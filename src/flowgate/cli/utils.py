@@ -7,7 +7,6 @@ path resolution, and common CLI operations.
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from typing import Any
@@ -29,15 +28,6 @@ def _load_and_resolve_config(path: str) -> dict[str, Any]:
         "config_dir": str(cfg_path.resolve().parent),
     }
     return resolved
-
-
-def _read_state_file(state_path: Path) -> dict[str, Any]:
-    if not state_path.exists():
-        return {}
-    try:
-        return json.loads(state_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return {}
 
 
 def _default_auth_dir(config: dict[str, Any]) -> str:

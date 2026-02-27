@@ -43,12 +43,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    profile = sub.add_parser("profile")
-    profile_sub = profile.add_subparsers(dest="profile_cmd", required=True)
-    profile_sub.add_parser("list")
-    p_set = profile_sub.add_parser("set")
-    p_set.add_argument("name")
-
     sub.add_parser("status")
     health_parser = sub.add_parser("health")
     health_parser.add_argument("--verbose", action="store_true", help="Show detailed health information")

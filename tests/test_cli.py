@@ -48,76 +48,22 @@ def write_config(path: Path) -> None:
     data["secret_files"] = []
 
     path.write_text(json.dumps(data), encoding="utf-8")
+
+
+@pytest.mark.unit
+def test_profile_command_is_removed() -> None:
+    parser = build_parser()
+    with pytest.raises(SystemExit) as exc:
+        parser.parse_args(["profile", "list"])
+    assert exc.value.code == 2
+
+
 @pytest.mark.unit
 class CLITests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
         self.cfg = self.root / "flowgate.yaml"
         write_config(self.cfg)
-
-    def test_profile_list_and_set(self):
-        out = io.StringIO()
-        code = run_cli(["--config", str(self.cfg), "profile", "list"], stdout=out)
-        self.assertEqual(code, 0)
-        self.assertIn("balanced", out.getvalue())
-
-        out = io.StringIO()
-        code = run_cli(
-            ["--config", str(self.cfg), "profile", "set", "balanced"], stdout=out
-        )
-        self.assertEqual(code, 0)
-
-        state_file = self.root / "runtime" / "state.json"
-        self.assertTrue(state_file.exists())
-        state = json.loads(state_file.read_text())
-        self.assertEqual(state["current_profile"], "balanced")
-
-    def test_status_command(self):
-        run_cli(
-            ["--config", str(self.cfg), "profile", "set", "reliability"],
-            stdout=io.StringIO(),
-        )
-
-        out = io.StringIO()
-        code = run_cli(["--config", str(self.cfg), "status"], stdout=out)
-        self.assertEqual(code, 0)
-        text = out.getvalue()
-        self.assertIn("current_profile=reliability", text)
-
-    def test_status_command_json(self):
-        run_cli(
-            ["--config", str(self.cfg), "profile", "set", "reliability"],
-            stdout=io.StringIO(),
-        )
-
-        out = io.StringIO()
-        code = run_cli(
-            ["--config", str(self.cfg), "--format", "json", "status"], stdout=out
-        )
-        self.assertEqual(code, 0)
-        payload = json.loads(out.getvalue())
-        self.assertTrue(payload["ok"])
-        self.assertEqual(payload["command"], "status")
-        self.assertEqual(payload["data"]["current_profile"], "reliability")
-
-    def test_profile_set_restarts_litellm_when_running(self):
-        out = io.StringIO()
-        with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
-            supervisor = supervisor_cls.return_value
-            supervisor.is_running.return_value = True
-            supervisor.restart.return_value = 4321
-
-            code = run_cli(
-                ["--config", str(self.cfg), "profile", "set", "balanced"], stdout=out
-            )
-
-        self.assertEqual(code, 0)
-        supervisor.is_running.assert_called_once_with("litellm")
-        supervisor.restart.assert_called_once()
-        supervisor.record_event.assert_called_once_with(
-            "profile_switch", profile="balanced", result="success"
-        )
-        self.assertIn("litellm:restarted pid=4321", out.getvalue())
 
     def test_health_command(self):
         out = io.StringIO()
