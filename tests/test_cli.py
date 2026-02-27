@@ -84,6 +84,22 @@ class CLITests(unittest.TestCase):
         text = out.getvalue()
         self.assertIn("current_profile=reliability", text)
 
+    def test_status_command_json(self):
+        run_cli(
+            ["--config", str(self.cfg), "profile", "set", "reliability"],
+            stdout=io.StringIO(),
+        )
+
+        out = io.StringIO()
+        code = run_cli(
+            ["--config", str(self.cfg), "--format", "json", "status"], stdout=out
+        )
+        self.assertEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["command"], "status")
+        self.assertEqual(payload["data"]["current_profile"], "reliability")
+
     def test_profile_set_restarts_litellm_when_running(self):
         out = io.StringIO()
         with mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls:
@@ -127,6 +143,47 @@ class CLITests(unittest.TestCase):
         self.assertIn("Service Health:", text)
         self.assertIn("litellm: liveness=ok readiness=ok", text)
         self.assertIn("cliproxyapi_plus: liveness=ok readiness=fail", text)
+
+    def test_health_command_json(self):
+        out = io.StringIO()
+        with (
+            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.check_http_health",
+                side_effect=lambda url, timeout=1.0: {
+                    "ok": str(DEFAULT_SERVICE_PORTS["litellm"]) in url,
+                    "status_code": 200
+                    if str(DEFAULT_SERVICE_PORTS["litellm"]) in url
+                    else 503,
+                    "error": None,
+                },
+            ),
+            mock.patch(
+                "flowgate.health.comprehensive_health_check",
+                return_value={
+                    "overall_status": "degraded",
+                    "status_counts": {"healthy": 3, "degraded": 1, "unhealthy": 0},
+                    "checks": {
+                        "disk_space": {"status": "healthy", "message": "OK", "details": {}},
+                        "memory": {"status": "healthy", "message": "OK", "details": {}},
+                        "credentials": {"status": "healthy", "message": "OK", "details": {}},
+                        "port_conflicts": {"status": "degraded", "message": "WARN", "details": {}},
+                    },
+                },
+            ),
+        ):
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.side_effect = [True, True]
+            code = run_cli(
+                ["--config", str(self.cfg), "--format", "json", "health"], stdout=out
+            )
+
+        self.assertEqual(code, 1)
+        payload = json.loads(out.getvalue())
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["command"], "health")
+        self.assertEqual(payload["data"]["overall_status"], "degraded")
+        self.assertIn("services", payload["data"])
 
     def test_health_command_uses_default_readiness_path_when_missing(self):
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
@@ -209,6 +266,22 @@ class CLITests(unittest.TestCase):
         self.assertIn("litellm:stopped", out.getvalue())
         self.assertIn("cliproxyapi_plus:stopped", out.getvalue())
 
+    def test_service_start_all_json(self):
+        out = io.StringIO()
+        with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
+            supervisor = supervisor_cls.return_value
+            supervisor.start.side_effect = [111, 222]
+            code = run_cli(
+                ["--config", str(self.cfg), "--format", "json", "service", "start", "all"],
+                stdout=out,
+            )
+        self.assertEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["command"], "service.start")
+        results = payload["data"]["results"]
+        self.assertEqual({r["service"] for r in results}, {"litellm", "cliproxyapi_plus"})
+
     def test_service_start_reports_port_in_use(self):
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
@@ -286,6 +359,29 @@ class CLITests(unittest.TestCase):
             "oauth_login",
             provider="codex",
             result="success",
+        )
+
+    def test_auth_login_json(self):
+        out = io.StringIO()
+        with (
+            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"
+            ),
+            mock.patch("flowgate.oauth.poll_auth_status", return_value="success"),
+        ):
+            code = run_cli(
+                ["--config", str(self.cfg), "--format", "json", "auth", "login", "codex"],
+                stdout=out,
+            )
+        self.assertEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["command"], "auth.login")
+        self.assertEqual(payload["data"]["oauth_status"], "success")
+        supervisor = supervisor_cls.return_value
+        supervisor.record_event.assert_called_once_with(
+            "oauth_login", provider="codex", result="success"
         )
 
     def test_auth_login_timeout_error_contains_hint(self):
@@ -548,6 +644,36 @@ class CLITests(unittest.TestCase):
         cliproxy_validate.assert_called_once()
         litellm_validate.assert_called_once()
 
+    def test_bootstrap_download_json(self):
+        out = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.download_cliproxyapi_plus",
+                return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.prepare_litellm_runner",
+                return_value=Path("/tmp/runtime/bin/litellm"),
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
+                return_value=True,
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.validate_litellm_runner",
+                return_value=True,
+            ),
+        ):
+            code = run_cli(
+                ["--config", str(self.cfg), "--format", "json", "bootstrap", "download"],
+                stdout=out,
+            )
+        self.assertEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["command"], "bootstrap.download")
+        self.assertIn("cliproxyapi_plus", payload["data"])
+
     def test_bootstrap_download_rejects_litellm_version_flag(self):
         parser = build_parser()
         with self.assertRaises(SystemExit) as ctx:
@@ -572,6 +698,19 @@ class CLITests(unittest.TestCase):
         self.assertIn("[model_providers.flowgate]", text)
         self.assertIn('base_url = "http://127.0.0.1:4000/v1"', text)
         self.assertIn('model = "router-default"', text)
+
+    def test_integration_print_codex_json(self):
+        out = io.StringIO()
+        code = run_cli(
+            ["--config", str(self.cfg), "--format", "json", "integration", "print", "codex"],
+            stdout=out,
+        )
+        self.assertEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["command"], "integration.print")
+        self.assertEqual(payload["data"]["client"], "codex")
+        self.assertIn('model_provider = "flowgate"', payload["data"]["snippet"])
 
     def test_integration_print_claude_code(self):
         out = io.StringIO()
@@ -615,6 +754,30 @@ class CLITests(unittest.TestCase):
         self.assertEqual(saved["env"]["ANTHROPIC_BASE_URL"], "http://127.0.0.1:4000")
         self.assertEqual(saved["env"]["ANTHROPIC_AUTH_TOKEN"], "your-gateway-token")
 
+    def test_integration_apply_dry_run_does_not_modify_file(self):
+        target = self.root / "claude-settings-dry-run.json"
+        original = json.dumps({"env": {"ANTHROPIC_AUTH_TOKEN": "old"}}, sort_keys=True)
+        target.write_text(original, encoding="utf-8")
+
+        out = io.StringIO()
+        code = run_cli(
+            [
+                "--config",
+                str(self.cfg),
+                "integration",
+                "apply",
+                "claude-code",
+                "--target",
+                str(target),
+                "--dry-run",
+            ],
+            stdout=out,
+        )
+
+        self.assertEqual(code, 0)
+        self.assertIn(f"planned_path={target}", out.getvalue())
+        self.assertEqual(target.read_text(encoding="utf-8"), original)
+
     def test_doctor_reports_missing_runtime_artifacts(self):
         out = io.StringIO()
         with mock.patch(
@@ -625,6 +788,21 @@ class CLITests(unittest.TestCase):
         text = out.getvalue()
         self.assertIn("doctor:runtime_dir=fail", text)
         self.assertIn("doctor:runtime_binaries=fail", text)
+
+    def test_doctor_json_reports_missing_runtime_artifacts(self):
+        out = io.StringIO()
+        with mock.patch("flowgate.cli._runtime_dependency_available", return_value=True):
+            code = run_cli(
+                ["--config", str(self.cfg), "--format", "json", "doctor"], stdout=out
+            )
+        self.assertEqual(code, 1)
+        payload = json.loads(out.getvalue())
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["command"], "doctor")
+        checks = payload["data"]["checks"]
+        statuses = {c["id"]: c["status"] for c in checks}
+        self.assertEqual(statuses["runtime_dir"], "fail")
+        self.assertEqual(statuses["runtime_binaries"], "fail")
 
     def test_doctor_passes_when_runtime_ready(self):
         data = json.loads(self.cfg.read_text(encoding="utf-8"))
@@ -953,9 +1131,40 @@ class CLITests(unittest.TestCase):
         supervisor.is_running.assert_called_once_with("cliproxyapi_plus")
         supervisor.restart.assert_called_once()
 
-    def test_bootstrap_update_user_cancels(self):
+    def test_bootstrap_update_requires_yes_in_non_interactive_mode(self):
         out = io.StringIO()
+        err = io.StringIO()
         with (
+            mock.patch(
+                "flowgate.cli.commands.bootstrap.read_cliproxyapiplus_installed_version",
+                return_value="v6.8.16-0",
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap._check_latest_version",
+                return_value={
+                    "current_version": "v6.8.16-0",
+                    "latest_version": "v6.8.18-1",
+                    "release_url": "",
+                },
+            ),
+            mock.patch(
+                "flowgate.cli.commands.bootstrap._confirm_update",
+                return_value=False,
+            ),
+        ):
+            code = run_cli(
+                ["--config", str(self.cfg), "bootstrap", "update"],
+                stdout=out,
+                stderr=err,
+            )
+
+        self.assertEqual(code, 2)
+        self.assertIn("--yes", err.getvalue())
+
+    def test_bootstrap_update_user_cancels_in_interactive_mode(self):
+        out = TTYStringIO()
+        with (
+            mock.patch("sys.stdin.isatty", return_value=True),
             mock.patch(
                 "flowgate.cli.commands.bootstrap.read_cliproxyapiplus_installed_version",
                 return_value="v6.8.16-0",
@@ -979,8 +1188,7 @@ class CLITests(unittest.TestCase):
             )
 
         self.assertEqual(code, 0)
-        text = out.getvalue()
-        self.assertIn("cliproxyapi_plus:update_cancelled", text)
+        self.assertIn("cliproxyapi_plus:update_cancelled", out.getvalue())
 
     def test_bootstrap_update_validation_failure_raises(self):
         out = io.StringIO()
