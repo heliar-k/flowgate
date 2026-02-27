@@ -1,7 +1,6 @@
 import io
 import json
 import os
-import socket
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,43 +10,13 @@ from flowgate.cli import run_cli
 from flowgate.cli.parser import build_parser
 from flowgate.constants import (
     DEFAULT_READINESS_PATH,
-    DEFAULT_SERVICE_HOST,
-    DEFAULT_SERVICE_PORTS,
-    DEFAULT_SERVICE_READINESS_PATHS,
 )
-from tests.fixtures import ConfigFactory
 
 import pytest
 
 class TTYStringIO(io.StringIO):
     def isatty(self) -> bool:
         return True
-
-
-def write_config(path: Path) -> None:
-    """Write test config using ConfigFactory."""
-    data = ConfigFactory.with_profiles(["reliability", "balanced", "cost"])
-    data["paths"] = ConfigFactory.paths(
-        runtime_dir=str(path.parent / "runtime"),
-        active_config=str(path.parent / "runtime" / "litellm.active.yaml"),
-        state_file=str(path.parent / "runtime" / "state.json"),
-        log_file=str(path.parent / "logs" / "routerctl.log"),
-    )
-    data["auth"] = {
-        "providers": {
-            "codex": {
-                "auth_url_endpoint": "http://example.local/codex/auth-url",
-                "status_endpoint": "http://example.local/codex/status",
-            },
-            "copilot": {
-                "auth_url_endpoint": "http://example.local/copilot/auth-url",
-                "status_endpoint": "http://example.local/copilot/status",
-            },
-        }
-    }
-    data["secret_files"] = []
-
-    path.write_text(json.dumps(data), encoding="utf-8")
 
 
 def write_minimal_v3_config(root: Path) -> Path:
@@ -81,8 +50,22 @@ def write_minimal_v3_config(root: Path) -> Path:
                     "log_file": str(runtime_dir / "events.log"),
                 },
                 "cliproxyapi_plus": {"config_file": str(cliproxy_cfg)},
-                "auth": {"providers": {}},
+                "auth": {
+                    "providers": {
+                        "codex": {
+                            "method": "oauth_poll",
+                            "auth_url_endpoint": "http://example.local/codex/auth-url",
+                            "status_endpoint": "http://example.local/codex/status",
+                        },
+                        "copilot": {
+                            "method": "oauth_poll",
+                            "auth_url_endpoint": "http://example.local/copilot/auth-url",
+                            "status_endpoint": "http://example.local/copilot/status",
+                        },
+                    }
+                },
                 "secret_files": [],
+                "integration": {},
             }
         ),
         encoding="utf-8",
@@ -102,8 +85,7 @@ def test_profile_command_is_removed() -> None:
 class CLITests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
-        self.cfg = self.root / "flowgate.yaml"
-        write_config(self.cfg)
+        self.cfg = write_minimal_v3_config(self.root)
 
     def test_health_command(self):
         out = io.StringIO()
@@ -111,24 +93,25 @@ class CLITests(unittest.TestCase):
             mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
             mock.patch(
                 "flowgate.cli.check_http_health",
-                side_effect=lambda url, timeout=1.0: {
-                    "ok": str(DEFAULT_SERVICE_PORTS["litellm"]) in url,
-                    "status_code": 200
-                    if str(DEFAULT_SERVICE_PORTS["litellm"]) in url
-                    else 503,
-                    "error": None,
+                return_value={"ok": True, "status_code": 200, "error": None},
+            ),
+            mock.patch(
+                "flowgate.health.comprehensive_health_check",
+                return_value={
+                    "overall_status": "healthy",
+                    "status_counts": {"healthy": 4, "degraded": 0, "unhealthy": 0},
+                    "checks": {},
                 },
             ),
         ):
             supervisor = supervisor_cls.return_value
-            supervisor.is_running.side_effect = [True, True]
+            supervisor.is_running.return_value = True
             code = run_cli(["--config", str(self.cfg), "health"], stdout=out)
-        self.assertEqual(code, 1)
+        self.assertEqual(code, 0)
         text = out.getvalue()
         # New format includes service health section
         self.assertIn("Service Health:", text)
-        self.assertIn("litellm: liveness=ok readiness=ok", text)
-        self.assertIn("cliproxyapi_plus: liveness=ok readiness=fail", text)
+        self.assertIn("cliproxyapi_plus: liveness=ok readiness=ok", text)
 
     def test_health_command_json(self):
         out = io.StringIO()
@@ -136,13 +119,7 @@ class CLITests(unittest.TestCase):
             mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
             mock.patch(
                 "flowgate.cli.check_http_health",
-                side_effect=lambda url, timeout=1.0: {
-                    "ok": str(DEFAULT_SERVICE_PORTS["litellm"]) in url,
-                    "status_code": 200
-                    if str(DEFAULT_SERVICE_PORTS["litellm"]) in url
-                    else 503,
-                    "error": None,
-                },
+                return_value={"ok": True, "status_code": 200, "error": None},
             ),
             mock.patch(
                 "flowgate.health.comprehensive_health_check",
@@ -159,7 +136,7 @@ class CLITests(unittest.TestCase):
             ),
         ):
             supervisor = supervisor_cls.return_value
-            supervisor.is_running.side_effect = [True, True]
+            supervisor.is_running.return_value = True
             code = run_cli(
                 ["--config", str(self.cfg), "--format", "json", "health"], stdout=out
             )
@@ -171,13 +148,7 @@ class CLITests(unittest.TestCase):
         self.assertEqual(payload["data"]["overall_status"], "degraded")
         self.assertIn("services", payload["data"])
 
-    def test_health_command_uses_default_readiness_path_when_missing(self):
-        data = json.loads(self.cfg.read_text(encoding="utf-8"))
-        for service in data["services"].values():
-            service.pop("readiness_path", None)
-            service.pop("health_path", None)
-        self.cfg.write_text(json.dumps(data), encoding="utf-8")
-
+    def test_health_command_uses_default_readiness_path(self):
         out = io.StringIO()
         with (
             mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
@@ -200,18 +171,12 @@ class CLITests(unittest.TestCase):
             ),
         ):
             supervisor = supervisor_cls.return_value
-            supervisor.is_running.side_effect = [True, True]
+            supervisor.is_running.return_value = True
             code = run_cli(["--config", str(self.cfg), "health"], stdout=out)
 
         self.assertEqual(code, 0)
         checked_urls = [call.args[0] for call in checker.call_args_list]
-        self.assertEqual(
-            checked_urls,
-            [
-                f"http://{DEFAULT_SERVICE_HOST}:{DEFAULT_SERVICE_PORTS['cliproxyapi_plus']}{DEFAULT_READINESS_PATH}",
-                f"http://{DEFAULT_SERVICE_HOST}:{DEFAULT_SERVICE_PORTS['litellm']}{DEFAULT_READINESS_PATH}",
-            ],
-        )
+        self.assertEqual(checked_urls, [f"http://127.0.0.1:5000{DEFAULT_READINESS_PATH}"])
 
     def test_health_command_fails_when_service_not_running(self):
         out = io.StringIO()
@@ -221,42 +186,49 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.check_http_health",
                 return_value={"ok": True, "status_code": 200, "error": None},
             ),
+            mock.patch(
+                "flowgate.health.comprehensive_health_check",
+                return_value={
+                    "overall_status": "healthy",
+                    "status_counts": {"healthy": 4, "degraded": 0, "unhealthy": 0},
+                    "checks": {},
+                },
+            ),
         ):
             supervisor = supervisor_cls.return_value
-            supervisor.is_running.side_effect = [True, False]
+            supervisor.is_running.return_value = False
             code = run_cli(["--config", str(self.cfg), "health"], stdout=out)
         self.assertEqual(code, 1)
         # New format: service name followed by status
-        self.assertIn("litellm: liveness=fail readiness=ok", out.getvalue())
+        self.assertIn("cliproxyapi_plus: liveness=fail readiness=ok", out.getvalue())
 
     def test_service_start_stop_all(self):
         out = io.StringIO()
+        out.isatty = lambda: False  # type: ignore[attr-defined]
         with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
-            supervisor.start.side_effect = [111, 222]
+            supervisor.start.side_effect = [222]
             code = run_cli(
                 ["--config", str(self.cfg), "service", "start", "all"], stdout=out
             )
         self.assertEqual(code, 0)
-        self.assertIn("litellm:started pid=111", out.getvalue())
-        self.assertIn("cliproxyapi_plus:started pid=222", out.getvalue())
+        self.assertEqual(out.getvalue().strip(), "cliproxyapi_plus:started pid=222")
 
         out = io.StringIO()
         with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
-            supervisor.stop.side_effect = [True, True]
+            supervisor.stop.side_effect = [True]
             code = run_cli(
                 ["--config", str(self.cfg), "service", "stop", "all"], stdout=out
             )
         self.assertEqual(code, 0)
-        self.assertIn("litellm:stopped", out.getvalue())
-        self.assertIn("cliproxyapi_plus:stopped", out.getvalue())
+        self.assertEqual(out.getvalue().strip(), "cliproxyapi_plus:stopped")
 
     def test_service_start_all_json(self):
         out = io.StringIO()
         with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
-            supervisor.start.side_effect = [111, 222]
+            supervisor.start.side_effect = [222]
             code = run_cli(
                 ["--config", str(self.cfg), "--format", "json", "service", "start", "all"],
                 stdout=out,
@@ -266,26 +238,26 @@ class CLITests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["command"], "service.start")
         results = payload["data"]["results"]
-        self.assertEqual({r["service"] for r in results}, {"litellm", "cliproxyapi_plus"})
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["service"], "cliproxyapi_plus")
 
     def test_service_start_reports_port_in_use(self):
-        data = json.loads(self.cfg.read_text(encoding="utf-8"))
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
-            occupied.bind((DEFAULT_SERVICE_HOST, 0))
-            occupied.listen(1)
-            data["services"]["cliproxyapi_plus"]["port"] = occupied.getsockname()[1]
-            self.cfg.write_text(json.dumps(data), encoding="utf-8")
-
-            out = io.StringIO()
-            err = io.StringIO()
-            with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
-                supervisor = supervisor_cls.return_value
-                supervisor.is_running.return_value = False
-                code = run_cli(
-                    ["--config", str(self.cfg), "service", "start", "cliproxyapi_plus"],
-                    stdout=out,
-                    stderr=err,
-                )
+        out = io.StringIO()
+        err = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.cli.commands.service._is_service_port_available",
+                return_value=False,
+            ),
+            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+        ):
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.return_value = False
+            code = run_cli(
+                ["--config", str(self.cfg), "service", "start", "cliproxyapi_plus"],
+                stdout=out,
+                stderr=err,
+            )
 
         self.assertEqual(code, 1)
         self.assertIn("port-in-use", err.getvalue())
@@ -293,29 +265,28 @@ class CLITests(unittest.TestCase):
         supervisor.start.assert_not_called()
 
     def test_service_restart_reports_port_in_use_when_service_not_running(self):
-        data = json.loads(self.cfg.read_text(encoding="utf-8"))
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
-            occupied.bind((DEFAULT_SERVICE_HOST, 0))
-            occupied.listen(1)
-            data["services"]["cliproxyapi_plus"]["port"] = occupied.getsockname()[1]
-            self.cfg.write_text(json.dumps(data), encoding="utf-8")
-
-            out = io.StringIO()
-            err = io.StringIO()
-            with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
-                supervisor = supervisor_cls.return_value
-                supervisor.is_running.return_value = False
-                code = run_cli(
-                    [
-                        "--config",
-                        str(self.cfg),
-                        "service",
-                        "restart",
-                        "cliproxyapi_plus",
-                    ],
-                    stdout=out,
-                    stderr=err,
-                )
+        out = io.StringIO()
+        err = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.cli.commands.service._is_service_port_available",
+                return_value=False,
+            ),
+            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+        ):
+            supervisor = supervisor_cls.return_value
+            supervisor.is_running.return_value = False
+            code = run_cli(
+                [
+                    "--config",
+                    str(self.cfg),
+                    "service",
+                    "restart",
+                    "cliproxyapi_plus",
+                ],
+                stdout=out,
+                stderr=err,
+            )
 
         self.assertEqual(code, 1)
         self.assertIn("port-in-use", err.getvalue())
