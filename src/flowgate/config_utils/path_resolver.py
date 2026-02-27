@@ -127,4 +127,11 @@ class PathResolver:
             if isinstance(cwd, str):
                 command["cwd"] = self.resolve(cwd)
 
+        # 5. Resolve cliproxyapi_plus.config_file
+        cliproxy = cfg.get("cliproxyapi_plus", {})
+        if isinstance(cliproxy, dict):
+            config_file = cliproxy.get("config_file")
+            if isinstance(config_file, str):
+                cliproxy["config_file"] = self.resolve(config_file)
+
         return cfg

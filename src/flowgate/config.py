@@ -87,10 +87,12 @@ def _derive_cliproxy_service(
     runtime_dir = paths.get("runtime_dir")
     if not isinstance(runtime_dir, str) or not runtime_dir.strip():
         raise ConfigError("paths.runtime_dir must be a non-empty string")
-    runtime_dir = runtime_dir.strip()
+    runtime_dir_path = _resolve_path_relative_to_config(
+        flowgate_config_path, runtime_dir.strip()
+    )
 
     project_root = flowgate_config_path.parent.resolve().parent
-    binary = str((Path(runtime_dir) / "bin" / "CLIProxyAPIPlus"))
+    binary = str((runtime_dir_path / "bin" / "CLIProxyAPIPlus"))
 
     service = {
         "host": host,

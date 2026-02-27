@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from flowgate.config import load_router_config
+from flowgate.config_utils.path_resolver import PathResolver
 
 
 @pytest.mark.unit
@@ -29,10 +30,12 @@ def test_load_config_v3_derives_service_from_cliproxy_config():
             {
                 "config_version": 3,
                 "paths": {
-                    "runtime_dir": str(root / ".router" / "runtime"),
-                    "log_file": str(root / ".router" / "runtime" / "events.log"),
+                    # Intentionally relative to config dir
+                    "runtime_dir": ".router/runtime",
+                    "log_file": ".router/runtime/events.log",
                 },
-                "cliproxyapi_plus": {"config_file": str(cliproxy_cfg)},
+                # Intentionally relative to config dir
+                "cliproxyapi_plus": {"config_file": "cliproxyapi.yaml"},
                 "auth": {"providers": {"codex": {"method": "oauth_poll"}}},
             }
         ),
@@ -48,4 +51,24 @@ def test_load_config_v3_derives_service_from_cliproxy_config():
     assert svc["port"] == 8317
     assert svc["readiness_path"] == "/v1/models"
     assert "command" in svc and "args" in svc["command"]
+    assert Path(svc["command"]["args"][0]).is_absolute()
+    assert svc["command"]["args"][0].endswith("/.router/runtime/bin/CLIProxyAPIPlus")
 
+
+@pytest.mark.unit
+def test_path_resolver_resolves_cliproxyapi_plus_config_file():
+    root = Path(tempfile.mkdtemp())
+    cfg_dir = root / "config"
+    cfg_dir.mkdir(parents=True, exist_ok=True)
+    flowgate_cfg = cfg_dir / "flowgate.yaml"
+
+    resolver = PathResolver(flowgate_cfg)
+    resolved = resolver.resolve_config_paths(
+        {
+            "paths": {"runtime_dir": ".router/runtime", "log_file": "events.log"},
+            "cliproxyapi_plus": {"config_file": "cliproxyapi.yaml"},
+        }
+    )
+    assert resolved["cliproxyapi_plus"]["config_file"] == str(
+        (cfg_dir / "cliproxyapi.yaml").resolve()
+    )
