@@ -61,6 +61,12 @@ class StatusCommand(BaseCommand):
         issues = check_secret_file_permissions(_effective_secret_files(self.config))
         secret_issue_count = len(issues)
 
+        cliproxy_cfg = None
+        cliproxy_section = self.config.get("cliproxyapi_plus", {})
+        if isinstance(cliproxy_section, dict):
+            cliproxy_cfg = cliproxy_section.get("config_file")
+        cliproxy_cfg_str = str(cliproxy_cfg).strip() if cliproxy_cfg else ""
+
         if output.format != "legacy":
             output.emit_envelope(
                 {
@@ -68,6 +74,7 @@ class StatusCommand(BaseCommand):
                     "command": command_id_from_args(self.args),
                     "data": {
                         "services": services,
+                        "cliproxyapi_plus_config": cliproxy_cfg_str,
                         "secret_permission_issues": secret_issue_count,
                     },
                     "warnings": [],
@@ -77,7 +84,12 @@ class StatusCommand(BaseCommand):
             return 0
 
         for name in sorted(services.keys()):
-            print(f"{name}_running={'yes' if services[name] else 'no'}", file=stdout)
+            print(
+                f"services.{name}_running={'yes' if services[name] else 'no'}",
+                file=stdout,
+            )
+        if cliproxy_cfg_str:
+            print(f"cliproxyapi_plus_config={cliproxy_cfg_str}", file=stdout)
         print(f"secret_permission_issues={secret_issue_count}", file=stdout)
 
         return 0

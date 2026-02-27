@@ -86,7 +86,8 @@ class TestDiagnosticCommandRegression(unittest.TestCase):
         output = stdout.getvalue()
         self.assertNotIn("current_profile=", output)
         self.assertNotIn("updated_at=", output)
-        self.assertIn("cliproxyapi_plus_running=no", output)
+        self.assertIn("services.cliproxyapi_plus_running=no", output)
+        self.assertIn("cliproxyapi_plus_config=", output)
         self.assertIn("secret_permission_issues=0", output)
 
     @mock.patch("flowgate.cli.ProcessSupervisor")
