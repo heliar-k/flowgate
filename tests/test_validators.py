@@ -108,13 +108,12 @@ class TestValidatePaths(unittest.TestCase):
 
     def test_validate_paths_missing_multiple_keys(self):
         """Test validate_paths with multiple missing keys."""
-        config = {"runtime_dir": ".router"}
+        config: dict[str, object] = {}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_paths(config)
         error_msg = str(ctx.exception)
         self.assertIn("paths is missing required keys:", error_msg)
-        self.assertIn("active_config", error_msg)
-        self.assertIn("state_file", error_msg)
+        self.assertIn("runtime_dir", error_msg)
         self.assertIn("log_file", error_msg)
 
     def test_validate_paths_extra_keys_allowed(self):
