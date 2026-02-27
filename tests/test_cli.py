@@ -205,14 +205,23 @@ class CLITests(unittest.TestCase):
     def test_service_start_stop_all(self):
         out = io.StringIO()
         out.isatty = lambda: False  # type: ignore[attr-defined]
-        with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
+        with (
+            mock.patch(
+                "flowgate.cli.commands.service._is_service_port_available",
+                return_value=True,
+            ) as port_available,
+            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+        ):
             supervisor = supervisor_cls.return_value
+            supervisor.is_running.return_value = False
             supervisor.start.side_effect = [222]
             code = run_cli(
                 ["--config", str(self.cfg), "service", "start", "all"], stdout=out
             )
         self.assertEqual(code, 0)
         self.assertEqual(out.getvalue().strip(), "cliproxyapi_plus:started pid=222")
+        port_available.assert_called_once_with("127.0.0.1", 5000)
+        supervisor.is_running.assert_called_once_with("cliproxyapi_plus")
 
         out = io.StringIO()
         with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
@@ -226,8 +235,15 @@ class CLITests(unittest.TestCase):
 
     def test_service_start_all_json(self):
         out = io.StringIO()
-        with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
+        with (
+            mock.patch(
+                "flowgate.cli.commands.service._is_service_port_available",
+                return_value=True,
+            ) as port_available,
+            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+        ):
             supervisor = supervisor_cls.return_value
+            supervisor.is_running.return_value = False
             supervisor.start.side_effect = [222]
             code = run_cli(
                 ["--config", str(self.cfg), "--format", "json", "service", "start", "all"],
@@ -240,6 +256,8 @@ class CLITests(unittest.TestCase):
         results = payload["data"]["results"]
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["service"], "cliproxyapi_plus")
+        port_available.assert_called_once_with("127.0.0.1", 5000)
+        supervisor.is_running.assert_called_once_with("cliproxyapi_plus")
 
     def test_service_start_reports_port_in_use(self):
         out = io.StringIO()
@@ -248,7 +266,7 @@ class CLITests(unittest.TestCase):
             mock.patch(
                 "flowgate.cli.commands.service._is_service_port_available",
                 return_value=False,
-            ),
+            ) as port_available,
             mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
@@ -262,6 +280,8 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("port-in-use", err.getvalue())
         self.assertIn("cliproxyapi_plus", err.getvalue())
+        port_available.assert_called_once_with("127.0.0.1", 5000)
+        supervisor.is_running.assert_called_once_with("cliproxyapi_plus")
         supervisor.start.assert_not_called()
 
     def test_service_restart_reports_port_in_use_when_service_not_running(self):
@@ -271,7 +291,7 @@ class CLITests(unittest.TestCase):
             mock.patch(
                 "flowgate.cli.commands.service._is_service_port_available",
                 return_value=False,
-            ),
+            ) as port_available,
             mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
@@ -291,6 +311,8 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("port-in-use", err.getvalue())
         self.assertIn("cliproxyapi_plus", err.getvalue())
+        port_available.assert_called_once_with("127.0.0.1", 5000)
+        supervisor.is_running.assert_called_once_with("cliproxyapi_plus")
         supervisor.restart.assert_not_called()
 
     def test_auth_login(self):
