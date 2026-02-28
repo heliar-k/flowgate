@@ -5,9 +5,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from flowgate.client_apply import apply_claude_code_settings, apply_codex_config
-
 import pytest
+
+from flowgate.client_apply import apply_claude_code_settings, apply_codex_config
 
 
 @pytest.mark.unit

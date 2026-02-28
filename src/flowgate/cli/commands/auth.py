@@ -4,6 +4,7 @@ Auth command handlers for FlowGate CLI.
 This module contains command handlers for authentication operations including
 OAuth login, headless import, and provider status checks.
 """
+
 from __future__ import annotations
 
 import sys
@@ -293,9 +294,19 @@ class AuthLoginCommand(BaseCommand):
                     {
                         "ok": False,
                         "command": command_id_from_args(self.args),
-                        "data": {"provider": provider, "available": available.split(",") if available != "none" else []},
+                        "data": {
+                            "provider": provider,
+                            "available": available.split(",")
+                            if available != "none"
+                            else [],
+                        },
                         "warnings": [],
-                        "errors": [{"type": "ConfigError", "message": f"OAuth provider not configured: {provider}"}],
+                        "errors": [
+                            {
+                                "type": "ConfigError",
+                                "message": f"OAuth provider not configured: {provider}",
+                            }
+                        ],
                     }
                 )
             print(
@@ -318,7 +329,10 @@ class AuthLoginCommand(BaseCommand):
 
         if not auth_url_endpoint or not status_endpoint:
             supervisor.record_event(
-                "oauth_login", provider=provider, result="failed", detail="endpoint-missing"
+                "oauth_login",
+                provider=provider,
+                result="failed",
+                detail="endpoint-missing",
             )
             if output.format != "legacy":
                 output.emit_envelope(
@@ -357,7 +371,11 @@ class AuthLoginCommand(BaseCommand):
                     {
                         "ok": True,
                         "command": command_id_from_args(self.args),
-                        "data": {"provider": provider, "login_url": url, "oauth_status": status},
+                        "data": {
+                            "provider": provider,
+                            "login_url": url,
+                            "oauth_status": status,
+                        },
                         "warnings": [],
                         "errors": [],
                     }
@@ -384,7 +402,10 @@ class AuthImportCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth import-headless command."""
         # Import here to avoid circular dependency
-        from ...auth_methods import get_headless_import_handler, headless_import_handlers
+        from ...auth_methods import (
+            get_headless_import_handler,
+            headless_import_handlers,
+        )
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -404,7 +425,12 @@ class AuthImportCommand(BaseCommand):
                     {
                         "ok": False,
                         "command": command_id_from_args(self.args),
-                        "data": {"provider": provider, "supported": supported.split(",") if supported != "none" else []},
+                        "data": {
+                            "provider": provider,
+                            "supported": supported.split(",")
+                            if supported != "none"
+                            else [],
+                        },
                         "warnings": [],
                         "errors": [
                             {
@@ -444,7 +470,11 @@ class AuthImportCommand(BaseCommand):
                 {
                     "ok": True,
                     "command": command_id_from_args(self.args),
-                    "data": {"provider": provider, "saved_auth": saved, "dest_dir": resolved_dest},
+                    "data": {
+                        "provider": provider,
+                        "saved_auth": saved,
+                        "dest_dir": resolved_dest,
+                    },
                     "warnings": [],
                     "errors": [],
                 }

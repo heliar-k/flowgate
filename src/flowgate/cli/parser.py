@@ -45,7 +45,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("status")
     health_parser = sub.add_parser("health")
-    health_parser.add_argument("--verbose", action="store_true", help="Show detailed health information")
+    health_parser.add_argument(
+        "--verbose", action="store_true", help="Show detailed health information"
+    )
     sub.add_parser("doctor")
 
     integration = sub.add_parser("integration")

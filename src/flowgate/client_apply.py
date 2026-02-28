@@ -13,6 +13,7 @@ CLAUDE_MANAGED_MODEL_ENV_KEYS: tuple[str, ...] = (
     "ANTHROPIC_DEFAULT_HAIKU_MODEL",
 )
 
+
 def _backup_file_maybe(path: Path, *, dry_run: bool) -> Path | None:
     """Create a backup file, or return the path that would be used in dry-run."""
     if not path.exists():
@@ -62,7 +63,9 @@ def apply_claude_code_settings(
         env["ANTHROPIC_AUTH_TOKEN"] = "your-gateway-token"
 
     updated_text = json.dumps(doc, indent=2, sort_keys=True) + "\n"
-    existing_text = target_path.read_text(encoding="utf-8") if target_path.exists() else ""
+    existing_text = (
+        target_path.read_text(encoding="utf-8") if target_path.exists() else ""
+    )
     changed = existing_text != updated_text
 
     if not dry_run:

@@ -3,7 +3,6 @@ from __future__ import annotations
 import stat
 from pathlib import Path
 
-
 EXPECTED_MODE = 0o600
 
 

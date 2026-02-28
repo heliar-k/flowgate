@@ -5,9 +5,9 @@ import os
 import signal
 import subprocess
 import time
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Mapping
 
 from .observability import measure_time
 
@@ -17,11 +17,17 @@ class ProcessError(RuntimeError):
 
 
 class ProcessSupervisor:
-    def __init__(self, runtime_dir: str | Path, *, events_log: str | Path | None = None):
+    def __init__(
+        self, runtime_dir: str | Path, *, events_log: str | Path | None = None
+    ):
         self.runtime_dir = Path(runtime_dir)
         self.pid_dir = self.runtime_dir / "pids"
         self.log_dir = self.runtime_dir / "process-logs"
-        self.events_log = Path(events_log) if events_log is not None else (self.runtime_dir / "events.log")
+        self.events_log = (
+            Path(events_log)
+            if events_log is not None
+            else (self.runtime_dir / "events.log")
+        )
         self._children: dict[str, subprocess.Popen[bytes]] = {}
         self.pid_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -66,7 +72,9 @@ class ProcessSupervisor:
                 raw = proc_cmdline.read_bytes()
             except OSError:
                 return None
-            parts = [p.decode("utf-8", errors="ignore") for p in raw.split(b"\x00") if p]
+            parts = [
+                p.decode("utf-8", errors="ignore") for p in raw.split(b"\x00") if p
+            ]
             return parts or None
 
         # Best-effort fallback for non-/proc environments.

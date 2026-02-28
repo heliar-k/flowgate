@@ -14,11 +14,12 @@ Example usage:
 import functools
 import json
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -146,7 +147,7 @@ def log_performance_metric(
         # Append JSON line to events log
         with events_log.open("a", encoding="utf-8") as f:
             f.write(json.dumps(metric) + "\n")
-    except (OSError, IOError):
+    except OSError:
         # Silently fail if we can't write (e.g., permissions, disk full)
         # Don't break the application for observability failures
         pass
@@ -191,7 +192,7 @@ def get_recent_metrics(
                 except json.JSONDecodeError:
                     # Skip malformed lines
                     continue
-    except (OSError, IOError):
+    except OSError:
         # Return empty list if we can't read the file
         return []
 

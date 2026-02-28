@@ -5,9 +5,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+
 from flowgate.config_utils.path_resolver import PathResolver
 
-import pytest
+
 @pytest.mark.unit
 class TestPathResolverInit(unittest.TestCase):
     """Test PathResolver initialization."""
@@ -48,8 +50,9 @@ class TestPathResolverInit(unittest.TestCase):
                     resolver.config_dir, (Path(temp_dir) / "config").resolve()
                 )
             finally:
-
                 os.chdir(original_cwd)
+
+
 @pytest.mark.unit
 class TestPathResolverResolve(unittest.TestCase):
     """Test resolve() method."""
@@ -100,6 +103,8 @@ class TestPathResolverResolve(unittest.TestCase):
         expected = str((self.config_path.parent / rel_path).resolve())
 
         self.assertEqual(result, expected)
+
+
 @pytest.mark.unit
 class TestPathResolverResolveConfigPaths(unittest.TestCase):
     """Test resolve_config_paths() method."""
@@ -227,9 +232,7 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
         resolved = self.resolver.resolve_config_paths(config)
 
         # Absolute paths should remain unchanged
-        self.assertEqual(
-            resolved["paths"]["runtime_dir"], "/absolute/path/runtime"
-        )
+        self.assertEqual(resolved["paths"]["runtime_dir"], "/absolute/path/runtime")
         self.assertEqual(resolved["paths"]["state_file"], "/absolute/state.json")
         self.assertEqual(resolved["secret_files"][0], "/absolute/secret.key")
 
@@ -247,7 +250,9 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
             },
             "secret_files": ["secrets/api.key"],
             "services": {
-                "cliproxyapi_plus": {"command": {"cwd": "runtime", "args": ["cliproxy"]}}
+                "cliproxyapi_plus": {
+                    "command": {"cwd": "runtime", "args": ["cliproxy"]}
+                }
             },
         }
 
@@ -261,7 +266,9 @@ class TestPathResolverResolveConfigPaths(unittest.TestCase):
         self.assertEqual(config, original_config)
 
         # Resolved config should be different
-        self.assertNotEqual(resolved["paths"]["runtime_dir"], config["paths"]["runtime_dir"])
+        self.assertNotEqual(
+            resolved["paths"]["runtime_dir"], config["paths"]["runtime_dir"]
+        )
         self.assertNotEqual(resolved["secret_files"][0], config["secret_files"][0])
 
     def test_resolve_empty_secret_files_list(self):

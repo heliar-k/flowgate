@@ -35,4 +35,3 @@ uv run flowgate --config config/flowgate.yaml doctor
 - PIDs: `.router/runtime/pids/`
 - Events: `.router/runtime/events.log`
 - Auth artifacts: `.router/auths/` (or `auth-dir` in cliproxy config)
-

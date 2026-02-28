@@ -192,7 +192,9 @@ class TestLogPerformanceMetric(unittest.TestCase):
     def test_log_with_context(self):
         """Test logging with additional context."""
         log_performance_metric(
-            "test_op", 100.0, context={"profile": "balanced", "service": "cliproxyapi_plus"}
+            "test_op",
+            100.0,
+            context={"profile": "balanced", "service": "cliproxyapi_plus"},
         )
 
         events_log = Path(".router/runtime/events.log")

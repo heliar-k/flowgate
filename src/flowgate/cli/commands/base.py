@@ -4,6 +4,7 @@ Base command class for FlowGate CLI commands.
 This module contains the BaseCommand abstract class that
 all command handlers will inherit from.
 """
+
 from __future__ import annotations
 
 from argparse import Namespace

@@ -20,7 +20,8 @@ class DefaultsSyncTests(unittest.TestCase):
 
         self.assertEqual(list(services.keys()), ["cliproxyapi_plus"])
         self.assertEqual(
-            services["cliproxyapi_plus"]["port"], DEFAULT_SERVICE_PORTS["cliproxyapi_plus"]
+            services["cliproxyapi_plus"]["port"],
+            DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
         )
         self.assertEqual(services["cliproxyapi_plus"]["host"], DEFAULT_SERVICE_HOST)
         self.assertEqual(

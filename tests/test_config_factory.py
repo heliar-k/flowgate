@@ -70,7 +70,9 @@ class TestConfigFactory(unittest.TestCase):
     def test_auth_provider_creates_management_endpoints(self):
         provider = ConfigFactory.auth_provider("codex")
         self.assertEqual(provider["method"], "oauth_poll")
-        self.assertIn("/v0/management/oauth/codex/auth-url", provider["auth_url_endpoint"])
+        self.assertIn(
+            "/v0/management/oauth/codex/auth-url", provider["auth_url_endpoint"]
+        )
         self.assertIn("/v0/management/oauth/codex/status", provider["status_endpoint"])
 
     def test_with_auth_creates_auth_providers(self):
@@ -83,8 +85,12 @@ class TestConfigFactory(unittest.TestCase):
         self.assertIn("status_endpoint", providers["codex"])
 
     def test_with_secret_files_creates_list(self):
-        config = ConfigFactory.with_secret_files(["auth/codex.json", "auth/copilot.json"])
-        self.assertEqual(config["secret_files"], ["auth/codex.json", "auth/copilot.json"])
+        config = ConfigFactory.with_secret_files(
+            ["auth/codex.json", "auth/copilot.json"]
+        )
+        self.assertEqual(
+            config["secret_files"], ["auth/codex.json", "auth/copilot.json"]
+        )
 
     def test_service_factory_creates_valid_service(self):
         service = ConfigFactory.service("test-service", 8080)
@@ -103,4 +109,3 @@ class TestConfigFactory(unittest.TestCase):
 
         self.assertEqual(config["custom_field"], "custom_value")
         self.assertIn("codex", config["auth"]["providers"])
-

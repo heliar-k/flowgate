@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from flowgate.constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from flowgate.observability import measure_time
 from flowgate.validators import ConfigValidator
-from flowgate.constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 
 
 class ConfigError(ValueError):
@@ -64,7 +64,10 @@ def _resolve_path_relative_to_config(config_path: Path, raw: str) -> Path:
 
 
 def _derive_cliproxy_service(
-    *, flowgate_config_path: Path, paths: dict[str, Any], cliproxy_section: dict[str, Any]
+    *,
+    flowgate_config_path: Path,
+    paths: dict[str, Any],
+    cliproxy_section: dict[str, Any],
 ) -> tuple[dict[str, Any], Path]:
     config_file_raw = cliproxy_section.get("config_file")
     if not isinstance(config_file_raw, str) or not config_file_raw.strip():
@@ -92,7 +95,7 @@ def _derive_cliproxy_service(
     )
 
     project_root = flowgate_config_path.parent.resolve().parent
-    binary = str((runtime_dir_path / "bin" / "CLIProxyAPIPlus"))
+    binary = str(runtime_dir_path / "bin" / "CLIProxyAPIPlus")
 
     service = {
         "host": host,
@@ -136,7 +139,8 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
 
     # Filter out comment fields (keys starting with _comment)
     unknown = sorted(
-        k for k in set(data.keys()) - _ALLOWED_TOP_LEVEL_KEYS
+        k
+        for k in set(data.keys()) - _ALLOWED_TOP_LEVEL_KEYS
         if not k.startswith("_comment")
     )
     if unknown:

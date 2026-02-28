@@ -4,27 +4,29 @@ Bootstrap command handlers for FlowGate CLI.
 This module contains command handlers for downloading and setting up
 runtime dependencies (CLIProxyAPIPlus binary).
 """
+
 from __future__ import annotations
 
 import os
 import sys
 from pathlib import Path
-from typing import Any, TextIO
+from typing import TextIO
 
 from ...bootstrap import (
     DEFAULT_CLIPROXY_REPO,
     DEFAULT_CLIPROXY_VERSION,
-    _http_get_json,
     download_cliproxyapi_plus,
     validate_cliproxy_binary,
 )
+from ...cliproxyapiplus_auto_update import (
+    check_latest_version,
+    perform_update,
+)
 from ...cliproxyapiplus_update_check import (
-    _is_newer_version,
     read_cliproxyapiplus_installed_version,
     write_cliproxyapiplus_installed_version,
 )
 from ...constants import CLIPROXYAPI_PLUS_SERVICE
-from ...process import ProcessSupervisor
 from ..error_handler import handle_command_errors
 from ..output import Output, command_id_from_args
 from .base import BaseCommand
@@ -82,27 +84,9 @@ class BootstrapDownloadCommand(BaseCommand):
         return 0
 
 
-def _check_latest_version(
-    current_version: str, repo: str
-) -> dict[str, str] | None:
-    """Check for the latest CLIProxyAPIPlus version via GitHub API (no cache).
-
-    Returns a dict with current_version, latest_version and release_url
-    if an update is available, or None if already up to date.
-    """
-    api_url = f"https://api.github.com/repos/{repo}/releases/latest"
-    data = _http_get_json(api_url)
-    latest = str(data.get("tag_name", "")).strip()
-    release_url = str(data.get("html_url", "")).strip()
-    if not latest:
-        return None
-    if _is_newer_version(latest, current_version):
-        return {
-            "current_version": current_version,
-            "latest_version": latest,
-            "release_url": release_url,
-        }
-    return None
+def _check_latest_version(current_version: str, repo: str) -> dict[str, str] | None:
+    """Backward-compatible wrapper for latest-version checks."""
+    return check_latest_version(current_version=current_version, repo=repo)
 
 
 def _confirm_update(stdout: TextIO, stderr: TextIO) -> bool:
@@ -192,38 +176,26 @@ class BootstrapUpdateCommand(BaseCommand):
                 )
                 return 2
             if not output.interactive:
-                print("bootstrap update requires --yes in non-interactive mode", file=stderr)
+                print(
+                    "bootstrap update requires --yes in non-interactive mode",
+                    file=stderr,
+                )
                 return 2
             if not _confirm_update(stdout, stderr):
                 print("cliproxyapi_plus:update_cancelled", file=stdout)
                 return 0
 
-        output.progress(f"bootstrap:update downloading version={latest_version} repo={repo}")
-        cliproxy = download_cliproxyapi_plus(
-            runtime_bin_dir,
-            version=latest_version,
+        output.progress(
+            f"bootstrap:update downloading version={latest_version} repo={repo}"
+        )
+        updated = perform_update(
+            config=self.config,
+            latest_version=latest_version,
             repo=repo,
             require_sha256=require_sha256,
         )
-        if not validate_cliproxy_binary(cliproxy):
-            raise RuntimeError(
-                f"Invalid CLIProxyAPIPlus binary downloaded: {cliproxy}"
-            )
-
-        write_cliproxyapiplus_installed_version(runtime_dir, latest_version)
-        restarted_pid: int | None = None
-
-        # Auto-restart cliproxyapi_plus if it is running
-        supervisor = ProcessSupervisor(
-            runtime_dir,
-            events_log=self.config["paths"]["log_file"],
-        )
-        if supervisor.is_running(CLIPROXYAPI_PLUS_SERVICE):
-            service_cfg = self.config["services"].get(CLIPROXYAPI_PLUS_SERVICE, {})
-            args = service_cfg.get("command", {}).get("args", [])
-            cwd = service_cfg.get("command", {}).get("cwd") or os.getcwd()
-            pid = supervisor.restart(CLIPROXYAPI_PLUS_SERVICE, args, cwd=cwd)
-            restarted_pid = int(pid)
+        cliproxy = updated["cliproxyapi_plus"]
+        restarted_pid = updated["restarted_pid"]
 
         if output.format != "legacy":
             output.emit_envelope(

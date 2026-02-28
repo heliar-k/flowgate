@@ -13,14 +13,16 @@ from urllib.request import Request, urlopen
 DEFAULT_CLIPROXY_REPO = "router-for-me/CLIProxyAPIPlus"
 DEFAULT_CLIPROXY_VERSION = "v6.8.18-1"
 
-_PREFERRED_BASENAMES = frozenset({
-    "cliproxyapiplus",
-    "cliproxyapi",
-    "cliproxyapiplus.exe",
-    "cliproxyapi.exe",
-    "cli-proxy-api-plus",
-    "cli-proxy-api-plus.exe",
-})
+_PREFERRED_BASENAMES = frozenset(
+    {
+        "cliproxyapiplus",
+        "cliproxyapi",
+        "cliproxyapiplus.exe",
+        "cliproxyapi.exe",
+        "cli-proxy-api-plus",
+        "cli-proxy-api-plus.exe",
+    }
+)
 
 
 def detect_platform() -> tuple[str, str]:
@@ -111,7 +113,9 @@ def _extract_sha256_from_checksum_text(text: str, asset_name: str) -> str | None
         if len(parts) < 2:
             continue
         digest = parts[0].strip()
-        if len(digest) != 64 or not all(ch in "0123456789abcdefABCDEF" for ch in digest):
+        if len(digest) != 64 or not all(
+            ch in "0123456789abcdefABCDEF" for ch in digest
+        ):
             continue
         if asset_name in line:
             return digest.lower()
@@ -213,8 +217,7 @@ def download_cliproxyapi_plus(
         actual = hashlib.sha256(blob).hexdigest()
         if actual != expected:
             raise RuntimeError(
-                "CLIProxyAPIPlus sha256 mismatch "
-                f"expected={expected} actual={actual}"
+                f"CLIProxyAPIPlus sha256 mismatch expected={expected} actual={actual}"
             )
     elif require_sha256:
         raise RuntimeError(
@@ -228,6 +231,7 @@ def download_cliproxyapi_plus(
     target.write_bytes(binary)
     target.chmod(0o755)
     return target
+
 
 def validate_cliproxy_binary(path: str | Path) -> bool:
     target = Path(path)

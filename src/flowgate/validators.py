@@ -6,7 +6,7 @@ extracting validation concerns from the main config module.
 
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from flowgate.config import ConfigError
@@ -23,9 +23,7 @@ class ConfigValidator:
     # -------------------------------------------------------------------------
 
     @staticmethod
-    def _require_keys(
-        config: dict[str, Any], required: set[str], context: str
-    ) -> None:
+    def _require_keys(config: dict[str, Any], required: set[str], context: str) -> None:
         """Check that all required keys exist in config.
 
         Args:
@@ -119,9 +117,7 @@ class ConfigValidator:
         """
         from flowgate.config import ConfigError
 
-        ConfigValidator._validate_type(
-            service_config, dict, f"services.{service_name}"
-        )
+        ConfigValidator._validate_type(service_config, dict, f"services.{service_name}")
 
         if "command" not in service_config or not isinstance(
             service_config["command"], dict
@@ -196,9 +192,7 @@ class ConfigValidator:
             ConfigError: If validation fails
         """
         for name, provider in providers_config.items():
-            ConfigValidator._validate_type(
-                provider, dict, f"auth.providers.{name}"
-            )
+            ConfigValidator._validate_type(provider, dict, f"auth.providers.{name}")
 
             # Validate auth_url_endpoint (optional)
             auth_url = provider.get("auth_url_endpoint")
@@ -250,7 +244,8 @@ class ConfigValidator:
         from flowgate.config import ConfigError
 
         unknown = sorted(
-            k for k in set(integration_config.keys()) - {"default_model", "fast_model"}
+            k
+            for k in set(integration_config.keys()) - {"default_model", "fast_model"}
             if not str(k).startswith("_comment")
         )
         if unknown:

@@ -2,6 +2,7 @@
 
 Verifies that service commands maintain consistent exit codes and output formats.
 """
+
 from __future__ import annotations
 
 import io
@@ -11,9 +12,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from flowgate.cli import run_cli
-
 import pytest
+
+from flowgate.cli import run_cli
 
 
 def write_minimal_v3_config(root: Path) -> Path:
@@ -55,6 +56,8 @@ def write_minimal_v3_config(root: Path) -> Path:
         encoding="utf-8",
     )
     return flowgate_cfg
+
+
 @pytest.mark.unit
 class TestServiceCommandExitCodes(unittest.TestCase):
     """Regression tests for service command exit codes"""
@@ -109,7 +112,10 @@ class TestServiceCommandExitCodes(unittest.TestCase):
         err = io.StringIO()
 
         # Mock port check to simulate port conflict
-        with mock.patch("flowgate.cli.commands.service._is_service_port_available", return_value=False):
+        with mock.patch(
+            "flowgate.cli.commands.service._is_service_port_available",
+            return_value=False,
+        ):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "start", "cliproxyapi_plus"],
                 stdout=out,
@@ -154,7 +160,11 @@ class TestServiceCommandExitCodes(unittest.TestCase):
             )
         # Should exit with code 2 (argparse error)
 
-        self.assertEqual(cm.exception.code, 2, "Expected exit code 2 for missing subcommand")
+        self.assertEqual(
+            cm.exception.code, 2, "Expected exit code 2 for missing subcommand"
+        )
+
+
 @pytest.mark.unit
 class TestServiceCommandOutput(unittest.TestCase):
     """Regression tests for service command output formats"""
@@ -176,7 +186,11 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         self.assertEqual(result, 0)
         output = out.getvalue()
-        self.assertIn("cliproxyapi_plus:started", output, "Output should contain 'cliproxyapi_plus:started'")
+        self.assertIn(
+            "cliproxyapi_plus:started",
+            output,
+            "Output should contain 'cliproxyapi_plus:started'",
+        )
         self.assertIn("pid=12345", output, "Output should contain 'pid=12345'")
 
     def test_service_stop_success_output_format(self) -> None:
@@ -192,7 +206,11 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         self.assertEqual(result, 0)
         output = out.getvalue()
-        self.assertIn("cliproxyapi_plus:stopped", output, "Output should contain 'cliproxyapi_plus:stopped'")
+        self.assertIn(
+            "cliproxyapi_plus:stopped",
+            output,
+            "Output should contain 'cliproxyapi_plus:stopped'",
+        )
 
     def test_service_stop_failure_output_format(self) -> None:
         """service stop failure output includes service name and stop-failed status"""
@@ -207,14 +225,20 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         self.assertNotEqual(result, 0)
         output = out.getvalue()
-        self.assertIn("cliproxyapi_plus:stop-failed", output, "Output should contain 'cliproxyapi_plus:stop-failed'")
+        self.assertIn(
+            "cliproxyapi_plus:stop-failed",
+            output,
+            "Output should contain 'cliproxyapi_plus:stop-failed'",
+        )
 
     def test_service_restart_output_format(self) -> None:
         """service restart output includes service name and PID"""
         out = io.StringIO()
 
         # Mock supervisor to simulate successful restart
-        with mock.patch("flowgate.process.ProcessSupervisor.restart", return_value=67890):
+        with mock.patch(
+            "flowgate.process.ProcessSupervisor.restart", return_value=67890
+        ):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "restart", "cliproxyapi_plus"],
                 stdout=out,
@@ -222,7 +246,11 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         self.assertEqual(result, 0)
         output = out.getvalue()
-        self.assertIn("cliproxyapi_plus:restarted", output, "Output should contain 'cliproxyapi_plus:restarted'")
+        self.assertIn(
+            "cliproxyapi_plus:restarted",
+            output,
+            "Output should contain 'cliproxyapi_plus:restarted'",
+        )
         self.assertIn("pid=67890", output, "Output should contain 'pid=67890'")
 
     def test_service_start_all_output_format(self) -> None:
@@ -238,7 +266,9 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         self.assertEqual(result, 0)
         output = out.getvalue()
-        self.assertIn("cliproxyapi_plus:started", output, "Output should contain cliproxyapi_plus")
+        self.assertIn(
+            "cliproxyapi_plus:started", output, "Output should contain cliproxyapi_plus"
+        )
         self.assertEqual(output.count("pid="), 1, "Single service should show PID")
 
     def test_service_port_conflict_output_format(self) -> None:
@@ -247,7 +277,10 @@ class TestServiceCommandOutput(unittest.TestCase):
         err = io.StringIO()
 
         # Mock port check to simulate port conflict
-        with mock.patch("flowgate.cli.commands.service._is_service_port_available", return_value=False):
+        with mock.patch(
+            "flowgate.cli.commands.service._is_service_port_available",
+            return_value=False,
+        ):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "start", "cliproxyapi_plus"],
                 stdout=out,
@@ -256,7 +289,9 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         self.assertNotEqual(result, 0)
         error_output = err.getvalue()
-        self.assertIn("cliproxyapi_plus:", error_output, "Error should mention service name")
+        self.assertIn(
+            "cliproxyapi_plus:", error_output, "Error should mention service name"
+        )
         self.assertIn("port-in-use", error_output, "Error should mention 'port-in-use'")
         self.assertIn("port=5000", error_output, "Error should include port number")
 

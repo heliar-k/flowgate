@@ -12,13 +12,17 @@ from tests.fixtures import ConfigFactory
 
 @pytest.mark.unit
 class ConfigTests(unittest.TestCase):
-    def _write_project_config(self, flowgate: dict, cliproxy: dict | None = None) -> Path:
+    def _write_project_config(
+        self, flowgate: dict, cliproxy: dict | None = None
+    ) -> Path:
         root = Path(tempfile.mkdtemp())
         cfg_dir = root / "config"
         cfg_dir.mkdir(parents=True, exist_ok=True)
 
         cliproxy_path = cfg_dir / "cliproxyapi.yaml"
-        cliproxy_data = cliproxy if cliproxy is not None else ConfigFactory.cliproxyapi_config()
+        cliproxy_data = (
+            cliproxy if cliproxy is not None else ConfigFactory.cliproxyapi_config()
+        )
         cliproxy_path.write_text(json.dumps(cliproxy_data), encoding="utf-8")
 
         flowgate_path = cfg_dir / "flowgate.yaml"
@@ -45,7 +49,9 @@ class ConfigTests(unittest.TestCase):
             cfg["services"]["cliproxyapi_plus"]["port"],
             DEFAULT_SERVICE_PORTS["cliproxyapi_plus"],
         )
-        self.assertEqual(cfg["services"]["cliproxyapi_plus"]["host"], DEFAULT_SERVICE_HOST)
+        self.assertEqual(
+            cfg["services"]["cliproxyapi_plus"]["host"], DEFAULT_SERVICE_HOST
+        )
 
     def test_reject_unknown_top_level_key(self):
         data = self._base_config()
@@ -101,4 +107,3 @@ class ConfigTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

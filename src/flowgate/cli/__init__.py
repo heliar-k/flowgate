@@ -4,13 +4,21 @@ CLI package for FlowGate.
 This package contains the command-line interface implementation,
 including argument parsing, command handlers, and CLI utilities.
 """
+
 from __future__ import annotations
 
 import logging
 import sys
 import traceback
-from typing import Any, Iterable, TextIO
+from collections.abc import Iterable
+from typing import Any, TextIO
 
+from ..config import ConfigError
+from ..health import check_http_health
+from ..observability import events_log_context, set_events_log_path
+from ..process import ProcessSupervisor
+from ..security import check_secret_file_permissions
+from ..utils import _is_executable_file
 from .commands.auth import (
     AuthImportCommand,
     AuthListCommand,
@@ -32,15 +40,9 @@ from .utils import (
     _load_and_resolve_config,
 )
 
-from ..observability import events_log_context, set_events_log_path
-from ..config import ConfigError
-from ..health import check_http_health
-from ..process import ProcessSupervisor
-from ..security import check_secret_file_permissions
-from ..utils import _is_executable_file
-
 # Backward compatibility alias
 _build_parser = build_parser
+
 
 def run_cli(
     argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO | None = None

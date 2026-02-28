@@ -7,6 +7,7 @@ They do NOT require real CLIProxyAPIPlus binaries.
 Run with:
     pytest tests/integration/test_service_lifecycle.py -v -m integration
 """
+
 from __future__ import annotations
 
 import json
@@ -20,7 +21,6 @@ import pytest
 from flowgate.process import ProcessSupervisor
 
 from .base import IntegrationTestBase
-
 
 _SLEEP_CMD = [sys.executable, "-c", "import time; time.sleep(120)"]
 _FAST_EXIT_CMD = [sys.executable, "-c", "import sys; sys.exit(0)"]
@@ -84,7 +84,8 @@ class TestServiceStart(IntegrationTestBase):
             dup_events = [
                 e
                 for e in events
-                if e["event"] == "service_start" and e.get("result") == "already-running"
+                if e["event"] == "service_start"
+                and e.get("result") == "already-running"
             ]
             self.assertTrue(len(dup_events) >= 1)
         finally:
@@ -266,14 +267,18 @@ class TestEventLogIntegrity(IntegrationTestBase):
 
         events_path = self.root / "runtime" / "events.log"
         self.assertTrue(events_path.exists())
-        lines = [l for l in events_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+        lines = [
+            l for l in events_path.read_text(encoding="utf-8").splitlines() if l.strip()
+        ]
         self.assertGreater(len(lines), 0)
 
         required_fields = {"event", "service", "result", "timestamp"}
         for line in lines:
             record = json.loads(line)  # raises if invalid JSON
             for field in required_fields:
-                self.assertIn(field, record, f"Missing field '{field}' in event: {record}")
+                self.assertIn(
+                    field, record, f"Missing field '{field}' in event: {record}"
+                )
 
     def test_multiple_services_events_are_distinct(self) -> None:
         """Events from different services are individually recorded and distinguishable."""

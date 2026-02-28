@@ -99,9 +99,7 @@ class PathResolver:
                 cfg["paths"][key] = self.resolve(value)
 
         # 2. Resolve secret_files list
-        cfg["secret_files"] = [
-            self.resolve(p) for p in cfg.get("secret_files", [])
-        ]
+        cfg["secret_files"] = [self.resolve(p) for p in cfg.get("secret_files", [])]
 
         # 3. Resolve services.*.command.cwd paths
         for service in cfg.get("services", {}).values():

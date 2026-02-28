@@ -3,9 +3,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from flowgate.security import check_secret_file_permissions
-
 import pytest
+
+from flowgate.security import check_secret_file_permissions
 
 
 @pytest.mark.unit

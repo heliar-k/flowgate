@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from .headless_import import import_codex_headless_auth
-
 
 HeadlessImportHandler = Callable[[str, str], Path]
 

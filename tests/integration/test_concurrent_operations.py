@@ -26,7 +26,6 @@ from flowgate.process import ProcessSupervisor
 
 from .base import IntegrationTestBase
 
-
 _SLEEP_CMD = [sys.executable, "-c", "import time; time.sleep(120)"]
 
 
@@ -57,7 +56,9 @@ class TestConcurrentProcessSupervisor(IntegrationTestBase):
                 t.join(timeout=5)
 
             self.assertEqual(len(results), 10)
-            self.assertTrue(all(results), f"Some is_running checks returned False: {results}")
+            self.assertTrue(
+                all(results), f"Some is_running checks returned False: {results}"
+            )
         finally:
             sv.stop("concurrent-svc", timeout=3)
 
@@ -95,11 +96,12 @@ class TestConcurrentProcessSupervisor(IntegrationTestBase):
             for f in as_completed(futures):
                 f.result()
 
-        self.assertEqual(errors, [], f"Errors during parallel service lifecycle: {errors}")
+        self.assertEqual(
+            errors, [], f"Errors during parallel service lifecycle: {errors}"
+        )
         for name in service_names:
             self.assertFalse(sv.is_running(name), f"{name} still running after stop")
 
 
 if __name__ == "__main__":
     unittest.main()
-

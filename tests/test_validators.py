@@ -2,11 +2,12 @@
 
 import unittest
 
+import pytest
+
 from flowgate.config import ConfigError
 from flowgate.validators import ConfigValidator
 from tests.fixtures import ConfigFactory
 
-import pytest
 
 @pytest.mark.unit
 class TestConfigValidatorHelpers(unittest.TestCase):
@@ -82,6 +83,8 @@ class TestConfigValidatorHelpers(unittest.TestCase):
             ConfigValidator._validate_non_empty_string(123, "test_field")
 
         self.assertIn("test_field must be a non-empty string", str(ctx.exception))
+
+
 @pytest.mark.unit
 class TestValidatePaths(unittest.TestCase):
     """Test validate_paths method."""
@@ -123,8 +126,9 @@ class TestValidatePaths(unittest.TestCase):
         try:
             ConfigValidator.validate_paths(config)
         except ConfigError:
-
             self.fail("Extra keys should be allowed in paths config")
+
+
 @pytest.mark.unit
 class TestValidateService(unittest.TestCase):
     """Test validate_service method."""
@@ -152,35 +156,48 @@ class TestValidateService(unittest.TestCase):
         config = {"host": "127.0.0.1", "port": 4000}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.command must be provided", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.command must be provided", str(ctx.exception)
+        )
 
     def test_validate_service_command_not_dict(self):
         """Test validate_service with command not being a dict."""
         config = {"command": "not_a_dict"}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.command must be provided", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.command must be provided", str(ctx.exception)
+        )
 
     def test_validate_service_missing_args(self):
         """Test validate_service with missing args."""
         config = {"command": {}}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.command.args must be a non-empty string list", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.command.args must be a non-empty string list",
+            str(ctx.exception),
+        )
 
     def test_validate_service_args_not_list(self):
         """Test validate_service with args not being a list."""
         config = {"command": {"args": "not_a_list"}}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.command.args must be a non-empty string list", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.command.args must be a non-empty string list",
+            str(ctx.exception),
+        )
 
     def test_validate_service_args_empty_list(self):
         """Test validate_service with empty args list."""
         config = {"command": {"args": []}}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.command.args must be a non-empty string list", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.command.args must be a non-empty string list",
+            str(ctx.exception),
+        )
 
     def test_validate_service_args_non_string_items(self):
         """Test validate_service with non-string items in args."""
@@ -188,7 +205,10 @@ class TestValidateService(unittest.TestCase):
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
 
-        self.assertIn("services.test_service.command.args must be a non-empty string list", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.command.args must be a non-empty string list",
+            str(ctx.exception),
+        )
 
     def test_validate_service_valid_with_host_port(self):
         """Test validate_service with valid host and port."""
@@ -196,82 +216,83 @@ class TestValidateService(unittest.TestCase):
             "command": {"args": ["/path/to/service"]},
             "host": "127.0.0.1",
             "port": 8080,
-            "readiness_path": "/health"
+            "readiness_path": "/health",
         }
         try:
             ConfigValidator.validate_service("test_service", config)
         except ConfigError:
-            self.fail("Valid service config with host/port should not raise ConfigError")
+            self.fail(
+                "Valid service config with host/port should not raise ConfigError"
+            )
 
     def test_validate_service_invalid_host_empty(self):
         """Test validate_service with empty host."""
-        config = {
-            "command": {"args": ["/path/to/service"]},
-            "host": ""
-        }
+        config = {"command": {"args": ["/path/to/service"]}, "host": ""}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.host must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.host must be a non-empty string", str(ctx.exception)
+        )
 
     def test_validate_service_invalid_host_not_string(self):
         """Test validate_service with host not being a string."""
-        config = {
-            "command": {"args": ["/path/to/service"]},
-            "host": 12345
-        }
+        config = {"command": {"args": ["/path/to/service"]}, "host": 12345}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.host must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.host must be a non-empty string", str(ctx.exception)
+        )
 
     def test_validate_service_invalid_port_not_int(self):
         """Test validate_service with port not being an integer."""
-        config = {
-            "command": {"args": ["/path/to/service"]},
-            "port": "8080"
-        }
+        config = {"command": {"args": ["/path/to/service"]}, "port": "8080"}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.port must be an integer between 1 and 65535", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.port must be an integer between 1 and 65535",
+            str(ctx.exception),
+        )
 
     def test_validate_service_invalid_port_negative(self):
         """Test validate_service with negative port."""
-        config = {
-            "command": {"args": ["/path/to/service"]},
-            "port": -1
-        }
+        config = {"command": {"args": ["/path/to/service"]}, "port": -1}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.port must be an integer between 1 and 65535", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.port must be an integer between 1 and 65535",
+            str(ctx.exception),
+        )
 
     def test_validate_service_invalid_port_zero(self):
         """Test validate_service with port being zero."""
-        config = {
-            "command": {"args": ["/path/to/service"]},
-            "port": 0
-        }
+        config = {"command": {"args": ["/path/to/service"]}, "port": 0}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.port must be an integer between 1 and 65535", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.port must be an integer between 1 and 65535",
+            str(ctx.exception),
+        )
 
     def test_validate_service_invalid_port_too_large(self):
         """Test validate_service with port exceeding 65535."""
-        config = {
-            "command": {"args": ["/path/to/service"]},
-            "port": 65536
-        }
+        config = {"command": {"args": ["/path/to/service"]}, "port": 65536}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.port must be an integer between 1 and 65535", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.port must be an integer between 1 and 65535",
+            str(ctx.exception),
+        )
 
     def test_validate_service_invalid_readiness_path_empty(self):
         """Test validate_service with empty readiness_path."""
-        config = {
-            "command": {"args": ["/path/to/service"]},
-            "readiness_path": ""
-        }
+        config = {"command": {"args": ["/path/to/service"]}, "readiness_path": ""}
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_service("test_service", config)
-        self.assertIn("services.test_service.readiness_path must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "services.test_service.readiness_path must be a non-empty string",
+            str(ctx.exception),
+        )
+
 
 @pytest.mark.unit
 class TestValidateServices(unittest.TestCase):
@@ -302,7 +323,9 @@ class TestValidateServices(unittest.TestCase):
         }
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_services(config)
-        self.assertIn("services is missing required keys: cliproxyapi_plus", str(ctx.exception))
+        self.assertIn(
+            "services is missing required keys: cliproxyapi_plus", str(ctx.exception)
+        )
 
     def test_validate_services_invalid_service(self):
         """Test validate_services with invalid service config."""
@@ -315,6 +338,8 @@ class TestValidateServices(unittest.TestCase):
             "services.cliproxyapi_plus.command.args must be a non-empty string list",
             str(ctx.exception),
         )
+
+
 @pytest.mark.unit
 class TestValidateAuthProviders(unittest.TestCase):
     """Test validate_auth_providers method."""
@@ -362,15 +387,13 @@ class TestValidateAuthProviders(unittest.TestCase):
         try:
             ConfigValidator.validate_auth_providers(config)
         except ConfigError:
-            self.fail("Valid auth.providers with endpoints should not raise ConfigError")
+            self.fail(
+                "Valid auth.providers with endpoints should not raise ConfigError"
+            )
 
     def test_validate_auth_providers_without_endpoints(self):
         """Test validate_auth_providers without endpoints (should be valid)."""
-        config = {
-            "codex": {
-                "method": "oauth_poll"
-            }
-        }
+        config = {"codex": {"method": "oauth_poll"}}
         try:
             ConfigValidator.validate_auth_providers(config)
         except ConfigError:
@@ -381,48 +404,61 @@ class TestValidateAuthProviders(unittest.TestCase):
         config = {
             "codex": {
                 "auth_url_endpoint": "",
-                "status_endpoint": "http://localhost:8317/status"
+                "status_endpoint": "http://localhost:8317/status",
             }
         }
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_auth_providers(config)
-        self.assertIn("auth.providers.codex.auth_url_endpoint must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "auth.providers.codex.auth_url_endpoint must be a non-empty string",
+            str(ctx.exception),
+        )
 
     def test_validate_auth_providers_invalid_auth_url_not_string(self):
         """Test validate_auth_providers with auth_url_endpoint not being a string."""
         config = {
             "codex": {
                 "auth_url_endpoint": 12345,
-                "status_endpoint": "http://localhost:8317/status"
+                "status_endpoint": "http://localhost:8317/status",
             }
         }
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_auth_providers(config)
-        self.assertIn("auth.providers.codex.auth_url_endpoint must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "auth.providers.codex.auth_url_endpoint must be a non-empty string",
+            str(ctx.exception),
+        )
 
     def test_validate_auth_providers_invalid_status_url_empty(self):
         """Test validate_auth_providers with empty status_endpoint."""
         config = {
             "codex": {
                 "auth_url_endpoint": "http://localhost:8317/auth-url",
-                "status_endpoint": ""
+                "status_endpoint": "",
             }
         }
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_auth_providers(config)
-        self.assertIn("auth.providers.codex.status_endpoint must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "auth.providers.codex.status_endpoint must be a non-empty string",
+            str(ctx.exception),
+        )
 
     def test_validate_auth_providers_invalid_status_url_not_string(self):
         """Test validate_auth_providers with status_endpoint not being a string."""
         config = {
             "codex": {
                 "auth_url_endpoint": "http://localhost:8317/auth-url",
-                "status_endpoint": ["not", "a", "string"]
+                "status_endpoint": ["not", "a", "string"],
             }
         }
         with self.assertRaises(ConfigError) as ctx:
             ConfigValidator.validate_auth_providers(config)
-        self.assertIn("auth.providers.codex.status_endpoint must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "auth.providers.codex.status_endpoint must be a non-empty string",
+            str(ctx.exception),
+        )
+
 
 @pytest.mark.unit
 class TestValidateSecretFiles(unittest.TestCase):
@@ -430,7 +466,11 @@ class TestValidateSecretFiles(unittest.TestCase):
 
     def test_validate_secret_files_valid(self):
         """Test validate_secret_files with valid list."""
-        secret_files = ["auth/codex.json", "auth/copilot.json", ".router/secrets/api.key"]
+        secret_files = [
+            "auth/codex.json",
+            "auth/copilot.json",
+            ".router/secrets/api.key",
+        ]
         try:
             ConfigValidator.validate_secret_files(secret_files)
         except ConfigError:

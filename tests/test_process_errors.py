@@ -13,9 +13,11 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 from flowgate.process import ProcessError, ProcessSupervisor
 
-import pytest
+
 @pytest.mark.unit
 class TestProcessErrorHandling(unittest.TestCase):
     """Test process management error handling."""
@@ -68,7 +70,9 @@ class TestProcessErrorHandling(unittest.TestCase):
                         "test",
                         [sys.executable, "-c", "import time; time.sleep(30)"],
                     )
-                self.assertIn("appears running but no pid is available", str(ctx.exception))
+                self.assertIn(
+                    "appears running but no pid is available", str(ctx.exception)
+                )
 
     def test_start_with_invalid_command(self):
         """Test exception when starting service with non-existent command."""
@@ -83,14 +87,15 @@ class TestProcessErrorHandling(unittest.TestCase):
         if events_log.exists():
             import json
 
-
             events = [
                 json.loads(line)
                 for line in events_log.read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ]
             failed_events = [
-                e for e in events if e["event"] == "service_start" and e["result"] == "failed"
+                e
+                for e in events
+                if e["event"] == "service_start" and e["result"] == "failed"
             ]
             self.assertTrue(len(failed_events) > 0)
 

@@ -4,6 +4,7 @@ Integration command handlers for FlowGate CLI.
 This module contains command handlers for generating and applying
 client integration configurations (Codex, Claude Code).
 """
+
 from __future__ import annotations
 
 import sys
@@ -138,13 +139,23 @@ class IntegrationApplyCommand(BaseCommand):
                             "command": command_id_from_args(self.args),
                             "data": {"client": client},
                             "warnings": [],
-                            "errors": [{"type": "RuntimeError", "message": "integration spec missing codex block"}],
+                            "errors": [
+                                {
+                                    "type": "RuntimeError",
+                                    "message": "integration spec missing codex block",
+                                }
+                            ],
                         }
                     )
                     return 1
                 print("integration spec missing codex block", file=stderr)
                 return 1
-            if output.interactive and not auto_yes and not dry_run and output.format == "legacy":
+            if (
+                output.interactive
+                and not auto_yes
+                and not dry_run
+                and output.format == "legacy"
+            ):
                 print(
                     f"About to modify {resolved_target}. Proceed? [y/N] ",
                     end="",
@@ -169,13 +180,23 @@ class IntegrationApplyCommand(BaseCommand):
                             "command": command_id_from_args(self.args),
                             "data": {"client": client},
                             "warnings": [],
-                            "errors": [{"type": "RuntimeError", "message": "integration spec missing claude_code block"}],
+                            "errors": [
+                                {
+                                    "type": "RuntimeError",
+                                    "message": "integration spec missing claude_code block",
+                                }
+                            ],
                         }
                     )
                     return 1
                 print("integration spec missing claude_code block", file=stderr)
                 return 1
-            if output.interactive and not auto_yes and not dry_run and output.format == "legacy":
+            if (
+                output.interactive
+                and not auto_yes
+                and not dry_run
+                and output.format == "legacy"
+            ):
                 print(
                     f"About to modify {resolved_target}. Proceed? [y/N] ",
                     end="",

@@ -46,4 +46,3 @@ uv run flowgate --config config/flowgate.yaml service stop all
 
 - OAuth login: `uv run flowgate --config config/flowgate.yaml auth login codex`
 - Client snippets: `uv run flowgate --config config/flowgate.yaml integration print codex`
-

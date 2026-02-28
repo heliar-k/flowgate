@@ -94,7 +94,7 @@ def check_disk_space(
             "details": details,
         }
 
-    except (OSError, IOError) as exc:
+    except OSError as exc:
         return {
             "status": "unhealthy",
             "message": f"Failed to check disk space: {exc}",
@@ -226,7 +226,7 @@ def check_port_availability(host: str, port: int) -> HealthCheckResult:
             "details": {"host": host, "port": port, "in_use": False},
         }
 
-    except socket.error as exc:
+    except OSError as exc:
         return {
             "status": "unhealthy",
             "message": f"Failed to check port {port}: {exc}",
@@ -285,7 +285,7 @@ def check_credentials(config: dict[str, Any]) -> HealthCheckResult:
                 content = cred_path.read_text(encoding="utf-8").strip()
                 if not content:
                     issues.append(f"{name}: file is empty ({cred_path})")
-            except (OSError, IOError) as exc:
+            except OSError as exc:
                 issues.append(f"{name}: cannot read file ({exc})")
             continue
 

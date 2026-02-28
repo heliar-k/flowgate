@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from flowgate.process import ProcessSupervisor
-from flowgate.health import check_health_url
-
 import pytest
+
+from flowgate.health import check_health_url
+from flowgate.process import ProcessSupervisor
 
 
 @pytest.mark.unit

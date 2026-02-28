@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import unittest
 
-from flowgate.cliproxy_debug import management_api_url_from_auth, management_page_url
-
 import pytest
+
+from flowgate.cliproxy_debug import management_api_url_from_auth, management_page_url
 
 
 @pytest.mark.unit

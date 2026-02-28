@@ -1,6 +1,7 @@
 """
 Tests for BaseCommand abstract base class.
 """
+
 import sys
 import unittest
 from argparse import Namespace
@@ -14,14 +15,15 @@ import importlib.util
 
 import pytest
 
-
 spec = importlib.util.spec_from_file_location(
     "base",
-    Path(__file__).parent.parent / "src" / "flowgate" / "cli" / "commands" / "base.py"
+    Path(__file__).parent.parent / "src" / "flowgate" / "cli" / "commands" / "base.py",
 )
 base_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(base_module)
 BaseCommand = base_module.BaseCommand
+
+
 class ConcreteCommand(BaseCommand):
     """Concrete implementation for testing."""
 
@@ -29,6 +31,8 @@ class ConcreteCommand(BaseCommand):
         """Execute the command."""
 
         return 0
+
+
 @pytest.mark.unit
 class TestBaseCommand(unittest.TestCase):
     """Test suite for BaseCommand base class."""

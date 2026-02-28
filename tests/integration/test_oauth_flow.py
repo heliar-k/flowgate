@@ -7,6 +7,7 @@ OAuth providers is required.
 Run with:
     pytest tests/integration/test_oauth_flow.py -v -m integration
 """
+
 from __future__ import annotations
 
 import json
@@ -24,7 +25,6 @@ import pytest
 from flowgate.oauth import fetch_auth_url, poll_auth_status
 
 from .base import IntegrationTestBase
-
 
 # ---------------------------------------------------------------------------
 # Mock OAuth server
@@ -78,7 +78,7 @@ class MockOAuthServer:
     # Context-manager support
     # ------------------------------------------------------------------
 
-    def __enter__(self) -> "MockOAuthServer":
+    def __enter__(self) -> MockOAuthServer:
         self.start()
         return self
 

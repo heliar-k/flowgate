@@ -4,6 +4,7 @@ Health and diagnostic command handlers for FlowGate CLI.
 This module contains command handlers for health checks, doctor diagnostics,
 and status reporting.
 """
+
 from __future__ import annotations
 
 import json
@@ -283,9 +284,7 @@ class DoctorCommand(BaseCommand):
             cliproxy_cfg_str = (
                 str(cliproxy_cfg_value).strip() if cliproxy_cfg_value else ""
             )
-            cliproxy_cfg_path = (
-                Path(cliproxy_cfg_str) if cliproxy_cfg_str else None
-            )
+            cliproxy_cfg_path = Path(cliproxy_cfg_str) if cliproxy_cfg_str else None
             cliproxy_suggestion = (
                 "copy config/examples/cliproxyapi.yaml to config/cliproxyapi.yaml"
             )
@@ -378,7 +377,11 @@ class DoctorCommand(BaseCommand):
                 )
             else:
                 checks_out.append(
-                    {"id": "runtime_binaries", "status": "pass", "path": str(runtime_bin)}
+                    {
+                        "id": "runtime_binaries",
+                        "status": "pass",
+                        "path": str(runtime_bin),
+                    }
                 )
 
             issues = check_secret_file_permissions(_effective_secret_files(self.config))
@@ -427,9 +430,7 @@ class DoctorCommand(BaseCommand):
         if cliproxy_cfg_path is None:
             all_ok = False
             print(
-                "doctor:cliproxy_config=fail "
-                "path= "
-                f"suggestion='{cliproxy_suggestion}'",
+                f"doctor:cliproxy_config=fail path= suggestion='{cliproxy_suggestion}'",
                 file=stdout,
             )
         elif not cliproxy_cfg_path.exists():

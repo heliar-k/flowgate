@@ -4,9 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from flowgate.headless_import import import_codex_headless_auth
-
 import pytest
+
+from flowgate.headless_import import import_codex_headless_auth
 
 
 @pytest.mark.unit

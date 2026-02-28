@@ -6,13 +6,14 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 from flowgate.cli import run_cli
 from flowgate.cli.parser import build_parser
 from flowgate.constants import (
     DEFAULT_READINESS_PATH,
 )
 
-import pytest
 
 class TTYStringIO(io.StringIO):
     def isatty(self) -> bool:
@@ -127,10 +128,22 @@ class CLITests(unittest.TestCase):
                     "overall_status": "degraded",
                     "status_counts": {"healthy": 3, "degraded": 1, "unhealthy": 0},
                     "checks": {
-                        "disk_space": {"status": "healthy", "message": "OK", "details": {}},
+                        "disk_space": {
+                            "status": "healthy",
+                            "message": "OK",
+                            "details": {},
+                        },
                         "memory": {"status": "healthy", "message": "OK", "details": {}},
-                        "credentials": {"status": "healthy", "message": "OK", "details": {}},
-                        "port_conflicts": {"status": "degraded", "message": "WARN", "details": {}},
+                        "credentials": {
+                            "status": "healthy",
+                            "message": "OK",
+                            "details": {},
+                        },
+                        "port_conflicts": {
+                            "status": "degraded",
+                            "message": "WARN",
+                            "details": {},
+                        },
                     },
                 },
             ),
@@ -162,10 +175,22 @@ class CLITests(unittest.TestCase):
                     "overall_status": "healthy",
                     "status_counts": {"healthy": 4, "degraded": 0, "unhealthy": 0},
                     "checks": {
-                        "disk_space": {"status": "healthy", "message": "OK", "details": {}},
+                        "disk_space": {
+                            "status": "healthy",
+                            "message": "OK",
+                            "details": {},
+                        },
                         "memory": {"status": "healthy", "message": "OK", "details": {}},
-                        "credentials": {"status": "healthy", "message": "OK", "details": {}},
-                        "port_conflicts": {"status": "healthy", "message": "OK", "details": {}},
+                        "credentials": {
+                            "status": "healthy",
+                            "message": "OK",
+                            "details": {},
+                        },
+                        "port_conflicts": {
+                            "status": "healthy",
+                            "message": "OK",
+                            "details": {},
+                        },
                     },
                 },
             ),
@@ -176,7 +201,9 @@ class CLITests(unittest.TestCase):
 
         self.assertEqual(code, 0)
         checked_urls = [call.args[0] for call in checker.call_args_list]
-        self.assertEqual(checked_urls, [f"http://127.0.0.1:5000{DEFAULT_READINESS_PATH}"])
+        self.assertEqual(
+            checked_urls, [f"http://127.0.0.1:5000{DEFAULT_READINESS_PATH}"]
+        )
 
     def test_health_command_fails_when_service_not_running(self):
         out = io.StringIO()
@@ -210,7 +237,9 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.commands.service._is_service_port_available",
                 return_value=True,
             ) as port_available,
-            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.service.ProcessSupervisor"
+            ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = False
@@ -224,7 +253,9 @@ class CLITests(unittest.TestCase):
         supervisor.is_running.assert_called_once_with("cliproxyapi_plus")
 
         out = io.StringIO()
-        with mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls:
+        with mock.patch(
+            "flowgate.cli.commands.service.ProcessSupervisor"
+        ) as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.stop.side_effect = [True]
             code = run_cli(
@@ -240,13 +271,23 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.commands.service._is_service_port_available",
                 return_value=True,
             ) as port_available,
-            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.service.ProcessSupervisor"
+            ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = False
             supervisor.start.side_effect = [222]
             code = run_cli(
-                ["--config", str(self.cfg), "--format", "json", "service", "start", "all"],
+                [
+                    "--config",
+                    str(self.cfg),
+                    "--format",
+                    "json",
+                    "service",
+                    "start",
+                    "all",
+                ],
                 stdout=out,
             )
         self.assertEqual(code, 0)
@@ -267,7 +308,9 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.commands.service._is_service_port_available",
                 return_value=False,
             ) as port_available,
-            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.service.ProcessSupervisor"
+            ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = False
@@ -292,7 +335,9 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.commands.service._is_service_port_available",
                 return_value=False,
             ) as port_available,
-            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.service.ProcessSupervisor"
+            ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = False
@@ -318,9 +363,12 @@ class CLITests(unittest.TestCase):
     def test_auth_login(self):
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"
+                "flowgate.cli.commands.auth.ProcessSupervisor"
+            ) as supervisor_cls,
+            mock.patch(
+                "flowgate.oauth.fetch_auth_url",
+                return_value="https://example.com/login",
             ) as f_url,
             mock.patch(
                 "flowgate.oauth.poll_auth_status", return_value="success"
@@ -343,14 +391,25 @@ class CLITests(unittest.TestCase):
     def test_auth_login_json(self):
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"
+                "flowgate.cli.commands.auth.ProcessSupervisor"
+            ) as supervisor_cls,
+            mock.patch(
+                "flowgate.oauth.fetch_auth_url",
+                return_value="https://example.com/login",
             ),
             mock.patch("flowgate.oauth.poll_auth_status", return_value="success"),
         ):
             code = run_cli(
-                ["--config", str(self.cfg), "--format", "json", "auth", "login", "codex"],
+                [
+                    "--config",
+                    str(self.cfg),
+                    "--format",
+                    "json",
+                    "auth",
+                    "login",
+                    "codex",
+                ],
                 stdout=out,
             )
         self.assertEqual(code, 0)
@@ -369,7 +428,8 @@ class CLITests(unittest.TestCase):
         with (
             mock.patch("flowgate.cli.commands.auth.ProcessSupervisor"),
             mock.patch(
-                "flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"
+                "flowgate.oauth.fetch_auth_url",
+                return_value="https://example.com/login",
             ),
             mock.patch(
                 "flowgate.oauth.poll_auth_status",
@@ -419,7 +479,9 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.auth.ProcessSupervisor"
+            ) as supervisor_cls,
             mock.patch(
                 "flowgate.oauth.fetch_auth_url",
                 return_value="https://example.com/custom-login",
@@ -478,9 +540,12 @@ class CLITests(unittest.TestCase):
         handler = mock.Mock(return_value=Path("/tmp/auths/custom-headless-import.json"))
         with (
             mock.patch(
-                "flowgate.auth_methods.get_headless_import_handler", return_value=handler
+                "flowgate.auth_methods.get_headless_import_handler",
+                return_value=handler,
             ) as resolver,
-            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.auth.ProcessSupervisor"
+            ) as supervisor_cls,
         ):
             code = run_cli(
                 [
@@ -599,12 +664,11 @@ class CLITests(unittest.TestCase):
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ) as cliproxy_download,
             mock.patch(
-                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary", return_value=True
+                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
+                return_value=True,
             ) as cliproxy_validate,
         ):
-            code = run_cli(
-                ["--config", str(cfg), "bootstrap", "download"], stdout=out
-            )
+            code = run_cli(["--config", str(cfg), "bootstrap", "download"], stdout=out)
         self.assertEqual(code, 0)
         self.assertIn(
             "cliproxyapi_plus=/tmp/runtime/bin/CLIProxyAPIPlus", out.getvalue()
@@ -772,9 +836,7 @@ class CLITests(unittest.TestCase):
         cfg.write_text(json.dumps(data), encoding="utf-8")
 
         out = io.StringIO()
-        code = run_cli(
-            ["--config", str(cfg), "--format", "json", "doctor"], stdout=out
-        )
+        code = run_cli(["--config", str(cfg), "--format", "json", "doctor"], stdout=out)
         self.assertEqual(code, 1)
         payload = json.loads(out.getvalue())
         self.assertFalse(payload["ok"])
@@ -835,7 +897,9 @@ class CLITests(unittest.TestCase):
     def test_service_start_reports_cliproxyapiplus_update_when_available(self):
         out = TTYStringIO()
         with (
-            mock.patch("flowgate.cli.commands.service.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.service.ProcessSupervisor"
+            ) as supervisor_cls,
             mock.patch(
                 "flowgate.cliproxyapiplus_update_check.read_cliproxyapiplus_installed_version",
                 return_value="v6.8.16-0",
@@ -900,7 +964,9 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.auth.ProcessSupervisor"
+            ) as supervisor_cls,
             mock.patch(
                 "flowgate.oauth.fetch_auth_url",
                 return_value="http://example.local/auth?code=xyz",
@@ -937,7 +1003,9 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls,
+            mock.patch(
+                "flowgate.cli.commands.auth.ProcessSupervisor"
+            ) as supervisor_cls,
             mock.patch(
                 "flowgate.oauth.fetch_auth_url",
                 return_value="http://example.local/auth?code=xyz",
@@ -967,7 +1035,9 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         err = io.StringIO()
-        with mock.patch("flowgate.cli.commands.auth.ProcessSupervisor") as supervisor_cls:
+        with mock.patch(
+            "flowgate.cli.commands.auth.ProcessSupervisor"
+        ) as supervisor_cls:
             supervisor = supervisor_cls.return_value
             code = run_cli(
                 ["--config", str(self.cfg), "auth", "login", "custom"],
@@ -977,7 +1047,6 @@ class CLITests(unittest.TestCase):
 
         self.assertEqual(code, 2)
         self.assertIn("not configured or derivable", err.getvalue())
-
 
     def test_bootstrap_update_available_with_yes_flag(self):
         out = io.StringIO()
@@ -995,18 +1064,18 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.download_cliproxyapi_plus",
+                "flowgate.cliproxyapiplus_auto_update.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
+                "flowgate.cliproxyapiplus_auto_update.validate_cliproxy_binary",
                 return_value=True,
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.write_cliproxyapiplus_installed_version",
+                "flowgate.cliproxyapiplus_auto_update.write_cliproxyapiplus_installed_version",
             ) as write_ver,
             mock.patch(
-                "flowgate.cli.commands.bootstrap.ProcessSupervisor",
+                "flowgate.cliproxyapiplus_auto_update.ProcessSupervisor",
             ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
@@ -1061,18 +1130,18 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.download_cliproxyapi_plus",
+                "flowgate.cliproxyapiplus_auto_update.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
+                "flowgate.cliproxyapiplus_auto_update.validate_cliproxy_binary",
                 return_value=True,
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.write_cliproxyapiplus_installed_version",
+                "flowgate.cliproxyapiplus_auto_update.write_cliproxyapiplus_installed_version",
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.ProcessSupervisor",
+                "flowgate.cliproxyapiplus_auto_update.ProcessSupervisor",
             ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
@@ -1165,11 +1234,11 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.download_cliproxyapi_plus",
+                "flowgate.cliproxyapiplus_auto_update.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cli.commands.bootstrap.validate_cliproxy_binary",
+                "flowgate.cliproxyapiplus_auto_update.validate_cliproxy_binary",
                 return_value=False,
             ),
         ):

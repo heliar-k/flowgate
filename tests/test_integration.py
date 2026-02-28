@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import unittest
 
-from flowgate.integration import build_integration_specs
-
 import pytest
+
+from flowgate.integration import build_integration_specs
 
 
 @pytest.mark.unit

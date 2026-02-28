@@ -3,14 +3,15 @@ Service lifecycle command handlers for FlowGate CLI.
 
 This module contains command handlers for starting, stopping, and restarting services.
 """
+
 from __future__ import annotations
 
 import os
 import sys
 from typing import Any, TextIO
 
-from ...constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
 from ...config import ConfigError
+from ...constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
 from ...process import ProcessSupervisor
 from ...utils import _is_service_port_available
 from ..error_handler import handle_command_errors

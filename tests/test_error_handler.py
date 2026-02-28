@@ -1,6 +1,7 @@
 """
 Tests for unified exception handling decorator.
 """
+
 from __future__ import annotations
 
 import io
@@ -9,6 +10,8 @@ import sys
 import unittest
 from argparse import Namespace
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from flowgate.cli.commands.base import BaseCommand
 from flowgate.cli.error_handler import (
@@ -20,8 +23,6 @@ from flowgate.cli.error_handler import (
 )
 from flowgate.config import ConfigError
 
-import pytest
-
 
 @pytest.mark.unit
 class TestErrorHandler(unittest.TestCase):
@@ -29,6 +30,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_success_case(self):
         """Test that successful execution returns EXIT_SUCCESS."""
+
         @handle_command_errors
         def successful_command():
             return EXIT_SUCCESS
@@ -38,6 +40,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_config_error_handling(self):
         """Test that ConfigError returns EXIT_CONFIG_ERROR."""
+
         @handle_command_errors
         def command_with_config_error():
             raise ConfigError("Invalid configuration")
@@ -52,6 +55,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_process_error_handling(self):
         """Test that ProcessError returns EXIT_RUNTIME_ERROR."""
+
         @handle_command_errors
         def command_with_process_error():
             raise ProcessError("Failed to start service")
@@ -66,6 +70,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_permission_error_handling(self):
         """Test that PermissionError returns EXIT_RUNTIME_ERROR."""
+
         @handle_command_errors
         def command_with_permission_error():
             raise PermissionError("Access denied to file")
@@ -80,6 +85,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_generic_exception_handling(self):
         """Test that generic Exception returns EXIT_RUNTIME_ERROR."""
+
         @handle_command_errors
         def command_with_generic_error():
             raise ValueError("Unexpected error")
@@ -95,6 +101,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_decorator_preserves_function_metadata(self):
         """Test that decorator preserves original function metadata."""
+
         @handle_command_errors
         def example_command():
             """Example command docstring."""
@@ -105,6 +112,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_decorator_with_arguments(self):
         """Test that decorator works with functions that take arguments."""
+
         @handle_command_errors
         def command_with_args(value: int, flag: bool = False):
             if flag:
@@ -122,6 +130,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_decorator_with_command_class(self):
         """Test that decorator works with BaseCommand subclass methods."""
+
         class TestCommand(BaseCommand):
             @handle_command_errors
             def execute(self) -> int:
@@ -145,6 +154,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_decorator_with_instance_method(self):
         """Test that decorator works with instance methods."""
+
         class CommandHandler:
             def __init__(self, should_fail: bool):
                 self.should_fail = should_fail
@@ -168,6 +178,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_exception_chaining_preserves_original(self):
         """Test that exception chaining preserves original exception context."""
+
         @handle_command_errors
         def command_with_chained_error():
             try:
@@ -185,6 +196,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_logging_for_config_error(self):
         """Test that logger.error() is called for ConfigError."""
+
         @handle_command_errors
         def command_with_config_error():
             raise ConfigError("Config issue")
@@ -201,6 +213,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_logging_for_process_error_with_traceback(self):
         """Test that logger.error(exc_info=True) is called for ProcessError."""
+
         @handle_command_errors
         def command_with_process_error():
             raise ProcessError("Process failed")
@@ -217,6 +230,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_logging_for_permission_error(self):
         """Test that logger.error() is called for PermissionError."""
+
         @handle_command_errors
         def command_with_permission_error():
             raise PermissionError("Access denied")
@@ -232,6 +246,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_logging_for_generic_exception(self):
         """Test that logger.exception() is called for generic Exception."""
+
         @handle_command_errors
         def command_with_generic_error():
             raise RuntimeError("Unexpected error")
@@ -247,6 +262,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_non_zero_return_without_exception(self):
         """Test that non-zero return codes pass through without exception."""
+
         @handle_command_errors
         def command_with_error_code():
             # Simulate a command that returns error code without raising
@@ -257,6 +273,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_exception_with_empty_message(self):
         """Test that exceptions with empty messages are handled gracefully."""
+
         @handle_command_errors
         def command_with_empty_message():
             raise ConfigError("")
@@ -270,6 +287,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_decorator_with_multiple_arguments(self):
         """Test that decorator works with functions having multiple arguments."""
+
         @handle_command_errors
         def command_with_many_args(a: int, b: str, c: bool = True, d: list = None):
             if d is None:
@@ -289,6 +307,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_integration_with_command_execution_flow(self):
         """Test decorator in realistic command execution scenario."""
+
         class ProfileCommand(BaseCommand):
             @handle_command_errors
             def execute(self) -> int:

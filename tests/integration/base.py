@@ -3,12 +3,13 @@
 Integration tests are marked with ``@pytest.mark.integration`` and are skipped
 by default unless explicitly selected with ``pytest -m integration``.
 """
+
 from __future__ import annotations
 
 import json
+import tempfile
 import unittest
 from pathlib import Path
-import tempfile
 
 
 class IntegrationTestBase(unittest.TestCase):

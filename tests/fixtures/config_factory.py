@@ -160,4 +160,3 @@ class ConfigFactory:
             "port": port,
             "readiness_path": readiness_path,
         }
-

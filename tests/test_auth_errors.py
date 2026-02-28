@@ -12,10 +12,11 @@ from pathlib import Path
 from unittest import mock
 from urllib.error import URLError
 
-from flowgate.oauth import fetch_auth_url, poll_auth_status
-from flowgate.headless_import import import_codex_headless_auth
-
 import pytest
+
+from flowgate.headless_import import import_codex_headless_auth
+from flowgate.oauth import fetch_auth_url, poll_auth_status
+
 
 @pytest.mark.unit
 class TestOAuthErrorHandling(unittest.TestCase):
@@ -42,7 +43,9 @@ class TestOAuthErrorHandling(unittest.TestCase):
         with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
             with self.assertRaises(ValueError) as ctx:
                 fetch_auth_url("http://localhost:9000/auth-url")
-            self.assertIn("OAuth endpoint must return a JSON object", str(ctx.exception))
+            self.assertIn(
+                "OAuth endpoint must return a JSON object", str(ctx.exception)
+            )
 
     def test_fetch_auth_url_missing_url_field(self):
         """Test ValueError when auth-url endpoint missing all expected URL fields."""
@@ -222,7 +225,9 @@ class TestOAuthErrorHandling(unittest.TestCase):
                     timeout_seconds=1,
                     poll_interval_seconds=0.1,
                 )
-            self.assertIn("OAuth endpoint must return a JSON object", str(ctx.exception))
+            self.assertIn(
+                "OAuth endpoint must return a JSON object", str(ctx.exception)
+            )
 
     def test_poll_auth_status_success_after_pending(self):
         """Test successful auth after initial pending status."""
@@ -248,6 +253,8 @@ class TestOAuthErrorHandling(unittest.TestCase):
             )
 
             self.assertEqual(status, "success")
+
+
 @pytest.mark.unit
 class TestHeadlessImportErrorHandling(unittest.TestCase):
     """Test headless import error handling."""
@@ -322,14 +329,14 @@ class TestHeadlessImportErrorHandling(unittest.TestCase):
         dest_dir = Path(tempfile.mkdtemp())
         with self.assertRaises(ValueError) as ctx:
             import_codex_headless_auth(source_path, dest_dir)
-        self.assertIn("Headless auth file missing tokens.access_token", str(ctx.exception))
+        self.assertIn(
+            "Headless auth file missing tokens.access_token", str(ctx.exception)
+        )
 
     def test_import_empty_access_token(self):
         """Test ValueError when access_token is empty string."""
         tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-        tmp.write(
-            '{"tokens": {"access_token": "", "refresh_token": "refresh123"}}'
-        )
+        tmp.write('{"tokens": {"access_token": "", "refresh_token": "refresh123"}}')
         tmp.flush()
         tmp.close()
         source_path = Path(tmp.name)
@@ -337,14 +344,14 @@ class TestHeadlessImportErrorHandling(unittest.TestCase):
         dest_dir = Path(tempfile.mkdtemp())
         with self.assertRaises(ValueError) as ctx:
             import_codex_headless_auth(source_path, dest_dir)
-        self.assertIn("Headless auth file missing tokens.access_token", str(ctx.exception))
+        self.assertIn(
+            "Headless auth file missing tokens.access_token", str(ctx.exception)
+        )
 
     def test_import_whitespace_only_access_token(self):
         """Test ValueError when access_token is whitespace only."""
         tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-        tmp.write(
-            '{"tokens": {"access_token": "   ", "refresh_token": "refresh123"}}'
-        )
+        tmp.write('{"tokens": {"access_token": "   ", "refresh_token": "refresh123"}}')
         tmp.flush()
         tmp.close()
         source_path = Path(tmp.name)
@@ -352,7 +359,9 @@ class TestHeadlessImportErrorHandling(unittest.TestCase):
         dest_dir = Path(tempfile.mkdtemp())
         with self.assertRaises(ValueError) as ctx:
             import_codex_headless_auth(source_path, dest_dir)
-        self.assertIn("Headless auth file missing tokens.access_token", str(ctx.exception))
+        self.assertIn(
+            "Headless auth file missing tokens.access_token", str(ctx.exception)
+        )
 
     def test_import_missing_refresh_token(self):
         """Test ValueError when refresh_token is missing."""
@@ -372,9 +381,7 @@ class TestHeadlessImportErrorHandling(unittest.TestCase):
     def test_import_empty_refresh_token(self):
         """Test ValueError when refresh_token is empty string."""
         tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-        tmp.write(
-            '{"tokens": {"access_token": "access123", "refresh_token": ""}}'
-        )
+        tmp.write('{"tokens": {"access_token": "access123", "refresh_token": ""}}')
         tmp.flush()
         tmp.close()
         source_path = Path(tmp.name)
@@ -389,9 +396,7 @@ class TestHeadlessImportErrorHandling(unittest.TestCase):
     def test_import_whitespace_only_refresh_token(self):
         """Test ValueError when refresh_token is whitespace only."""
         tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-        tmp.write(
-            '{"tokens": {"access_token": "access123", "refresh_token": "   "}}'
-        )
+        tmp.write('{"tokens": {"access_token": "access123", "refresh_token": "   "}}')
         tmp.flush()
         tmp.close()
         source_path = Path(tmp.name)

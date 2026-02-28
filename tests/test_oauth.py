@@ -1,9 +1,9 @@
 import unittest
 from unittest import mock
 
-from flowgate.oauth import fetch_auth_url, poll_auth_status
-
 import pytest
+
+from flowgate.oauth import fetch_auth_url, poll_auth_status
 
 
 @pytest.mark.unit

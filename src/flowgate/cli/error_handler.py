@@ -4,12 +4,13 @@ Unified exception handling for FlowGate CLI commands.
 This module provides a decorator for consistent error handling across all CLI commands,
 with standardized exit codes and error messages.
 """
+
 from __future__ import annotations
 
 import functools
 import logging
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 from ..config import ConfigError
 from ..process import ProcessError
@@ -42,6 +43,7 @@ def handle_command_errors(func: Callable) -> Callable:
     Returns:
         Wrapped function with error handling
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> int:
         # Extract stderr from command instance if available (for testing)
@@ -56,7 +58,9 @@ def handle_command_errors(func: Callable) -> Callable:
             try:
                 output = getattr(args[0].args, "_output", None)
                 if output is None:
-                    output = Output.from_args(args[0].args, stdout=stdout, stderr=stderr)
+                    output = Output.from_args(
+                        args[0].args, stdout=stdout, stderr=stderr
+                    )
             except Exception:
                 output = None
 

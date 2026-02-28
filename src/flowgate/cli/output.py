@@ -5,13 +5,14 @@ This module centralizes CLI output formatting so commands can support both
 human-friendly ("legacy") and machine-friendly ("json"/"kv") modes without
 duplicating logic.
 """
+
 from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable, TextIO
-
+from typing import Any, TextIO
 
 _FORMAT_CHOICES = ("auto", "legacy", "kv", "json")
 
@@ -98,7 +99,7 @@ class Output:
     @classmethod
     def from_args(
         cls, args: Any, *, stdout: TextIO | None = None, stderr: TextIO | None = None
-    ) -> "Output":
+    ) -> Output:
         out = stdout or getattr(args, "stdout", None) or sys.stdout
         err = stderr or getattr(args, "stderr", None) or sys.stderr
         requested = str(getattr(args, "format", "legacy") or "legacy")

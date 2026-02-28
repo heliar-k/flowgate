@@ -29,7 +29,11 @@ class TestConfigErrorHandling(unittest.TestCase):
         if write_cliproxy:
             cliproxy_path = cfg_dir / "cliproxyapi.yaml"
             cliproxy_path.write_text(
-                json.dumps(cliproxy if cliproxy is not None else ConfigFactory.cliproxyapi_config()),
+                json.dumps(
+                    cliproxy
+                    if cliproxy is not None
+                    else ConfigFactory.cliproxyapi_config()
+                ),
                 encoding="utf-8",
             )
 
@@ -61,7 +65,9 @@ class TestConfigErrorHandling(unittest.TestCase):
         path = self._write_project(flowgate=cfg)
         with self.assertRaises(ConfigError) as ctx:
             load_router_config(path)
-        self.assertIn("Missing required top-level keys: cliproxyapi_plus", str(ctx.exception))
+        self.assertIn(
+            "Missing required top-level keys: cliproxyapi_plus", str(ctx.exception)
+        )
 
     def test_unknown_top_level_key(self):
         cfg = self._minimal_valid_flowgate()
@@ -128,7 +134,10 @@ class TestConfigErrorHandling(unittest.TestCase):
         path = self._write_project(flowgate=cfg)
         with self.assertRaises(ConfigError) as ctx:
             load_router_config(path)
-        self.assertIn("cliproxyapi_plus.config_file must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "cliproxyapi_plus.config_file must be a non-empty string",
+            str(ctx.exception),
+        )
 
     def test_cliproxy_config_port_must_be_int(self):
         cfg = self._minimal_valid_flowgate()
@@ -137,7 +146,9 @@ class TestConfigErrorHandling(unittest.TestCase):
         path = self._write_project(flowgate=cfg, cliproxy=cliproxy)
         with self.assertRaises(ConfigError) as ctx:
             load_router_config(path)
-        self.assertIn("CLIProxyAPIPlus config 'port' must be an integer", str(ctx.exception))
+        self.assertIn(
+            "CLIProxyAPIPlus config 'port' must be an integer", str(ctx.exception)
+        )
 
     def test_auth_provider_must_be_mapping(self):
         cfg = self._minimal_valid_flowgate()
@@ -149,11 +160,16 @@ class TestConfigErrorHandling(unittest.TestCase):
 
     def test_auth_provider_endpoints_must_be_non_empty(self):
         cfg = self._minimal_valid_flowgate()
-        cfg["auth"] = {"providers": {"codex": {"auth_url_endpoint": "", "status_endpoint": "x"}}}
+        cfg["auth"] = {
+            "providers": {"codex": {"auth_url_endpoint": "", "status_endpoint": "x"}}
+        }
         path = self._write_project(flowgate=cfg)
         with self.assertRaises(ConfigError) as ctx:
             load_router_config(path)
-        self.assertIn("auth.providers.codex.auth_url_endpoint must be a non-empty string", str(ctx.exception))
+        self.assertIn(
+            "auth.providers.codex.auth_url_endpoint must be a non-empty string",
+            str(ctx.exception),
+        )
 
     def test_secret_files_must_be_list(self):
         cfg = self._minimal_valid_flowgate()
@@ -174,4 +190,3 @@ class TestConfigErrorHandling(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

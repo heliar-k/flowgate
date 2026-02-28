@@ -2,6 +2,7 @@
 
 Verifies that auth commands maintain consistent exit codes and output formats.
 """
+
 from __future__ import annotations
 
 import io
@@ -11,9 +12,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from flowgate.cli import run_cli
-
 import pytest
+
+from flowgate.cli import run_cli
 
 
 def write_minimal_v3_config(root: Path) -> Path:
@@ -68,6 +69,8 @@ def write_minimal_v3_config(root: Path) -> Path:
         encoding="utf-8",
     )
     return flowgate_cfg
+
+
 @pytest.mark.unit
 class TestAuthCommandExitCodes(unittest.TestCase):
     """Regression tests for auth command exit codes"""
@@ -98,7 +101,8 @@ class TestAuthCommandExitCodes(unittest.TestCase):
         self.assertNotEqual(result, 0, "Expected non-zero exit code")
         error_output = err.getvalue() + out.getvalue()
         self.assertTrue(
-            "does not exist" in error_output.lower() or "not found" in error_output.lower(),
+            "does not exist" in error_output.lower()
+            or "not found" in error_output.lower(),
             f"Expected config file error message, got: {error_output}",
         )
 
@@ -113,7 +117,15 @@ class TestAuthCommandExitCodes(unittest.TestCase):
         out = io.StringIO()
         err = io.StringIO()
         result = run_cli(
-            ["--config", str(self.cfg), "auth", "login", "nonexistent-provider", "--timeout", "1"],
+            [
+                "--config",
+                str(self.cfg),
+                "auth",
+                "login",
+                "nonexistent-provider",
+                "--timeout",
+                "1",
+            ],
             stdout=out,
             stderr=err,
         )
@@ -129,7 +141,10 @@ class TestAuthCommandExitCodes(unittest.TestCase):
         out = io.StringIO()
         err = io.StringIO()
         with (
-            mock.patch("flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch(
+                "flowgate.oauth.fetch_auth_url",
+                return_value="https://example.com/login",
+            ),
             mock.patch(
                 "flowgate.oauth.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out"),
@@ -163,7 +178,8 @@ class TestAuthCommandExitCodes(unittest.TestCase):
         self.assertEqual(result, 1, "Expected exit code 1 (file not found)")
         error_output = err.getvalue() + out.getvalue()
         self.assertTrue(
-            "does not exist" in error_output.lower() or "not found" in error_output.lower(),
+            "does not exist" in error_output.lower()
+            or "not found" in error_output.lower(),
             f"Expected file not found error, got: {error_output}",
         )
 
@@ -218,6 +234,8 @@ class TestAuthCommandExitCodes(unittest.TestCase):
         self.assertEqual(result, 2, "Expected exit code 2 (unsupported feature)")
 
         self.assertIn("not supported", err.getvalue())
+
+
 @pytest.mark.unit
 class TestAuthCommandOutput(unittest.TestCase):
     """Regression tests for auth command output formats"""
@@ -235,15 +253,29 @@ class TestAuthCommandOutput(unittest.TestCase):
         output = out.getvalue()
         # Verify output contains configured providers
         self.assertIn("provider=codex", output, "Output should include codex provider")
-        self.assertIn("provider=copilot", output, "Output should include copilot provider")
+        self.assertIn(
+            "provider=copilot", output, "Output should include copilot provider"
+        )
 
         # Verify output contains capability information
-        self.assertIn("oauth_login=", output, "Output should include oauth_login capability")
-        self.assertIn("headless_import=", output, "Output should include headless_import capability")
+        self.assertIn(
+            "oauth_login=", output, "Output should include oauth_login capability"
+        )
+        self.assertIn(
+            "headless_import=",
+            output,
+            "Output should include headless_import capability",
+        )
 
         # Verify summary line
-        self.assertIn("oauth_providers=", output, "Output should include oauth_providers summary")
-        self.assertIn("headless_import_providers=", output, "Output should include headless_import_providers summary")
+        self.assertIn(
+            "oauth_providers=", output, "Output should include oauth_providers summary"
+        )
+        self.assertIn(
+            "headless_import_providers=",
+            output,
+            "Output should include headless_import_providers summary",
+        )
 
     def test_auth_status_output_format(self) -> None:
         """auth status output includes default_auth_dir and provider information"""
@@ -253,8 +285,14 @@ class TestAuthCommandOutput(unittest.TestCase):
 
         output = out.getvalue()
         # Verify output contains key fields
-        self.assertIn("default_auth_dir=", output, "Output should include default_auth_dir")
-        self.assertIn("secret_permission_issues=", output, "Output should include secret_permission_issues")
+        self.assertIn(
+            "default_auth_dir=", output, "Output should include default_auth_dir"
+        )
+        self.assertIn(
+            "secret_permission_issues=",
+            output,
+            "Output should include secret_permission_issues",
+        )
         self.assertIn("provider=codex", output, "Output should include codex provider")
         self.assertIn("method=", output, "Output should include authentication method")
 
@@ -262,7 +300,10 @@ class TestAuthCommandOutput(unittest.TestCase):
         """auth login success output includes login_url and oauth_status"""
         out = io.StringIO()
         with (
-            mock.patch("flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch(
+                "flowgate.oauth.fetch_auth_url",
+                return_value="https://example.com/login",
+            ),
             mock.patch("flowgate.oauth.poll_auth_status", return_value="success"),
         ):
             result = run_cli(
@@ -273,7 +314,11 @@ class TestAuthCommandOutput(unittest.TestCase):
 
         output = out.getvalue()
         self.assertIn("login_url=", output, "Output should include login_url")
-        self.assertIn("https://example.com/login", output, "Output should include actual login URL")
+        self.assertIn(
+            "https://example.com/login",
+            output,
+            "Output should include actual login URL",
+        )
         self.assertIn("oauth_status=", output, "Output should include oauth_status")
 
     def test_auth_import_headless_success_output_format(self) -> None:
@@ -286,7 +331,9 @@ class TestAuthCommandOutput(unittest.TestCase):
 
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
-        with mock.patch("flowgate.auth_methods.get_headless_import_handler", return_value=handler):
+        with mock.patch(
+            "flowgate.auth_methods.get_headless_import_handler", return_value=handler
+        ):
             result = run_cli(
                 [
                     "--config",
@@ -303,14 +350,21 @@ class TestAuthCommandOutput(unittest.TestCase):
 
         output = out.getvalue()
         self.assertIn("saved_auth=", output, "Output should include saved_auth")
-        self.assertIn("/tmp/auths/codex-headless-import.json", output, "Output should include actual save path")
+        self.assertIn(
+            "/tmp/auths/codex-headless-import.json",
+            output,
+            "Output should include actual save path",
+        )
 
     def test_auth_login_error_output_contains_hint(self) -> None:
         """auth login error output includes debugging hint"""
         out = io.StringIO()
         err = io.StringIO()
         with (
-            mock.patch("flowgate.oauth.fetch_auth_url", return_value="https://example.com/login"),
+            mock.patch(
+                "flowgate.oauth.fetch_auth_url",
+                return_value="https://example.com/login",
+            ),
             mock.patch(
                 "flowgate.oauth.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out; last status=pending"),
@@ -324,8 +378,12 @@ class TestAuthCommandOutput(unittest.TestCase):
         self.assertNotEqual(result, 0)
 
         error_output = err.getvalue()
-        self.assertIn("hint=", error_output, "Error output should include debugging hint")
-        self.assertIn("auth status", error_output, "Hint should suggest running auth status")
+        self.assertIn(
+            "hint=", error_output, "Error output should include debugging hint"
+        )
+        self.assertIn(
+            "auth status", error_output, "Hint should suggest running auth status"
+        )
 
     def test_auth_list_empty_providers_output(self) -> None:
         """auth list output format when no providers are configured"""
@@ -339,8 +397,16 @@ class TestAuthCommandOutput(unittest.TestCase):
         self.assertEqual(result, 0)
 
         output = out.getvalue()
-        self.assertIn("oauth_providers=none", output, "Should output 'none' when no providers configured")
-        self.assertIn("headless_import_providers=none", output, "Should output 'none' when no headless providers configured")
+        self.assertIn(
+            "oauth_providers=none",
+            output,
+            "Should output 'none' when no providers configured",
+        )
+        self.assertIn(
+            "headless_import_providers=none",
+            output,
+            "Should output 'none' when no headless providers configured",
+        )
 
 
 if __name__ == "__main__":

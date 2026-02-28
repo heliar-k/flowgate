@@ -5,7 +5,6 @@ from pathlib import Path
 
 from .observability import measure_time
 
-
 OUTPUT_FILENAME = "codex-headless-import.json"
 
 

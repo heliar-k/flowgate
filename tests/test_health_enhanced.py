@@ -372,9 +372,7 @@ class TestComprehensiveHealthCheck(unittest.TestCase):
         """Test comprehensive check with some issues."""
         config = {
             "paths": {"runtime_dir": self.temp_dir},
-            "credentials": {
-                "upstream": {"api1": {"file": "/nonexistent/file.key"}}
-            },
+            "credentials": {"upstream": {"api1": {"file": "/nonexistent/file.key"}}},
             "services": {"service1": {"port": 8000}},
         }
 
