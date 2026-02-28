@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-02-28
+
+**Major Release**: CLIProxyAPIPlus-Only Mode
+
+This release simplifies FlowGate by removing LiteLLM support, making it CLIProxyAPIPlus-only. This reduces dependencies, simplifies configuration, and improves maintainability.
+
+### Breaking Changes
+
+- **LiteLLM Support Removed**: FlowGate no longer manages LiteLLM. All traffic routes directly through CLIProxyAPIPlus.
+- **Profile Command Removed**: The `profile` command has been removed (no longer relevant without LiteLLM).
+- **Config Version 3**: New cliproxy-only schema. Existing v2 configs will need migration.
+- **Service Changes**:
+  - `lite_llm` service no longer available
+  - `service start lite_llm` will fail
+  - Status/health commands no longer check LiteLLM
+
+### Added
+
+- **Output Formats**: CLI commands now support multiple output formats:
+  - `--format json`: JSON output for scripting
+  - `--format kv`: Key-value pairs for easy parsing
+  - Supported across all status, health, and diagnostic commands
+- **Debug Flag**: New `--debug` flag for verbose error output and troubleshooting
+- **Explicit Dependencies**: Added explicit `pyyaml` dependency for clarity
+
+### Changed
+
+- **Simplified Architecture**: Single routing target (CLIProxyAPIPlus) instead of dual (LiteLLM + CLIProxyAPIPlus)
+- **Reduced Dependencies**: Removed `litellm` package, reducing install size and complexity
+- **Config Schema**: Updated to v3 with cliproxy-only configuration
+- **Test Updates**: All test fixtures and examples updated to v3 schema
+
+### Fixed
+
+- **Path Resolution**: Fixed runtime_dir and cliproxy path resolution edge cases
+- **Status Output**: Aligned status output with v3 schema
+- **Correctness**: Tightened P0/P1 correctness and safety checks
+
+### Migration Notes
+
+#### From v0.4.x to v0.5.0
+
+**Critical**: This is a breaking change.
+
+1. **If you use LiteLLM**: This release is not for you. Stay on v0.4.x or find an alternative solution.
+
+2. **Remove LiteLLM config** (if present):
+   ```yaml
+   # Remove these from your config:
+   # - services.lite_llm
+   # - upstream.lite_llm
+   ```
+
+3. **Update your config to v3**:
+   ```yaml
+   config_version: 3
+   ```
+
+4. **Test your configuration**:
+   ```bash
+   uv run flowgate --config config/flowgate.yaml doctor
+   ```
+
+5. **Update client integrations**: Point your clients directly to CLIProxyAPIPlus (port 5000) instead of LiteLLM (port 4000).
+
+### Documentation Updates
+
+- CLI reference documentation with output format examples
+- Migration guidance for v2 → v3 config
+- Condensed AGENTS.md to essential reference
+- Added missing documentation pages referenced in docs index
+
+### Git History
+
+This release includes 31 commits:
+- LiteLLM removal: 3aaa7f0, 2e0056d, 989402e, 013b34b
+- Config v3: d33667b, 9922153, 730b7ca
+- Output formats: 946a50d, 601b564, 59e2dd6
+- Debug flag: 3603fcd
+- Profile removal: b47f5f5
+- Documentation: c979331, ca7cb0e, 7d536d9, f4c2b52, 02743c9
+
+Tags: `v0.5.0`
+
 ## [0.4.6] - 2026-02-26
 
 ### Fixed
@@ -563,7 +647,10 @@ For issues, questions, or contributions:
 - Run `flowgate doctor` for configuration validation
 - Check event logs: `tail -n 50 .router/runtime/events.log`
 
-[Unreleased]: https://github.com/heliar-k/flowgate/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/heliar-k/flowgate/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/heliar-k/flowgate/compare/v0.4.6...v0.5.0
+[0.4.6]: https://github.com/heliar-k/flowgate/compare/v0.4.4...v0.4.6
+[0.4.4]: https://github.com/heliar-k/flowgate/compare/v0.4.0...v0.4.4
 [0.4.0]: https://github.com/heliar-k/flowgate/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/heliar-k/flowgate/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/heliar-k/flowgate/compare/v0.1.0...v0.2.0
