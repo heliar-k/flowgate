@@ -1,4 +1,3 @@
-minimum_pre_commit_version: "5.0.0"
 default_language_version:
   python: python3.12
 
@@ -27,4 +26,3 @@ repos:
     hooks:
         - id: pyupgrade
           args: [--py312-plus]
-
