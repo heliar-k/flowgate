@@ -35,7 +35,7 @@ from .service import (
 from .error_handler import EXIT_CONFIG_ERROR, EXIT_RUNTIME_ERROR
 from .output import Output
 from .parser import build_parser
-from .utils import (
+from .helpers import (
     _load_and_resolve_config,
 )
 

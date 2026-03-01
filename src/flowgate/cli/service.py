@@ -15,6 +15,7 @@ from ..constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
 from ..process import ProcessSupervisor
 from ..utils import _is_service_port_available
 from .error_handler import handle_command_errors
+from .helpers import maybe_print_update_notification
 from .output import Output, command_id_from_args
 from .base import BaseCommand
 
@@ -28,57 +29,13 @@ def _service_names(config: dict[str, Any], target: str) -> list[str]:
     return [target]
 
 
-def _maybe_print_cliproxyapiplus_update(
-    config: dict[str, Any], *, stdout: TextIO
-) -> None:
-    """Print CLIProxyAPIPlus update notification if available."""
-    from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
-    from ..cliproxyapiplus import (
-        check_update,
-        read_installed_version,
-    )
-
-    isatty = getattr(stdout, "isatty", None)
-    if callable(isatty) and not isatty():
-        return
-
-    runtime_dir = str(config.get("paths", {}).get("runtime_dir", "")).strip()
-    if not runtime_dir:
-        return
-
-    current_version = read_installed_version(
-        runtime_dir, DEFAULT_CLIPROXY_VERSION
-    )
-    update = check_update(
-        runtime_dir=runtime_dir,
-        current_version=current_version,
-        repo=DEFAULT_CLIPROXY_REPO,
-    )
-    if not update:
-        return
-
-    latest = update["latest_version"]
-    release_url = update.get("release_url", "")
-    config_path = str(
-        config.get("_meta", {}).get("config_path", "config/flowgate.yaml")
-    )
-    print(
-        (
-            "cliproxyapi_plus:update_available "
-            f"current={current_version} latest={latest} "
-            f"release={release_url if release_url else 'n/a'}"
-        ),
-        file=stdout,
-    )
-    print(
-        (
-            "cliproxyapi_plus:update_suggestion "
-            "command="
-            f"'uv run flowgate --config {config_path} "
-            f"bootstrap update'"
-        ),
-        file=stdout,
-    )
+def _service_names(config: dict[str, Any], target: str) -> list[str]:
+    """Resolve service names from target (service name or 'all')."""
+    if target == "all":
+        return list(config["services"].keys())
+    if target not in config["services"]:
+        raise ConfigError(f"Unknown service: {target}")
+    return [target]
 
 
 class ServiceStartCommand(BaseCommand):
@@ -153,7 +110,7 @@ class ServiceStartCommand(BaseCommand):
                 started_cliproxy = True
 
         if output.format == "legacy" and started_cliproxy:
-            _maybe_print_cliproxyapiplus_update(self.config, stdout=stdout)
+            maybe_print_update_notification(self.config, stdout=stdout)
 
         if output.format != "legacy":
             output.emit_envelope(

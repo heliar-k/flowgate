@@ -15,25 +15,9 @@ from typing import Any, TextIO
 from ..constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from ..security import check_secret_file_permissions
 from .error_handler import handle_command_errors
+from .helpers import effective_secret_files, maybe_print_update_notification
 from .output import Output, command_id_from_args
 from .base import BaseCommand
-
-
-def _effective_secret_files(config: dict[str, Any]) -> list[str]:
-    """Collect all secret files from config and auth directory."""
-    from .utils import _default_auth_dir
-
-    paths: set[str] = set()
-    for value in config.get("secret_files", []):
-        if isinstance(value, str) and value.strip():
-            paths.add(str(Path(value).resolve()))
-
-    default_auth_dir = Path(_default_auth_dir(config))
-    if default_auth_dir.exists():
-        for item in default_auth_dir.glob("*.json"):
-            paths.add(str(item.resolve()))
-
-    return sorted(paths)
 
 
 class StatusCommand(BaseCommand):
@@ -59,7 +43,7 @@ class StatusCommand(BaseCommand):
         for name in sorted(self.config["services"].keys()):
             services[name] = bool(supervisor.is_running(name))
 
-        issues = check_secret_file_permissions(_effective_secret_files(self.config))
+        issues = check_secret_file_permissions(effective_secret_files(self.config))
         secret_issue_count = len(issues)
 
         cliproxy_cfg = None
@@ -384,7 +368,7 @@ class DoctorCommand(BaseCommand):
                     }
                 )
 
-            issues = check_secret_file_permissions(_effective_secret_files(self.config))
+            issues = check_secret_file_permissions(effective_secret_files(self.config))
             if issues:
                 all_ok = False
                 checks_out.append(
@@ -500,7 +484,7 @@ class DoctorCommand(BaseCommand):
         else:
             print(f"doctor:runtime_binaries=pass path={runtime_bin}", file=stdout)
 
-        issues = check_secret_file_permissions(_effective_secret_files(self.config))
+        issues = check_secret_file_permissions(effective_secret_files(self.config))
         if issues:
             all_ok = False
             print(
@@ -513,56 +497,6 @@ class DoctorCommand(BaseCommand):
             print("doctor:secret_permissions=pass issues=0", file=stdout)
 
         # Check for CLIProxyAPIPlus updates (only if stdout is a tty)
-        self._maybe_print_cliproxyapiplus_update(stdout)
+        maybe_print_update_notification(self.config, stdout=stdout)
 
         return 0 if all_ok else 1
-
-    def _maybe_print_cliproxyapiplus_update(self, stdout: TextIO) -> None:
-        """Print CLIProxyAPIPlus update notification if available."""
-        from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
-        from ..cliproxyapiplus import (
-            check_update,
-            read_installed_version,
-        )
-
-        isatty = getattr(stdout, "isatty", None)
-        if callable(isatty) and not isatty():
-            return
-
-        runtime_dir = str(self.config.get("paths", {}).get("runtime_dir", "")).strip()
-        if not runtime_dir:
-            return
-
-        current_version = read_installed_version(
-            runtime_dir, DEFAULT_CLIPROXY_VERSION
-        )
-        update = check_update(
-            runtime_dir=runtime_dir,
-            current_version=current_version,
-            repo=DEFAULT_CLIPROXY_REPO,
-        )
-        if not update:
-            return
-
-        latest = update["latest_version"]
-        release_url = update.get("release_url", "")
-        config_path = str(
-            self.config.get("_meta", {}).get("config_path", "config/flowgate.yaml")
-        )
-        print(
-            (
-                "cliproxyapi_plus:update_available "
-                f"current={current_version} latest={latest} "
-                f"release={release_url if release_url else 'n/a'}"
-            ),
-            file=stdout,
-        )
-        print(
-            (
-                "cliproxyapi_plus:update_suggestion "
-                "command="
-                f"'uv run flowgate --config {config_path} "
-                f"bootstrap update'"
-            ),
-            file=stdout,
-        )

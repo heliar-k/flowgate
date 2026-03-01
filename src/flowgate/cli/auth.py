@@ -15,7 +15,7 @@ from ..process import ProcessError, ProcessSupervisor
 from ..security import check_secret_file_permissions
 from .error_handler import handle_command_errors
 from .output import Output, command_id_from_args
-from .utils import _default_auth_dir
+from .helpers import _default_auth_dir, effective_secret_files
 from .base import BaseCommand
 
 
@@ -28,23 +28,6 @@ def _auth_providers(config: dict[str, Any]) -> dict[str, Any]:
             return providers_raw
 
     return {}
-
-
-def _effective_secret_files(config: dict[str, Any]) -> list[str]:
-    """Collect all secret files from config and auth directory."""
-    from pathlib import Path
-
-    paths: set[str] = set()
-    for value in config.get("secret_files", []):
-        if isinstance(value, str) and value.strip():
-            paths.add(str(Path(value).resolve()))
-
-    default_auth_dir = Path(_default_auth_dir(config))
-    if default_auth_dir.exists():
-        for item in default_auth_dir.glob("*.json"):
-            paths.add(str(item.resolve()))
-
-    return sorted(paths)
 
 
 def _derive_auth_endpoints(
@@ -187,7 +170,7 @@ class AuthStatusCommand(BaseCommand):
         providers = sorted(str(name) for name in providers_map.keys())
         handlers = headless_import_handlers()
 
-        issues = check_secret_file_permissions(_effective_secret_files(self.config))
+        issues = check_secret_file_permissions(effective_secret_files(self.config))
         default_dir = _default_auth_dir(self.config)
         secret_issue_count = len(issues)
 
