@@ -33,9 +33,9 @@ def _maybe_print_cliproxyapiplus_update(
 ) -> None:
     """Print CLIProxyAPIPlus update notification if available."""
     from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
-    from ..cliproxyapiplus_update_check import (
-        check_cliproxyapiplus_update,
-        read_cliproxyapiplus_installed_version,
+    from ..cliproxyapiplus import (
+        check_update,
+        read_installed_version,
     )
 
     isatty = getattr(stdout, "isatty", None)
@@ -46,10 +46,10 @@ def _maybe_print_cliproxyapiplus_update(
     if not runtime_dir:
         return
 
-    current_version = read_cliproxyapiplus_installed_version(
+    current_version = read_installed_version(
         runtime_dir, DEFAULT_CLIPROXY_VERSION
     )
-    update = check_cliproxyapiplus_update(
+    update = check_update(
         runtime_dir=runtime_dir,
         current_version=current_version,
         repo=DEFAULT_CLIPROXY_REPO,

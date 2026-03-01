@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from flowgate.cliproxyapiplus_auto_update import (
+from flowgate.cliproxyapiplus import (
     check_latest_version,
     perform_update,
 )
@@ -14,7 +14,7 @@ from flowgate.cliproxyapiplus_auto_update import (
 @pytest.mark.unit
 def test_check_latest_version_returns_update_info():
     with mock.patch(
-        "flowgate.cliproxyapiplus_auto_update._http_get_json",
+        "flowgate.cliproxyapiplus._http_get_json",
         return_value={
             "tag_name": "v6.8.18-1",
             "html_url": "https://github.com/example/releases/tag/v6.8.18-1",
@@ -52,18 +52,18 @@ def test_perform_update_restarts_running_service(tmp_path: Path):
 
     with (
         mock.patch(
-            "flowgate.cliproxyapiplus_auto_update.download_cliproxyapi_plus",
+            "flowgate.cliproxyapiplus.download_cliproxyapi_plus",
             return_value=runtime_dir / "bin" / "CLIProxyAPIPlus",
         ),
         mock.patch(
-            "flowgate.cliproxyapiplus_auto_update.validate_cliproxy_binary",
+            "flowgate.cliproxyapiplus.validate_cliproxy_binary",
             return_value=True,
         ),
         mock.patch(
-            "flowgate.cliproxyapiplus_auto_update.write_cliproxyapiplus_installed_version"
+            "flowgate.cliproxyapiplus.write_installed_version"
         ) as write_ver,
         mock.patch(
-            "flowgate.cliproxyapiplus_auto_update.ProcessSupervisor"
+            "flowgate.cliproxyapiplus.ProcessSupervisor"
         ) as supervisor_cls,
     ):
         supervisor = supervisor_cls.return_value

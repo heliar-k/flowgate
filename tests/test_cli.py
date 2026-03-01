@@ -801,11 +801,11 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.service.ProcessSupervisor"
             ) as supervisor_cls,
             mock.patch(
-                "flowgate.cliproxyapiplus_update_check.read_cliproxyapiplus_installed_version",
+                "flowgate.cliproxyapiplus.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_update_check.check_cliproxyapiplus_update",
+                "flowgate.cliproxyapiplus.check_update",
                 return_value={
                     "current_version": "v6.8.16-0",
                     "latest_version": "v6.8.18-1",
@@ -836,11 +836,11 @@ class CLITests(unittest.TestCase):
         out = TTYStringIO()
         with (
             mock.patch(
-                "flowgate.cliproxyapiplus_update_check.read_cliproxyapiplus_installed_version",
+                "flowgate.cliproxyapiplus.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_update_check.check_cliproxyapiplus_update",
+                "flowgate.cliproxyapiplus.check_update",
                 return_value={
                     "current_version": "v6.8.16-0",
                     "latest_version": "v6.8.18-1",
@@ -952,7 +952,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.bootstrap.read_cliproxyapiplus_installed_version",
+                "flowgate.cli.bootstrap.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
@@ -964,18 +964,18 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.download_cliproxyapi_plus",
+                "flowgate.cliproxyapiplus.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.validate_cliproxy_binary",
+                "flowgate.cliproxyapiplus.validate_cliproxy_binary",
                 return_value=True,
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.write_cliproxyapiplus_installed_version",
+                "flowgate.cliproxyapiplus.write_installed_version",
             ) as write_ver,
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.ProcessSupervisor",
+                "flowgate.cliproxyapiplus.ProcessSupervisor",
             ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
@@ -997,7 +997,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.bootstrap.read_cliproxyapiplus_installed_version",
+                "flowgate.cli.bootstrap.read_installed_version",
                 return_value="v6.8.18-1",
             ),
             mock.patch(
@@ -1018,7 +1018,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.bootstrap.read_cliproxyapiplus_installed_version",
+                "flowgate.cli.bootstrap.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
@@ -1030,18 +1030,18 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.download_cliproxyapi_plus",
+                "flowgate.cliproxyapiplus.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.validate_cliproxy_binary",
+                "flowgate.cliproxyapiplus.validate_cliproxy_binary",
                 return_value=True,
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.write_cliproxyapiplus_installed_version",
+                "flowgate.cliproxyapiplus.write_installed_version",
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.ProcessSupervisor",
+                "flowgate.cliproxyapiplus.ProcessSupervisor",
             ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
@@ -1063,7 +1063,7 @@ class CLITests(unittest.TestCase):
         err = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.bootstrap.read_cliproxyapiplus_installed_version",
+                "flowgate.cli.bootstrap.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
@@ -1093,7 +1093,7 @@ class CLITests(unittest.TestCase):
         with (
             mock.patch("sys.stdin.isatty", return_value=True),
             mock.patch(
-                "flowgate.cli.bootstrap.read_cliproxyapiplus_installed_version",
+                "flowgate.cli.bootstrap.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
@@ -1122,7 +1122,7 @@ class CLITests(unittest.TestCase):
         err = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.bootstrap.read_cliproxyapiplus_installed_version",
+                "flowgate.cli.bootstrap.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
@@ -1134,11 +1134,11 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.download_cliproxyapi_plus",
+                "flowgate.cliproxyapiplus.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus_auto_update.validate_cliproxy_binary",
+                "flowgate.cliproxyapiplus.validate_cliproxy_binary",
                 return_value=False,
             ),
         ):

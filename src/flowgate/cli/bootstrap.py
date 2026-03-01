@@ -12,18 +12,15 @@ from pathlib import Path
 from typing import TextIO
 
 from ..bootstrap import (
-    DEFAULT_CLIPROXY_REPO,
     DEFAULT_CLIPROXY_VERSION,
     download_cliproxyapi_plus,
     validate_cliproxy_binary,
 )
-from ..cliproxyapiplus_auto_update import (
+from ..cliproxyapiplus import (
     check_latest_version,
     perform_update,
-)
-from ..cliproxyapiplus_update_check import (
-    read_cliproxyapiplus_installed_version,
-    write_cliproxyapiplus_installed_version,
+    read_installed_version,
+    write_installed_version,
 )
 from ..constants import CLIPROXYAPI_PLUS_SERVICE
 from .error_handler import handle_command_errors
@@ -60,7 +57,7 @@ class BootstrapDownloadCommand(BaseCommand):
         if not validate_cliproxy_binary(cliproxy):
             raise RuntimeError(f"Invalid CLIProxyAPIPlus binary downloaded: {cliproxy}")
 
-        write_cliproxyapiplus_installed_version(
+        write_installed_version(
             self.config["paths"]["runtime_dir"], cliproxy_version
         )
         if output.format != "legacy":
@@ -115,7 +112,7 @@ class BootstrapUpdateCommand(BaseCommand):
         auto_yes = self.args.yes
         require_sha256 = bool(getattr(self.args, "require_sha256", False))
 
-        current_version = read_cliproxyapiplus_installed_version(
+        current_version = read_installed_version(
             runtime_dir, DEFAULT_CLIPROXY_VERSION
         )
 

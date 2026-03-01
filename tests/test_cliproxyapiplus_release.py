@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flowgate.cliproxyapiplus_release import (
+from flowgate.cliproxyapiplus import (
     build_latest_release_url,
     parse_latest_release_payload,
 )
