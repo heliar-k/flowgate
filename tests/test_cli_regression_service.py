@@ -50,7 +50,6 @@ def write_minimal_v3_config(root: Path) -> Path:
                 "cliproxyapi_plus": {"config_file": str(cliproxy_cfg)},
                 "auth": {"providers": {}},
                 "secret_files": [],
-                "integration": {},
             }
         ),
         encoding="utf-8",

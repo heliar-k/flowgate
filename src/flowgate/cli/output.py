@@ -47,10 +47,6 @@ def command_id_from_args(args: Any) -> str:
         sub = getattr(args, "bootstrap_cmd", None)
         if sub:
             return f"bootstrap.{sub}"
-    if command == "integration":
-        sub = getattr(args, "integration_cmd", None)
-        if sub:
-            return f"integration.{sub}"
     return command
 
 

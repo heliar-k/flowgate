@@ -179,14 +179,6 @@ class TestConfigErrorHandling(unittest.TestCase):
             load_router_config(path)
         self.assertIn("secret_files must be a list of string paths", str(ctx.exception))
 
-    def test_integration_unknown_key_rejected(self):
-        cfg = self._minimal_valid_flowgate()
-        cfg["integration"] = {"unknown": "x"}
-        path = self._write_project(flowgate=cfg)
-        with self.assertRaises(ConfigError) as ctx:
-            load_router_config(path)
-        self.assertIn("integration has unknown keys", str(ctx.exception))
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,6 @@ _ALLOWED_TOP_LEVEL_KEYS = {
     "cliproxyapi_plus",
     "auth",
     "secret_files",
-    "integration",
 }
 
 _REQUIRED_TOP_LEVEL_KEYS = {
@@ -171,10 +170,6 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
     secret_files = data.get("secret_files", [])
     ConfigValidator.validate_secret_files(secret_files)
 
-    integration_raw = data.get("integration", {})
-    integration = _ensure_mapping(integration_raw, "integration")
-    ConfigValidator.validate_integration(integration)
-
     return {
         "config_version": data["config_version"],
         "paths": paths,
@@ -182,7 +177,6 @@ def load_router_config(path: str | Path) -> dict[str, Any]:
         "cliproxyapi_plus": {"config_file": str(cliproxy_cfg_path)},
         "auth": {"providers": providers},
         "secret_files": secret_files,
-        "integration": integration,
     }
 
 

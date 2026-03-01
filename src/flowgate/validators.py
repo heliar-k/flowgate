@@ -226,39 +226,3 @@ class ConfigValidator:
             isinstance(p, str) for p in secret_files
         ):
             raise ConfigError("secret_files must be a list of string paths")
-
-    @staticmethod
-    def validate_integration(integration_config: dict[str, Any]) -> None:
-        """Validate the integration configuration section.
-
-        Supported keys:
-        - default_model: non-empty string (optional)
-        - fast_model: non-empty string (optional)
-
-        Args:
-            integration_config: The integration section from configuration
-
-        Raises:
-            ConfigError: If validation fails
-        """
-        from flowgate.config import ConfigError
-
-        unknown = sorted(
-            k
-            for k in set(integration_config.keys()) - {"default_model", "fast_model"}
-            if not str(k).startswith("_comment")
-        )
-        if unknown:
-            raise ConfigError(f"integration has unknown keys: {', '.join(unknown)}")
-
-        default_model = integration_config.get("default_model")
-        if default_model is not None:
-            ConfigValidator._validate_non_empty_string(
-                default_model, "integration.default_model"
-            )
-
-        fast_model = integration_config.get("fast_model")
-        if fast_model is not None:
-            ConfigValidator._validate_non_empty_string(
-                fast_model, "integration.fast_model"
-            )

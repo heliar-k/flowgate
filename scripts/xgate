@@ -40,19 +40,11 @@ xgate - FlowGate CLI 快捷启动脚本
       --cliproxy-version <版本>  指定 CLIProxyAPIPlus 版本
       --cliproxy-repo <仓库>     指定 GitHub 仓库地址
 
-  integration           客户端集成配置
-    print <客户端>        打印集成配置片段 (codex 或 claude-code)
-    apply <客户端>        应用集成设置到客户端配置文件
-      --target <路径>       目标配置文件路径
-                            codex 默认: ~/.codex/config.toml
-                            claude-code 默认: ~/.claude/settings.json
-
 示例:
   ./scripts/xgate --config config/flowgate.yaml status
   ./scripts/xgate --config config/flowgate.yaml service start all
   ./scripts/xgate --config config/flowgate.yaml auth login codex --timeout 180
   ./scripts/xgate --config config/flowgate.yaml bootstrap download
-  ./scripts/xgate --config config/flowgate.yaml integration apply codex
   ./scripts/xgate --config config/flowgate.yaml doctor
 HELP
 }

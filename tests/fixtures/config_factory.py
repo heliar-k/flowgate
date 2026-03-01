@@ -38,7 +38,6 @@ class ConfigFactory:
             "cliproxyapi_plus": {"config_file": cliproxy_config_file},
             "auth": {"providers": {}},
             "secret_files": [],
-            "integration": {},
         }
 
     @staticmethod

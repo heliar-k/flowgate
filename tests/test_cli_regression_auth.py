@@ -63,7 +63,6 @@ def write_minimal_v3_config(root: Path) -> Path:
                     }
                 },
                 "secret_files": [],
-                "integration": {},
             }
         ),
         encoding="utf-8",
