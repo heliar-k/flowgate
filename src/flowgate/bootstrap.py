@@ -78,7 +78,7 @@ def pick_release_asset(assets: list[dict], *, os_name: str, arch: str) -> dict:
     return best
 
 
-def _http_get_json(url: str) -> dict:
+def http_get_json(url: str) -> dict:
     req = Request(
         url,
         headers={
@@ -200,7 +200,7 @@ def download_cliproxyapi_plus(
     else:
         api_url = f"https://api.github.com/repos/{repo}/releases/tags/{version}"
 
-    release = _http_get_json(api_url)
+    release = http_get_json(api_url)
     assets = release.get("assets", [])
     if not isinstance(assets, list):
         raise RuntimeError("Release payload missing assets list")

@@ -11,7 +11,7 @@ from typing import Any, Callable
 
 from .bootstrap import (
     DEFAULT_CLIPROXY_REPO,
-    _http_get_json,
+    http_get_json,
     download_cliproxyapi_plus,
     validate_cliproxy_binary,
 )
@@ -24,6 +24,7 @@ CHECK_TTL_SECONDS = 24 * 60 * 60
 CHECK_ERROR_TTL_SECONDS = 60 * 60
 
 
+# ── Version comparison ─────────────────────────────────────
 def parse_version_tuple(version: str) -> tuple[int, ...] | None:
     """Convert a version string into a tuple of ints, or None if no digits."""
     parts = re.findall(r"\d+", version)
@@ -63,6 +64,7 @@ def build_update_info(
     }
 
 
+# ── Release fetching ────────────────────────────────────────
 def build_latest_release_url(repo: str) -> str:
     """Build GitHub API URL for the latest release of a repository."""
     return f"https://api.github.com/repos/{repo}/releases/latest"
@@ -83,6 +85,7 @@ def fetch_latest_release(
     return parse_latest_release_payload(data)
 
 
+# ── Cache/file I/O ─────────────────────────────────────────
 def _cache_path(runtime_dir: str | Path) -> Path:
     return Path(runtime_dir) / CHECK_CACHE_FILE
 
@@ -109,6 +112,7 @@ def _write_cache(path: Path, payload: dict[str, Any]) -> None:
         return
 
 
+# ── Public version management ───────────────────────────────
 def read_installed_version(runtime_dir: str | Path, fallback_version: str) -> str:
     """Read the installed CLIProxyAPIPlus version from runtime directory."""
     path = _version_path(runtime_dir)
@@ -177,7 +181,7 @@ def check_update(
 
     try:
         latest, release_url = fetch_latest_release(
-            repo=repo, http_get_json=_http_get_json
+            repo=repo, http_get_json=http_get_json
         )
     except Exception:  # noqa: BLE001
         _write_cache(
@@ -207,24 +211,18 @@ def check_update(
     )
 
 
-def _parse_version_tuple(version: str) -> tuple[int, ...] | None:
-    return parse_version_tuple(version)
-
-
-def _is_newer_version(latest: str, current: str) -> bool:
-    return is_newer_version(latest, current)
-
-
+# Backward-compat aliases — remove after all callers are updated
 read_cliproxyapiplus_installed_version = read_installed_version
 write_cliproxyapiplus_installed_version = write_installed_version
 check_cliproxyapiplus_update = check_update
 
 
+# ── Auto-update orchestration ────────────────────────────────
 def check_latest_version(
     current_version: str, repo: str = DEFAULT_CLIPROXY_REPO
 ) -> dict[str, str] | None:
     """Check latest release from GitHub and return update info when newer exists."""
-    latest, release_url = fetch_latest_release(repo=repo, http_get_json=_http_get_json)
+    latest, release_url = fetch_latest_release(repo=repo, http_get_json=http_get_json)
     return build_update_info(
         current_version=current_version,
         latest_version=latest,

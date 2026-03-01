@@ -14,7 +14,7 @@ from flowgate.cliproxyapiplus import (
 @pytest.mark.unit
 def test_check_latest_version_returns_update_info():
     with mock.patch(
-        "flowgate.cliproxyapiplus._http_get_json",
+        "flowgate.cliproxyapiplus.http_get_json",
         return_value={
             "tag_name": "v6.8.18-1",
             "html_url": "https://github.com/example/releases/tag/v6.8.18-1",
