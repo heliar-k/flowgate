@@ -10,12 +10,12 @@ from __future__ import annotations
 import sys
 from typing import Any, TextIO
 
-from ...config import ConfigError
-from ...process import ProcessError, ProcessSupervisor
-from ...security import check_secret_file_permissions
-from ..error_handler import handle_command_errors
-from ..output import Output, command_id_from_args
-from ..utils import _default_auth_dir
+from ..config import ConfigError
+from ..process import ProcessError, ProcessSupervisor
+from ..security import check_secret_file_permissions
+from .error_handler import handle_command_errors
+from .output import Output, command_id_from_args
+from .utils import _default_auth_dir
 from .base import BaseCommand
 
 
@@ -88,7 +88,7 @@ class AuthListCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth list command."""
         # Import here to avoid circular dependency
-        from ...auth_methods import headless_import_handlers
+        from ..auth_methods import headless_import_handlers
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -175,7 +175,7 @@ class AuthStatusCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth status command."""
         # Import here to avoid circular dependency
-        from ...auth_methods import headless_import_handlers
+        from ..auth_methods import headless_import_handlers
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -264,7 +264,7 @@ class AuthLoginCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth login command."""
         # Import here to avoid circular dependency
-        from ...oauth import fetch_auth_url, poll_auth_status
+        from ..oauth import fetch_auth_url, poll_auth_status
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -402,7 +402,7 @@ class AuthImportCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth import-headless command."""
         # Import here to avoid circular dependency
-        from ...auth_methods import (
+        from ..auth_methods import (
             get_headless_import_handler,
             headless_import_handlers,
         )

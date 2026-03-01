@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from flowgate.cli.commands.base import BaseCommand
+from flowgate.cli.base import BaseCommand
 from flowgate.cli.error_handler import (
     EXIT_CONFIG_ERROR,
     EXIT_RUNTIME_ERROR,

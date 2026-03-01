@@ -10,12 +10,12 @@ import os
 import sys
 from typing import Any, TextIO
 
-from ...config import ConfigError
-from ...constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
-from ...process import ProcessSupervisor
-from ...utils import _is_service_port_available
-from ..error_handler import handle_command_errors
-from ..output import Output, command_id_from_args
+from ..config import ConfigError
+from ..constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
+from ..process import ProcessSupervisor
+from ..utils import _is_service_port_available
+from .error_handler import handle_command_errors
+from .output import Output, command_id_from_args
 from .base import BaseCommand
 
 
@@ -32,8 +32,8 @@ def _maybe_print_cliproxyapiplus_update(
     config: dict[str, Any], *, stdout: TextIO
 ) -> None:
     """Print CLIProxyAPIPlus update notification if available."""
-    from ...bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
-    from ...cliproxyapiplus_update_check import (
+    from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
+    from ..cliproxyapiplus_update_check import (
         check_cliproxyapiplus_update,
         read_cliproxyapiplus_installed_version,
     )

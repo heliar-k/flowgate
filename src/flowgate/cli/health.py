@@ -12,16 +12,16 @@ import sys
 from pathlib import Path
 from typing import Any, TextIO
 
-from ...constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
-from ...security import check_secret_file_permissions
-from ..error_handler import handle_command_errors
-from ..output import Output, command_id_from_args
+from ..constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
+from ..security import check_secret_file_permissions
+from .error_handler import handle_command_errors
+from .output import Output, command_id_from_args
 from .base import BaseCommand
 
 
 def _effective_secret_files(config: dict[str, Any]) -> list[str]:
     """Collect all secret files from config and auth directory."""
-    from ..utils import _default_auth_dir
+    from .utils import _default_auth_dir
 
     paths: set[str] = set()
     for value in config.get("secret_files", []):
@@ -43,7 +43,7 @@ class StatusCommand(BaseCommand):
     def execute(self) -> int:
         """Execute status command."""
         # Import from cli module for test mocking compatibility
-        from ... import cli as cli_module
+        from .. import cli as cli_module
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -103,8 +103,8 @@ class HealthCommand(BaseCommand):
     def execute(self) -> int:
         """Execute health command."""
         # Import from cli module for test mocking compatibility
-        from ... import cli as cli_module
-        from ...health import comprehensive_health_check
+        from .. import cli as cli_module
+        from ..health import comprehensive_health_check
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -258,7 +258,7 @@ class DoctorCommand(BaseCommand):
     def execute(self) -> int:
         """Execute doctor command."""
         # Import helper functions from cli module for test mocking compatibility
-        from ... import cli as cli_module
+        from .. import cli as cli_module
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -519,8 +519,8 @@ class DoctorCommand(BaseCommand):
 
     def _maybe_print_cliproxyapiplus_update(self, stdout: TextIO) -> None:
         """Print CLIProxyAPIPlus update notification if available."""
-        from ...bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
-        from ...cliproxyapiplus_update_check import (
+        from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
+        from ..cliproxyapiplus_update_check import (
             check_cliproxyapiplus_update,
             read_cliproxyapiplus_installed_version,
         )

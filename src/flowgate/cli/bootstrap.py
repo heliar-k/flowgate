@@ -7,28 +7,27 @@ runtime dependencies (CLIProxyAPIPlus binary).
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 from typing import TextIO
 
-from ...bootstrap import (
+from ..bootstrap import (
     DEFAULT_CLIPROXY_REPO,
     DEFAULT_CLIPROXY_VERSION,
     download_cliproxyapi_plus,
     validate_cliproxy_binary,
 )
-from ...cliproxyapiplus_auto_update import (
+from ..cliproxyapiplus_auto_update import (
     check_latest_version,
     perform_update,
 )
-from ...cliproxyapiplus_update_check import (
+from ..cliproxyapiplus_update_check import (
     read_cliproxyapiplus_installed_version,
     write_cliproxyapiplus_installed_version,
 )
-from ...constants import CLIPROXYAPI_PLUS_SERVICE
-from ..error_handler import handle_command_errors
-from ..output import Output, command_id_from_args
+from ..constants import CLIPROXYAPI_PLUS_SERVICE
+from .error_handler import handle_command_errors
+from .output import Output, command_id_from_args
 from .base import BaseCommand
 
 
@@ -112,7 +111,6 @@ class BootstrapUpdateCommand(BaseCommand):
         )
 
         runtime_dir = self.config["paths"]["runtime_dir"]
-        runtime_bin_dir = Path(runtime_dir) / "bin"
         repo = self.args.cliproxy_repo
         auto_yes = self.args.yes
         require_sha256 = bool(getattr(self.args, "require_sha256", False))

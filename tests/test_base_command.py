@@ -7,21 +7,9 @@ import unittest
 from argparse import Namespace
 from pathlib import Path
 
-# Direct import to avoid triggering flowgate.__init__ during transition
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-# Import the module directly without going through flowgate package
-import importlib.util
-
 import pytest
 
-spec = importlib.util.spec_from_file_location(
-    "base",
-    Path(__file__).parent.parent / "src" / "flowgate" / "cli" / "commands" / "base.py",
-)
-base_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(base_module)
-BaseCommand = base_module.BaseCommand
+from flowgate.cli.base import BaseCommand
 
 
 class ConcreteCommand(BaseCommand):

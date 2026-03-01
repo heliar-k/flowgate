@@ -10,10 +10,10 @@ from __future__ import annotations
 import sys
 from typing import Any, TextIO
 
-from ...client_apply import apply_claude_code_settings, apply_codex_config
-from ...integration import build_integration_specs
-from ..error_handler import handle_command_errors
-from ..output import Output, command_id_from_args
+from ..client_apply import apply_claude_code_settings, apply_codex_config
+from ..integration import build_integration_specs
+from .error_handler import handle_command_errors
+from .output import Output, command_id_from_args
 from .base import BaseCommand
 
 

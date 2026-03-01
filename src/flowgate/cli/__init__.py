@@ -19,16 +19,16 @@ from ..observability import events_log_context, set_events_log_path
 from ..process import ProcessSupervisor
 from ..security import check_secret_file_permissions
 from ..utils import _is_executable_file
-from .commands.auth import (
+from .auth import (
     AuthImportCommand,
     AuthListCommand,
     AuthLoginCommand,
     AuthStatusCommand,
 )
-from .commands.bootstrap import BootstrapDownloadCommand, BootstrapUpdateCommand
-from .commands.health import DoctorCommand, HealthCommand, StatusCommand
-from .commands.integration import IntegrationApplyCommand, IntegrationPrintCommand
-from .commands.service import (
+from .bootstrap import BootstrapDownloadCommand, BootstrapUpdateCommand
+from .health import DoctorCommand, HealthCommand, StatusCommand
+from .integration import IntegrationApplyCommand, IntegrationPrintCommand
+from .service import (
     ServiceRestartCommand,
     ServiceStartCommand,
     ServiceStopCommand,

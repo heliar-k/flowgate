@@ -14,7 +14,7 @@ from flowgate.bootstrap import (
     pick_release_asset,
     validate_cliproxy_binary,
 )
-from flowgate.cli.commands.bootstrap import _check_latest_version
+from flowgate.cli.bootstrap import _check_latest_version
 
 
 @pytest.mark.unit

@@ -113,7 +113,7 @@ class TestServiceCommandExitCodes(unittest.TestCase):
 
         # Mock port check to simulate port conflict
         with mock.patch(
-            "flowgate.cli.commands.service._is_service_port_available",
+            "flowgate.cli.service._is_service_port_available",
             return_value=False,
         ):
             result = run_cli(
@@ -278,7 +278,7 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         # Mock port check to simulate port conflict
         with mock.patch(
-            "flowgate.cli.commands.service._is_service_port_available",
+            "flowgate.cli.service._is_service_port_available",
             return_value=False,
         ):
             result = run_cli(
