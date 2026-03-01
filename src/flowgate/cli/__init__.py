@@ -27,7 +27,6 @@ from .auth import (
 )
 from .bootstrap import BootstrapDownloadCommand, BootstrapUpdateCommand
 from .health import DoctorCommand, HealthCommand, StatusCommand
-from .integration import IntegrationApplyCommand, IntegrationPrintCommand
 from .service import (
     ServiceRestartCommand,
     ServiceStartCommand,
@@ -112,18 +111,6 @@ def run_cli(
                 bootstrap_cmd = getattr(args, "bootstrap_cmd", None)
                 if bootstrap_cmd in bootstrap_command_map:
                     command_class = bootstrap_command_map[bootstrap_cmd]
-                    command = command_class(args, config)
-                    return command.execute()
-
-            if args.command == "integration":
-                integration_command_map = {
-                    "print": IntegrationPrintCommand,
-                    "apply": IntegrationApplyCommand,
-                }
-
-                integration_cmd = getattr(args, "integration_cmd", None)
-                if integration_cmd in integration_command_map:
-                    command_class = integration_command_map[integration_cmd]
                     command = command_class(args, config)
                     return command.execute()
 

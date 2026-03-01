@@ -50,27 +50,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub.add_parser("doctor")
 
-    integration = sub.add_parser("integration")
-    integration_sub = integration.add_subparsers(dest="integration_cmd", required=True)
-    integration_print = integration_sub.add_parser("print")
-    integration_print.add_argument("client", choices=["codex", "claude-code"])
-    integration_apply = integration_sub.add_parser("apply")
-    integration_apply.add_argument("client", choices=["codex", "claude-code"])
-    integration_apply.add_argument("--target", default="")
-    integration_apply.add_argument(
-        "--dry-run",
-        action="store_true",
-        default=False,
-        help="Show planned changes without modifying files",
-    )
-    integration_apply.add_argument(
-        "--yes",
-        "-y",
-        action="store_true",
-        default=False,
-        help="Skip confirmation prompts for non-interactive runs",
-    )
-
     auth = sub.add_parser("auth")
     auth_sub = auth.add_subparsers(dest="provider", required=True)
     auth_sub.add_parser("list")
