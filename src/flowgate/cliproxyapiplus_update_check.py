@@ -7,6 +7,13 @@ from pathlib import Path
 from typing import Any
 from urllib.request import Request, urlopen
 
+from .cliproxyapiplus_release import fetch_latest_release
+from .cliproxyapiplus_version import (
+    build_update_info,
+    is_newer_version,
+    parse_version_tuple,
+)
+
 CHECK_CACHE_FILE = "cliproxyapiplus_update_cache.json"
 INSTALLED_VERSION_FILE = "cliproxyapiplus.version"
 CHECK_TTL_SECONDS = 24 * 60 * 60
@@ -14,22 +21,13 @@ CHECK_ERROR_TTL_SECONDS = 60 * 60
 
 
 def _parse_version_tuple(version: str) -> tuple[int, ...] | None:
-    parts = re.findall(r"\d+", version)
-    if not parts:
-        return None
-    return tuple(int(part) for part in parts)
+    # Backward-compatible private wrapper used by existing tests/call sites.
+    return parse_version_tuple(version)
 
 
 def _is_newer_version(latest: str, current: str) -> bool:
-    latest_tuple = _parse_version_tuple(latest)
-    current_tuple = _parse_version_tuple(current)
-    if latest_tuple is None or current_tuple is None:
-        return latest.strip() != current.strip()
-
-    width = max(len(latest_tuple), len(current_tuple))
-    latest_tuple = latest_tuple + (0,) * (width - len(latest_tuple))
-    current_tuple = current_tuple + (0,) * (width - len(current_tuple))
-    return latest_tuple > current_tuple
+    # Backward-compatible private wrapper used by existing tests/call sites.
+    return is_newer_version(latest, current)
 
 
 def _cache_path(runtime_dir: str | Path) -> Path:
@@ -56,6 +54,22 @@ def _write_cache(path: Path, payload: dict[str, Any]) -> None:
         path.write_text(json.dumps(payload), encoding="utf-8")
     except Exception:  # noqa: BLE001
         return
+
+
+def _http_get_json(url: str) -> dict[str, Any]:
+    req = Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "flowgate-update-check",
+        },
+    )
+    with urlopen(req, timeout=5) as resp:  # nosec B310
+        payload = resp.read().decode("utf-8")
+    data = json.loads(payload)
+    if not isinstance(data, dict):
+        raise RuntimeError("invalid latest release payload")
+    return data
 
 
 def read_cliproxyapiplus_installed_version(
@@ -119,30 +133,16 @@ def check_cliproxyapiplus_update(
     if cache_valid:
         latest = str(cached.get("latest_version", "")).strip()
         release_url = str(cached.get("release_url", "")).strip()
-        if latest and _is_newer_version(latest, current):
-            return {
-                "current_version": current,
-                "latest_version": latest,
-                "release_url": release_url,
-            }
-        return None
+        return build_update_info(
+            current_version=current,
+            latest_version=latest,
+            release_url=release_url,
+        )
 
-    api_url = f"https://api.github.com/repos/{repo}/releases/latest"
-    req = Request(
-        api_url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "flowgate-update-check",
-        },
-    )
     try:
-        with urlopen(req, timeout=5) as resp:  # nosec B310
-            payload = resp.read().decode("utf-8")
-        data = json.loads(payload)
-        if not isinstance(data, dict):
-            raise RuntimeError("invalid latest release payload")
-        latest = str(data.get("tag_name", "")).strip()
-        release_url = str(data.get("html_url", "")).strip()
+        latest, release_url = fetch_latest_release(
+            repo=repo, http_get_json=_http_get_json
+        )
     except Exception:  # noqa: BLE001
         _write_cache(
             cache_file,
@@ -164,10 +164,8 @@ def check_cliproxyapiplus_update(
             "error": False,
         },
     )
-    if latest and _is_newer_version(latest, current):
-        return {
-            "current_version": current,
-            "latest_version": latest,
-            "release_url": release_url,
-        }
-    return None
+    return build_update_info(
+        current_version=current,
+        latest_version=latest,
+        release_url=release_url,
+    )

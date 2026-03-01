@@ -47,6 +47,13 @@ class DevScriptTests(unittest.TestCase):
         self.assertIn("SMOKE_UPSTREAM_CLIPROXY_API_KEY", text)
         self.assertIn("ensure_upstream_api_key_file", text)
 
+    def test_cliproxy_auto_update_script_exists(self):
+        path = Path("scripts/cliproxy_auto_update.py")
+        self.assertTrue(path.exists())
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("load_router_config", text)
+        self.assertIn("perform_update", text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
-import tempfile
-import unittest
 import io
 import tarfile
+import tempfile
+import unittest
 from pathlib import Path
 from unittest import mock
 
@@ -15,6 +15,7 @@ from flowgate.bootstrap import (
     validate_cliproxy_binary,
 )
 from flowgate.cli.commands.bootstrap import _check_latest_version
+
 
 @pytest.mark.unit
 class BootstrapTests(unittest.TestCase):
@@ -98,11 +99,11 @@ class BootstrapTests(unittest.TestCase):
 class CheckLatestVersionTests(unittest.TestCase):
     def test_returns_update_info_when_newer_available(self):
         with mock.patch(
-            "flowgate.cli.commands.bootstrap._http_get_json",
-            return_value={
-                "tag_name": "v6.8.20-1",
-                "html_url": "https://github.com/example/releases/tag/v6.8.20-1",
-            },
+            "flowgate.cliproxyapiplus_auto_update.fetch_latest_release",
+            return_value=(
+                "v6.8.20-1",
+                "https://github.com/example/releases/tag/v6.8.20-1",
+            ),
         ):
             result = _check_latest_version("v6.8.18-1", "example/repo")
         self.assertIsNotNone(result)
@@ -112,30 +113,30 @@ class CheckLatestVersionTests(unittest.TestCase):
 
     def test_returns_none_when_up_to_date(self):
         with mock.patch(
-            "flowgate.cli.commands.bootstrap._http_get_json",
-            return_value={
-                "tag_name": "v6.8.18-1",
-                "html_url": "https://github.com/example/releases/tag/v6.8.18-1",
-            },
+            "flowgate.cliproxyapiplus_auto_update.fetch_latest_release",
+            return_value=(
+                "v6.8.18-1",
+                "https://github.com/example/releases/tag/v6.8.18-1",
+            ),
         ):
             result = _check_latest_version("v6.8.18-1", "example/repo")
         self.assertIsNone(result)
 
     def test_returns_none_when_current_is_newer(self):
         with mock.patch(
-            "flowgate.cli.commands.bootstrap._http_get_json",
-            return_value={
-                "tag_name": "v6.8.16-0",
-                "html_url": "https://github.com/example/releases/tag/v6.8.16-0",
-            },
+            "flowgate.cliproxyapiplus_auto_update.fetch_latest_release",
+            return_value=(
+                "v6.8.16-0",
+                "https://github.com/example/releases/tag/v6.8.16-0",
+            ),
         ):
             result = _check_latest_version("v6.8.18-1", "example/repo")
         self.assertIsNone(result)
 
     def test_returns_none_when_tag_name_empty(self):
         with mock.patch(
-            "flowgate.cli.commands.bootstrap._http_get_json",
-            return_value={"tag_name": "", "html_url": ""},
+            "flowgate.cliproxyapiplus_auto_update.fetch_latest_release",
+            return_value=("", ""),
         ):
             result = _check_latest_version("v6.8.18-1", "example/repo")
         self.assertIsNone(result)
