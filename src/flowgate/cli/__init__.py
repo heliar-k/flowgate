@@ -35,10 +35,6 @@ from .helpers import (
     _load_and_resolve_config,
 )
 
-# Backward compatibility alias
-_build_parser = build_parser
-
-
 def run_cli(
     argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO | None = None
 ) -> int:
