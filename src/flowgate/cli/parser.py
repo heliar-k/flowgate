@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import argparse
 
-from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
+from ..core.bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
 
 
 def build_parser() -> argparse.ArgumentParser:

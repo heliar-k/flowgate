@@ -10,10 +10,9 @@ import os
 import sys
 from typing import Any, TextIO
 
-from ..config import ConfigError
-from ..constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
-from ..core.process import is_port_available
-from ..process import ProcessSupervisor
+from ..core.config import ConfigError
+from ..core.constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
+from ..core.process import is_port_available, ProcessSupervisor
 from .error_handler import handle_command_errors
 from .helpers import maybe_print_update_notification
 from .output import Output, command_id_from_args

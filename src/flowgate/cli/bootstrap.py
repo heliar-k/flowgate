@@ -11,18 +11,18 @@ import sys
 from pathlib import Path
 from typing import TextIO
 
-from ..bootstrap import (
+from ..core.bootstrap import (
     DEFAULT_CLIPROXY_VERSION,
     download_cliproxyapi_plus,
     validate_cliproxy_binary,
 )
-from ..cliproxyapiplus import (
+from ..core.cliproxyapiplus import (
     check_latest_version,
     perform_update,
     read_installed_version,
     write_installed_version,
 )
-from ..constants import CLIPROXYAPI_PLUS_SERVICE
+from ..core.constants import CLIPROXYAPI_PLUS_SERVICE
 from .error_handler import handle_command_errors
 from .output import Output, command_id_from_args
 from .base import BaseCommand

@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 from typing import Any, TextIO
 
-from ..config import load_router_config
+from ..core.config import load_router_config
 from ..core.config import PathResolver
 
 
@@ -67,8 +67,8 @@ def maybe_print_update_notification(config: dict[str, Any], *, stdout: TextIO) -
 
     No-ops when stdout is not a TTY or lacks isatty attribute.
     """
-    from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
-    from ..cliproxyapiplus import (
+    from ..core.bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
+    from ..core.cliproxyapiplus import (
         check_update,
         read_installed_version,
     )

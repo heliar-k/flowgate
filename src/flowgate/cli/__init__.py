@@ -13,8 +13,8 @@ import traceback
 from collections.abc import Iterable
 from typing import Any, TextIO
 
-from ..config import ConfigError
-from ..observability import events_log_context, set_events_log_path
+from ..core.config import ConfigError
+from ..core.observability import events_log_context, set_events_log_path
 from .auth import (
     AuthImportCommand,
     AuthListCommand,

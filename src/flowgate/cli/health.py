@@ -12,11 +12,11 @@ import sys
 from pathlib import Path
 from typing import Any, TextIO
 
-from ..constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
+from ..core.constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from ..core.bootstrap import is_executable_file
-from ..health import check_http_health, comprehensive_health_check
-from ..process import ProcessSupervisor
-from ..security import check_secret_file_permissions
+from ..core.health import check_http_health, comprehensive_health_check
+from ..core.process import ProcessSupervisor
+from ..core.security import check_secret_file_permissions
 from .error_handler import handle_command_errors
 from .helpers import effective_secret_files, maybe_print_update_notification
 from .output import Output, command_id_from_args
