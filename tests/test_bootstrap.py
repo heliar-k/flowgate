@@ -21,8 +21,8 @@ from flowgate.cli.bootstrap import _check_latest_version
 class BootstrapTests(unittest.TestCase):
     def test_detect_platform_darwin_arm64(self):
         with (
-            mock.patch("flowgate.bootstrap.platform.system", return_value="Darwin"),
-            mock.patch("flowgate.bootstrap.platform.machine", return_value="arm64"),
+            mock.patch("flowgate.core.bootstrap.platform.system", return_value="Darwin"),
+            mock.patch("flowgate.core.bootstrap.platform.machine", return_value="arm64"),
         ):
             os_name, arch = detect_platform()
         self.assertEqual(os_name, "darwin")
@@ -30,8 +30,8 @@ class BootstrapTests(unittest.TestCase):
 
     def test_detect_platform_linux_amd64(self):
         with (
-            mock.patch("flowgate.bootstrap.platform.system", return_value="Linux"),
-            mock.patch("flowgate.bootstrap.platform.machine", return_value="x86_64"),
+            mock.patch("flowgate.core.bootstrap.platform.system", return_value="Linux"),
+            mock.patch("flowgate.core.bootstrap.platform.machine", return_value="x86_64"),
         ):
             os_name, arch = detect_platform()
         self.assertEqual(os_name, "linux")

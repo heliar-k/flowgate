@@ -56,8 +56,8 @@ cliproxy_models_url() {
   uv run python - "$CONFIG_PATH" <<'PY'
 from pathlib import Path
 
-from flowgate.config import load_router_config
-from flowgate.constants import DEFAULT_SERVICE_HOST, DEFAULT_READINESS_PATH
+from flowgate.core.config import load_router_config
+from flowgate.core.constants import DEFAULT_SERVICE_HOST, DEFAULT_READINESS_PATH
 
 cfg = load_router_config(Path(__import__("sys").argv[1]))
 service = cfg.get("services", {}).get("cliproxyapi_plus", {})
@@ -73,8 +73,8 @@ cliproxy_base_url() {
   uv run python - "$CONFIG_PATH" <<'PY'
 from pathlib import Path
 
-from flowgate.config import load_router_config
-from flowgate.constants import DEFAULT_SERVICE_HOST
+from flowgate.core.config import load_router_config
+from flowgate.core.constants import DEFAULT_SERVICE_HOST
 
 cfg = load_router_config(Path(__import__("sys").argv[1]))
 service = cfg.get("services", {}).get("cliproxyapi_plus", {})
@@ -90,7 +90,7 @@ cliproxy_api_key() {
 import json
 from pathlib import Path
 
-from flowgate.config import load_router_config
+from flowgate.core.config import load_router_config
 
 cfg_path = Path(__import__("sys").argv[1])
 flow = load_router_config(cfg_path)

@@ -9,7 +9,7 @@ requires-python = ">=3.11"
 dependencies = ["pyyaml>=6,<7"]
 
 [project.scripts]
-flowgate = "main:main"
+flowgate = "flowgate:main"
 
 [dependency-groups]
 test = ["pytest>=8.3.0,<9", "pytest-cov>=5.0.0,<6"]
