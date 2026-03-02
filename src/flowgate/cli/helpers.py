@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from ..config import load_router_config
-from ..config_utils.path_resolver import PathResolver
+from ..core.config import PathResolver
 
 
 def _load_and_resolve_config(path: str) -> dict[str, Any]:
