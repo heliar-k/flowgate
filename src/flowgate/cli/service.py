@@ -20,14 +20,6 @@ from .output import Output, command_id_from_args
 from .base import BaseCommand
 
 
-def _service_names(config: dict[str, Any], target: str) -> list[str]:
-    """Resolve service names from target (service name or 'all')."""
-    if target == "all":
-        return list(config["services"].keys())
-    if target not in config["services"]:
-        raise ConfigError(f"Unknown service: {target}")
-    return [target]
-
 
 def _service_names(config: dict[str, Any], target: str) -> list[str]:
     """Resolve service names from target (service name or 'all')."""

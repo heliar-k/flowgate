@@ -1,8 +1,10 @@
 """
-Utility functions for CLI operations.
+Helper functions for CLI operations.
 
-This module contains helper functions for configuration loading,
-path resolution, and common CLI operations.
+This module contains helper functions for:
+- Configuration loading and path resolution
+- Secret file collection from config and auth directory
+- CLIProxyAPIPlus update notification
 """
 
 from __future__ import annotations
@@ -39,7 +41,14 @@ def _default_auth_dir(config: dict[str, Any]) -> str:
 
 
 def effective_secret_files(config: dict[str, Any]) -> list[str]:
-    """Collect all secret files from config and auth directory."""
+    """Collect all secret files from config and auth directory.
+
+    Sources:
+    - Files listed in config's secret_files list (resolved to absolute paths)
+    - *.json files in the default auth directory
+
+    Returns deduplicated, sorted list of absolute file paths.
+    """
     paths: set[str] = set()
     for value in config.get("secret_files", []):
         if isinstance(value, str) and value.strip():
@@ -54,7 +63,10 @@ def effective_secret_files(config: dict[str, Any]) -> list[str]:
 
 
 def maybe_print_update_notification(config: dict[str, Any], *, stdout: TextIO) -> None:
-    """Print CLIProxyAPIPlus update notification if available (TTY only)."""
+    """Print CLIProxyAPIPlus update notification if available (TTY only).
+
+    No-ops when stdout is not a TTY or lacks isatty attribute.
+    """
     from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
     from ..cliproxyapiplus import (
         check_update,
@@ -83,7 +95,7 @@ def maybe_print_update_notification(config: dict[str, Any], *, stdout: TextIO) -
     latest = update["latest_version"]
     release_url = update.get("release_url", "")
     config_path = str(
-        config.get("_meta", {}).get("config_path", "config/flowgate.yaml")
+        config.get("_meta", {}).get("config_path", "<your-flowgate-config>")
     )
     print(
         (
