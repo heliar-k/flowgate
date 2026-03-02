@@ -1,9 +1,10 @@
+"""FlowGate - CLIProxyAPIPlus wrapper."""
 from __future__ import annotations
 
 import sys
 
-from .cli import run_cli
 
-
-def main() -> None:
-    raise SystemExit(run_cli(sys.argv[1:]))
+def main() -> int:
+    """Entry point for the flowgate CLI."""
+    from .cli import run_cli  # Lazy import to avoid loading CLI on package import
+    return run_cli(sys.argv[1:])
