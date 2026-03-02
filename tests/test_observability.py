@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from flowgate.observability import (
+from flowgate.core.observability import (
     get_recent_metrics,
     log_performance_metric,
     measure_time,
@@ -33,7 +33,7 @@ class TestMeasureTimeDecorator(unittest.TestCase):
 
     def test_decorator_measures_execution_time(self):
         """Test that decorator measures and logs execution time."""
-        with patch("flowgate.observability.log_performance_metric") as mock_log:
+        with patch("flowgate.core.observability.log_performance_metric") as mock_log:
 
             @measure_time("test_operation")
             def slow_function():
@@ -84,7 +84,7 @@ class TestMeasureTimeDecorator(unittest.TestCase):
 
     def test_decorator_logs_even_on_exception(self):
         """Test that decorator logs metrics even when function raises."""
-        with patch("flowgate.observability.log_performance_metric") as mock_log:
+        with patch("flowgate.core.observability.log_performance_metric") as mock_log:
 
             @measure_time("test_op")
             def raise_error():
@@ -121,7 +121,7 @@ class TestMeasureTimeDecorator(unittest.TestCase):
 
     def test_nested_decorators(self):
         """Test that nested decorated functions work correctly."""
-        with patch("flowgate.observability.log_performance_metric") as mock_log:
+        with patch("flowgate.core.observability.log_performance_metric") as mock_log:
 
             @measure_time("outer")
             def outer():
@@ -220,7 +220,7 @@ class TestLogPerformanceMetric(unittest.TestCase):
 
     def test_log_handles_write_failure_gracefully(self):
         """Test that logging failures don't raise exceptions."""
-        with patch("flowgate.observability.Path") as mock_path:
+        with patch("flowgate.core.observability.Path") as mock_path:
             mock_log = Mock()
             mock_path.return_value = mock_log
             mock_log.parent.mkdir.side_effect = OSError("Permission denied")
@@ -373,7 +373,7 @@ class TestGetRecentMetrics(unittest.TestCase):
 
     def test_get_metrics_handles_read_failure(self):
         """Test that read failures return empty list."""
-        with patch("flowgate.observability.Path") as mock_path:
+        with patch("flowgate.core.observability.Path") as mock_path:
             mock_log = Mock()
             mock_path.return_value = mock_log
             mock_log.exists.return_value = True

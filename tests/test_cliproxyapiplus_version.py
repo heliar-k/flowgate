@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from flowgate.cliproxyapiplus import (
+from flowgate.core.cliproxyapiplus import (
     build_update_info,
     is_newer_version,
     parse_version_tuple,

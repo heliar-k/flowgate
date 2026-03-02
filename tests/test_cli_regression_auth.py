@@ -141,11 +141,11 @@ class TestAuthCommandExitCodes(unittest.TestCase):
         err = io.StringIO()
         with (
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/login",
             ),
             mock.patch(
-                "flowgate.oauth.poll_auth_status",
+                "flowgate.core.auth.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out"),
             ),
         ):
@@ -300,10 +300,10 @@ class TestAuthCommandOutput(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/login",
             ),
-            mock.patch("flowgate.oauth.poll_auth_status", return_value="success"),
+            mock.patch("flowgate.core.auth.poll_auth_status", return_value="success"),
         ):
             result = run_cli(
                 ["--config", str(self.cfg), "auth", "login", "codex", "--timeout", "5"],
@@ -331,7 +331,7 @@ class TestAuthCommandOutput(unittest.TestCase):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
         with mock.patch(
-            "flowgate.auth_methods.get_headless_import_handler", return_value=handler
+            "flowgate.core.auth.get_headless_import_handler", return_value=handler
         ):
             result = run_cli(
                 [
@@ -361,11 +361,11 @@ class TestAuthCommandOutput(unittest.TestCase):
         err = io.StringIO()
         with (
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/login",
             ),
             mock.patch(
-                "flowgate.oauth.poll_auth_status",
+                "flowgate.core.auth.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out; last status=pending"),
             ),
         ):

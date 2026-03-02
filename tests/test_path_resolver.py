@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from flowgate.config_utils.path_resolver import PathResolver
+from flowgate.core.config import PathResolver
 
 
 @pytest.mark.unit

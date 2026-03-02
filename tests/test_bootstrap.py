@@ -7,7 +7,7 @@ from unittest import mock
 
 import pytest
 
-from flowgate.bootstrap import (
+from flowgate.core.bootstrap import (
     _extract_binary_from_bytes,
     _extract_sha256_from_checksum_text,
     detect_platform,
@@ -99,7 +99,7 @@ class BootstrapTests(unittest.TestCase):
 class CheckLatestVersionTests(unittest.TestCase):
     def test_returns_update_info_when_newer_available(self):
         with mock.patch(
-            "flowgate.cliproxyapiplus.fetch_latest_release",
+            "flowgate.core.cliproxyapiplus.fetch_latest_release",
             return_value=(
                 "v6.8.20-1",
                 "https://github.com/example/releases/tag/v6.8.20-1",
@@ -113,7 +113,7 @@ class CheckLatestVersionTests(unittest.TestCase):
 
     def test_returns_none_when_up_to_date(self):
         with mock.patch(
-            "flowgate.cliproxyapiplus.fetch_latest_release",
+            "flowgate.core.cliproxyapiplus.fetch_latest_release",
             return_value=(
                 "v6.8.18-1",
                 "https://github.com/example/releases/tag/v6.8.18-1",
@@ -124,7 +124,7 @@ class CheckLatestVersionTests(unittest.TestCase):
 
     def test_returns_none_when_current_is_newer(self):
         with mock.patch(
-            "flowgate.cliproxyapiplus.fetch_latest_release",
+            "flowgate.core.cliproxyapiplus.fetch_latest_release",
             return_value=(
                 "v6.8.16-0",
                 "https://github.com/example/releases/tag/v6.8.16-0",
@@ -135,7 +135,7 @@ class CheckLatestVersionTests(unittest.TestCase):
 
     def test_returns_none_when_tag_name_empty(self):
         with mock.patch(
-            "flowgate.cliproxyapiplus.fetch_latest_release",
+            "flowgate.core.cliproxyapiplus.fetch_latest_release",
             return_value=("", ""),
         ):
             result = _check_latest_version("v6.8.18-1", "example/repo")

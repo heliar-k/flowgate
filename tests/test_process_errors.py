@@ -15,7 +15,7 @@ from unittest import mock
 
 import pytest
 
-from flowgate.process import ProcessError, ProcessSupervisor
+from flowgate.core.process import ProcessError, ProcessSupervisor
 
 
 @pytest.mark.unit

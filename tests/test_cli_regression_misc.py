@@ -156,7 +156,7 @@ class TestDiagnosticCommandRegression(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("cliproxyapi_plus: liveness=fail readiness=fail", output)
 
-    @mock.patch("flowgate.cli.health._is_executable_file", return_value=True)
+    @mock.patch("flowgate.cli.health.is_executable_file", return_value=True)
     def test_doctor_runtime_exists(
         self,
         mock_is_executable: mock.Mock,
@@ -173,7 +173,7 @@ class TestDiagnosticCommandRegression(unittest.TestCase):
         self.assertIn("doctor:runtime_dir=pass", output)
         self.assertIn("doctor:cliproxy_config=pass", output)
 
-    @mock.patch("flowgate.cli.health._is_executable_file", return_value=False)
+    @mock.patch("flowgate.cli.health.is_executable_file", return_value=False)
     def test_doctor_missing_binaries(self, mock_is_executable: mock.Mock) -> None:
         stdout = io.StringIO()
         stderr = io.StringIO()

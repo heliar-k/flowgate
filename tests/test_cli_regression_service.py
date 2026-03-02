@@ -112,7 +112,7 @@ class TestServiceCommandExitCodes(unittest.TestCase):
 
         # Mock port check to simulate port conflict
         with mock.patch(
-            "flowgate.cli.service._is_service_port_available",
+            "flowgate.cli.service.is_port_available",
             return_value=False,
         ):
             result = run_cli(
@@ -134,7 +134,7 @@ class TestServiceCommandExitCodes(unittest.TestCase):
         err = io.StringIO()
 
         # Mock supervisor to simulate service not running
-        with mock.patch("flowgate.process.ProcessSupervisor.stop", return_value=False):
+        with mock.patch("flowgate.core.process.ProcessSupervisor.stop", return_value=False):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "stop", "cliproxyapi_plus"],
                 stdout=out,
@@ -177,7 +177,7 @@ class TestServiceCommandOutput(unittest.TestCase):
         out = io.StringIO()
 
         # Mock supervisor to simulate successful start
-        with mock.patch("flowgate.process.ProcessSupervisor.start", return_value=12345):
+        with mock.patch("flowgate.core.process.ProcessSupervisor.start", return_value=12345):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "start", "cliproxyapi_plus"],
                 stdout=out,
@@ -197,7 +197,7 @@ class TestServiceCommandOutput(unittest.TestCase):
         out = io.StringIO()
 
         # Mock supervisor to simulate successful stop
-        with mock.patch("flowgate.process.ProcessSupervisor.stop", return_value=True):
+        with mock.patch("flowgate.core.process.ProcessSupervisor.stop", return_value=True):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "stop", "cliproxyapi_plus"],
                 stdout=out,
@@ -216,7 +216,7 @@ class TestServiceCommandOutput(unittest.TestCase):
         out = io.StringIO()
 
         # Mock supervisor to simulate stop failure
-        with mock.patch("flowgate.process.ProcessSupervisor.stop", return_value=False):
+        with mock.patch("flowgate.core.process.ProcessSupervisor.stop", return_value=False):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "stop", "cliproxyapi_plus"],
                 stdout=out,
@@ -236,7 +236,7 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         # Mock supervisor to simulate successful restart
         with mock.patch(
-            "flowgate.process.ProcessSupervisor.restart", return_value=67890
+            "flowgate.core.process.ProcessSupervisor.restart", return_value=67890
         ):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "restart", "cliproxyapi_plus"],
@@ -257,7 +257,7 @@ class TestServiceCommandOutput(unittest.TestCase):
         out = io.StringIO()
 
         # Mock supervisor to simulate successful start of all services
-        with mock.patch("flowgate.process.ProcessSupervisor.start", return_value=11111):
+        with mock.patch("flowgate.core.process.ProcessSupervisor.start", return_value=11111):
             result = run_cli(
                 ["--config", str(self.cfg), "service", "start", "all"],
                 stdout=out,
@@ -277,7 +277,7 @@ class TestServiceCommandOutput(unittest.TestCase):
 
         # Mock port check to simulate port conflict
         with mock.patch(
-            "flowgate.cli.service._is_service_port_available",
+            "flowgate.cli.service.is_port_available",
             return_value=False,
         ):
             result = run_cli(

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from flowgate.security import check_secret_file_permissions
+from flowgate.core.security import check_secret_file_permissions
 
 
 @pytest.mark.unit

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from flowgate.headless_import import import_codex_headless_auth
+from flowgate.core.auth import import_codex_headless_auth
 
 
 @pytest.mark.unit

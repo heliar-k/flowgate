@@ -22,7 +22,7 @@ from urllib.error import URLError
 
 import pytest
 
-from flowgate.oauth import fetch_auth_url, poll_auth_status
+from flowgate.core.auth import fetch_auth_url, poll_auth_status
 
 from .base import IntegrationTestBase
 

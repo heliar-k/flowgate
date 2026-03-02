@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from flowgate.process import ProcessSupervisor
+from flowgate.core.process import ProcessSupervisor
 
 from .base import IntegrationTestBase
 

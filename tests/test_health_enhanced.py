@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from flowgate.health import (
+from flowgate.core.health import (
     HealthCheckResult,
     check_credentials,
     check_disk_space,
@@ -114,7 +114,7 @@ class TestCheckMemoryUsage(unittest.TestCase):
         """Test memory check when psutil is not available."""
         # Remove psutil from sys.modules if it exists
         with patch.dict("sys.modules", {"psutil": None}):
-            with patch("flowgate.health.Path") as mock_path:
+            with patch("flowgate.core.health.Path") as mock_path:
                 mock_meminfo = Mock()
                 mock_path.return_value = mock_meminfo
                 mock_meminfo.exists.return_value = False
@@ -432,7 +432,7 @@ class TestComprehensiveHealthCheck(unittest.TestCase):
         }
 
         # Mock disk space to return degraded
-        with patch("flowgate.health.check_disk_space") as mock_disk:
+        with patch("flowgate.core.health.check_disk_space") as mock_disk:
             mock_disk.return_value = {
                 "status": "degraded",
                 "message": "Low disk space",

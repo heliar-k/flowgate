@@ -233,7 +233,7 @@ class CLITests(unittest.TestCase):
         out.isatty = lambda: False  # type: ignore[attr-defined]
         with (
             mock.patch(
-                "flowgate.cli.service._is_service_port_available",
+                "flowgate.cli.service.is_port_available",
                 return_value=True,
             ) as port_available,
             mock.patch(
@@ -267,7 +267,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.service._is_service_port_available",
+                "flowgate.cli.service.is_port_available",
                 return_value=True,
             ) as port_available,
             mock.patch(
@@ -304,7 +304,7 @@ class CLITests(unittest.TestCase):
         err = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.service._is_service_port_available",
+                "flowgate.cli.service.is_port_available",
                 return_value=False,
             ) as port_available,
             mock.patch(
@@ -331,7 +331,7 @@ class CLITests(unittest.TestCase):
         err = io.StringIO()
         with (
             mock.patch(
-                "flowgate.cli.service._is_service_port_available",
+                "flowgate.cli.service.is_port_available",
                 return_value=False,
             ) as port_available,
             mock.patch(
@@ -366,11 +366,11 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.auth.ProcessSupervisor"
             ) as supervisor_cls,
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/login",
             ) as f_url,
             mock.patch(
-                "flowgate.oauth.poll_auth_status", return_value="success"
+                "flowgate.core.auth.poll_auth_status", return_value="success"
             ) as p_status,
         ):
             code = run_cli(
@@ -394,10 +394,10 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.auth.ProcessSupervisor"
             ) as supervisor_cls,
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/login",
             ),
-            mock.patch("flowgate.oauth.poll_auth_status", return_value="success"),
+            mock.patch("flowgate.core.auth.poll_auth_status", return_value="success"),
         ):
             code = run_cli(
                 [
@@ -427,11 +427,11 @@ class CLITests(unittest.TestCase):
         with (
             mock.patch("flowgate.cli.auth.ProcessSupervisor"),
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/login",
             ),
             mock.patch(
-                "flowgate.oauth.poll_auth_status",
+                "flowgate.core.auth.poll_auth_status",
                 side_effect=TimeoutError("OAuth login timed out; last status=pending"),
             ),
         ):
@@ -482,11 +482,11 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.auth.ProcessSupervisor"
             ) as supervisor_cls,
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/custom-login",
             ) as f_url,
             mock.patch(
-                "flowgate.oauth.poll_auth_status", return_value="success"
+                "flowgate.core.auth.poll_auth_status", return_value="success"
             ) as p_status,
         ):
             code = run_cli(
@@ -511,7 +511,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
         with mock.patch(
-            "flowgate.auth_methods.get_headless_import_handler", return_value=handler
+            "flowgate.core.auth.get_headless_import_handler", return_value=handler
         ) as resolver:
             code = run_cli(
                 [
@@ -539,7 +539,7 @@ class CLITests(unittest.TestCase):
         handler = mock.Mock(return_value=Path("/tmp/auths/custom-headless-import.json"))
         with (
             mock.patch(
-                "flowgate.auth_methods.get_headless_import_handler",
+                "flowgate.core.auth.get_headless_import_handler",
                 return_value=handler,
             ) as resolver,
             mock.patch(
@@ -597,7 +597,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
         with mock.patch(
-            "flowgate.auth_methods.get_headless_import_handler", return_value=handler
+            "flowgate.core.auth.get_headless_import_handler", return_value=handler
         ) as resolver:
             code = run_cli(
                 [
@@ -631,7 +631,7 @@ class CLITests(unittest.TestCase):
         out = io.StringIO()
         handler = mock.Mock(return_value=Path("/tmp/auths/codex-headless-import.json"))
         with mock.patch(
-            "flowgate.auth_methods.get_headless_import_handler", return_value=handler
+            "flowgate.core.auth.get_headless_import_handler", return_value=handler
         ) as resolver:
             code = run_cli(
                 [
@@ -801,11 +801,11 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.service.ProcessSupervisor"
             ) as supervisor_cls,
             mock.patch(
-                "flowgate.cliproxyapiplus.read_installed_version",
+                "flowgate.core.cliproxyapiplus.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.check_update",
+                "flowgate.core.cliproxyapiplus.check_update",
                 return_value={
                     "current_version": "v6.8.16-0",
                     "latest_version": "v6.8.18-1",
@@ -836,11 +836,11 @@ class CLITests(unittest.TestCase):
         out = TTYStringIO()
         with (
             mock.patch(
-                "flowgate.cliproxyapiplus.read_installed_version",
+                "flowgate.core.cliproxyapiplus.read_installed_version",
                 return_value="v6.8.16-0",
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.check_update",
+                "flowgate.core.cliproxyapiplus.check_update",
                 return_value={
                     "current_version": "v6.8.16-0",
                     "latest_version": "v6.8.18-1",
@@ -868,11 +868,11 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.auth.ProcessSupervisor"
             ) as supervisor_cls,
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="http://example.local/auth?code=xyz",
             ) as fetch_mock,
             mock.patch(
-                "flowgate.oauth.poll_auth_status",
+                "flowgate.core.auth.poll_auth_status",
                 return_value="authenticated",
             ) as poll_mock,
         ):
@@ -907,11 +907,11 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.auth.ProcessSupervisor"
             ) as supervisor_cls,
             mock.patch(
-                "flowgate.oauth.fetch_auth_url",
+                "flowgate.core.auth.fetch_auth_url",
                 return_value="http://example.local/auth?code=xyz",
             ) as fetch_mock,
             mock.patch(
-                "flowgate.oauth.poll_auth_status",
+                "flowgate.core.auth.poll_auth_status",
                 return_value="authenticated",
             ),
         ):
@@ -964,18 +964,18 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.download_cliproxyapi_plus",
+                "flowgate.core.cliproxyapiplus.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.validate_cliproxy_binary",
+                "flowgate.core.cliproxyapiplus.validate_cliproxy_binary",
                 return_value=True,
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.write_installed_version",
+                "flowgate.core.cliproxyapiplus.write_installed_version",
             ) as write_ver,
             mock.patch(
-                "flowgate.cliproxyapiplus.ProcessSupervisor",
+                "flowgate.core.cliproxyapiplus.ProcessSupervisor",
             ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
@@ -1030,18 +1030,18 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.download_cliproxyapi_plus",
+                "flowgate.core.cliproxyapiplus.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.validate_cliproxy_binary",
+                "flowgate.core.cliproxyapiplus.validate_cliproxy_binary",
                 return_value=True,
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.write_installed_version",
+                "flowgate.core.cliproxyapiplus.write_installed_version",
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.ProcessSupervisor",
+                "flowgate.core.cliproxyapiplus.ProcessSupervisor",
             ) as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
@@ -1134,11 +1134,11 @@ class CLITests(unittest.TestCase):
                 },
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.download_cliproxyapi_plus",
+                "flowgate.core.cliproxyapiplus.download_cliproxyapi_plus",
                 return_value=Path("/tmp/runtime/bin/CLIProxyAPIPlus"),
             ),
             mock.patch(
-                "flowgate.cliproxyapiplus.validate_cliproxy_binary",
+                "flowgate.core.cliproxyapiplus.validate_cliproxy_binary",
                 return_value=False,
             ),
         ):

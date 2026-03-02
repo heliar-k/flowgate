@@ -7,8 +7,8 @@ from unittest import mock
 
 import pytest
 
-from flowgate.health import check_health_url
-from flowgate.process import ProcessSupervisor
+from flowgate.core.health import check_health_url
+from flowgate.core.process import ProcessSupervisor
 
 
 @pytest.mark.unit
@@ -45,7 +45,7 @@ class ProcessSupervisorTests(unittest.TestCase):
             self.assertIn("result", event)
 
     def test_health_check_handles_network_error(self):
-        with mock.patch("flowgate.health.urlopen", side_effect=OSError("boom")):
+        with mock.patch("flowgate.core.health.urlopen", side_effect=OSError("boom")):
             self.assertFalse(check_health_url("http://127.0.0.1:1/", timeout=0.1))
 
 

@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from flowgate.config import load_router_config
-from flowgate.config_utils.path_resolver import PathResolver
+from flowgate.core.config import PathResolver, load_router_config
 
 
 @pytest.mark.unit

@@ -14,8 +14,7 @@ from urllib.error import URLError
 
 import pytest
 
-from flowgate.headless_import import import_codex_headless_auth
-from flowgate.oauth import fetch_auth_url, poll_auth_status
+from flowgate.core.auth import fetch_auth_url, import_codex_headless_auth, poll_auth_status
 
 
 @pytest.mark.unit
@@ -29,7 +28,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(Exception):  # json.JSONDecodeError
                 fetch_auth_url("http://localhost:9000/auth-url")
 
@@ -40,7 +39,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(ValueError) as ctx:
                 fetch_auth_url("http://localhost:9000/auth-url")
             self.assertIn(
@@ -54,7 +53,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(ValueError) as ctx:
                 fetch_auth_url("http://localhost:9000/auth-url")
             self.assertIn("did not return auth_url/url/login_url", str(ctx.exception))
@@ -66,7 +65,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(ValueError) as ctx:
                 fetch_auth_url("http://localhost:9000/auth-url")
             self.assertIn("did not return auth_url/url/login_url", str(ctx.exception))
@@ -78,7 +77,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(ValueError) as ctx:
                 fetch_auth_url("http://localhost:9000/auth-url")
             self.assertIn("did not return auth_url/url/login_url", str(ctx.exception))
@@ -86,14 +85,14 @@ class TestOAuthErrorHandling(unittest.TestCase):
     def test_fetch_auth_url_network_error(self):
         """Test exception when auth-url endpoint is unreachable."""
         with mock.patch(
-            "flowgate.oauth.urlopen", side_effect=URLError("Connection refused")
+            "flowgate.core.auth.urlopen", side_effect=URLError("Connection refused")
         ):
             with self.assertRaises(URLError):
                 fetch_auth_url("http://localhost:9000/auth-url", timeout=1)
 
     def test_fetch_auth_url_timeout(self):
         """Test exception when auth-url endpoint times out."""
-        with mock.patch("flowgate.oauth.urlopen", side_effect=TimeoutError("Timeout")):
+        with mock.patch("flowgate.core.auth.urlopen", side_effect=TimeoutError("Timeout")):
             with self.assertRaises(TimeoutError):
                 fetch_auth_url("http://localhost:9000/auth-url", timeout=1)
 
@@ -104,7 +103,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(TimeoutError) as ctx:
                 poll_auth_status(
                     "http://localhost:9000/status",
@@ -121,7 +120,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(RuntimeError) as ctx:
                 poll_auth_status(
                     "http://localhost:9000/status",
@@ -137,7 +136,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(RuntimeError) as ctx:
                 poll_auth_status(
                     "http://localhost:9000/status",
@@ -153,7 +152,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(RuntimeError) as ctx:
                 poll_auth_status(
                     "http://localhost:9000/status",
@@ -169,7 +168,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(RuntimeError) as ctx:
                 poll_auth_status(
                     "http://localhost:9000/status",
@@ -185,7 +184,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(RuntimeError) as ctx:
                 poll_auth_status(
                     "http://localhost:9000/status",
@@ -199,7 +198,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
     def test_poll_auth_status_network_error_with_timeout(self):
         """Test TimeoutError includes last network error when polling times out."""
         with mock.patch(
-            "flowgate.oauth.urlopen", side_effect=URLError("Connection refused")
+            "flowgate.core.auth.urlopen", side_effect=URLError("Connection refused")
         ):
             with self.assertRaises(TimeoutError) as ctx:
                 poll_auth_status(
@@ -218,7 +217,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
         mock_response.__enter__ = mock.Mock(return_value=mock_response)
         mock_response.__exit__ = mock.Mock(return_value=False)
 
-        with mock.patch("flowgate.oauth.urlopen", return_value=mock_response):
+        with mock.patch("flowgate.core.auth.urlopen", return_value=mock_response):
             with self.assertRaises(ValueError) as ctx:
                 poll_auth_status(
                     "http://localhost:9000/status",
@@ -245,7 +244,7 @@ class TestOAuthErrorHandling(unittest.TestCase):
             mock_response.__exit__ = mock.Mock(return_value=False)
             return mock_response
 
-        with mock.patch("flowgate.oauth.urlopen", side_effect=mock_urlopen):
+        with mock.patch("flowgate.core.auth.urlopen", side_effect=mock_urlopen):
             status = poll_auth_status(
                 "http://localhost:9000/status",
                 timeout_seconds=5,

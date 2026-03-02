@@ -21,7 +21,7 @@ from flowgate.cli.error_handler import (
     ProcessError,
     handle_command_errors,
 )
-from flowgate.config import ConfigError
+from flowgate.core.config import ConfigError
 
 
 @pytest.mark.unit

@@ -4,8 +4,7 @@ import unittest
 
 import pytest
 
-from flowgate.config import ConfigError
-from flowgate.validators import ConfigValidator
+from flowgate.core.config import ConfigError, ConfigValidator
 from tests.fixtures import ConfigFactory
 
 

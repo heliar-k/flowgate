@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from flowgate.config import ConfigError, load_router_config
+from flowgate.core.config import ConfigError, load_router_config
 from tests.fixtures import ConfigFactory
 
 
