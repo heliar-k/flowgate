@@ -5,6 +5,7 @@ import io
 import json
 import os
 import platform
+import socket
 import tarfile
 import zipfile
 from pathlib import Path
@@ -242,3 +243,9 @@ def validate_cliproxy_binary(path: str | Path) -> bool:
     if not os.access(target, os.X_OK):
         return False
     return True
+
+
+def is_executable_file(path: str | Path) -> bool:
+    """Return True if the path exists and is executable."""
+    target = Path(path)
+    return target.exists() and target.is_file() and os.access(target, os.X_OK)

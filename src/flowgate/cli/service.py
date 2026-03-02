@@ -12,8 +12,8 @@ from typing import Any, TextIO
 
 from ..config import ConfigError
 from ..constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
+from ..core.process import is_port_available
 from ..process import ProcessSupervisor
-from ..utils import _is_service_port_available
 from .error_handler import handle_command_errors
 from .helpers import maybe_print_update_notification
 from .output import Output, command_id_from_args
@@ -66,7 +66,7 @@ class ServiceStartCommand(BaseCommand):
             # Check port availability before starting
             if isinstance(port, int):
                 running = supervisor.is_running(name)
-                if not running and not _is_service_port_available(host, port):
+                if not running and not is_port_available(host, port):
                     ok = False
                     results.append(
                         {
@@ -202,7 +202,7 @@ class ServiceRestartCommand(BaseCommand):
             # Check port availability if service is not currently running
             if isinstance(port, int):
                 running = supervisor.is_running(name)
-                if not running and not _is_service_port_available(host, port):
+                if not running and not is_port_available(host, port):
                     ok = False
                     results.append(
                         {

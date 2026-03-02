@@ -13,10 +13,10 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from ..constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
+from ..core.bootstrap import is_executable_file
 from ..health import check_http_health, comprehensive_health_check
 from ..process import ProcessSupervisor
 from ..security import check_secret_file_permissions
-from ..utils import _is_executable_file
 from .error_handler import handle_command_errors
 from .helpers import effective_secret_files, maybe_print_update_notification
 from .output import Output, command_id_from_args
@@ -339,7 +339,7 @@ class DoctorCommand(BaseCommand):
             missing_or_non_exec = [
                 name
                 for name, binary_path in required_bins.items()
-                if not _is_executable_file(binary_path)
+                if not is_executable_file(binary_path)
             ]
             if missing_or_non_exec:
                 all_ok = False
@@ -464,7 +464,7 @@ class DoctorCommand(BaseCommand):
         missing_or_non_exec = [
             name
             for name, binary_path in required_bins.items()
-            if not _is_executable_file(binary_path)
+            if not is_executable_file(binary_path)
         ]
         if missing_or_non_exec:
             all_ok = False

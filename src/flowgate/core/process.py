@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import signal
+import socket
 import subprocess
 import time
 from collections.abc import Mapping
@@ -318,3 +319,15 @@ class ProcessSupervisor:
             "service_restart", service=name, result="success", detail=f"pid={pid}"
         )
         return pid
+
+
+def is_port_available(host: str, port: int) -> bool:
+    """Return True if the given host:port is not in use."""
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    try:
+        with socket.socket(family, socket.SOCK_STREAM) as probe:
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            probe.bind((host, port))
+    except OSError:
+        return False
+    return True
