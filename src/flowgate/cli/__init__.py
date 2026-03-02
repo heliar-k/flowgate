@@ -14,11 +14,7 @@ from collections.abc import Iterable
 from typing import Any, TextIO
 
 from ..config import ConfigError
-from ..health import check_http_health
 from ..observability import events_log_context, set_events_log_path
-from ..process import ProcessSupervisor
-from ..security import check_secret_file_permissions
-from ..utils import _is_executable_file
 from .auth import (
     AuthImportCommand,
     AuthListCommand,

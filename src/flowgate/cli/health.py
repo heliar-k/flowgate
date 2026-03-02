@@ -13,7 +13,10 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from ..constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
+from ..health import check_http_health, comprehensive_health_check
+from ..process import ProcessSupervisor
 from ..security import check_secret_file_permissions
+from ..utils import _is_executable_file
 from .error_handler import handle_command_errors
 from .helpers import effective_secret_files, maybe_print_update_notification
 from .output import Output, command_id_from_args
@@ -26,16 +29,13 @@ class StatusCommand(BaseCommand):
     @handle_command_errors
     def execute(self) -> int:
         """Execute status command."""
-        # Import from cli module for test mocking compatibility
-        from .. import cli as cli_module
-
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
         output: Output = getattr(self.args, "_output", None) or Output.from_args(
             self.args, stdout=stdout, stderr=stderr
         )
 
-        supervisor = cli_module.ProcessSupervisor(
+        supervisor = ProcessSupervisor(
             self.config["paths"]["runtime_dir"],
             events_log=self.config["paths"]["log_file"],
         )
@@ -86,10 +86,6 @@ class HealthCommand(BaseCommand):
     @handle_command_errors
     def execute(self) -> int:
         """Execute health command."""
-        # Import from cli module for test mocking compatibility
-        from .. import cli as cli_module
-        from ..health import comprehensive_health_check
-
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
         output: Output = getattr(self.args, "_output", None) or Output.from_args(
@@ -148,7 +144,7 @@ class HealthCommand(BaseCommand):
             print("", file=stdout)
 
         # Also run service health checks
-        supervisor = cli_module.ProcessSupervisor(
+        supervisor = ProcessSupervisor(
             self.config["paths"]["runtime_dir"],
             events_log=self.config["paths"]["log_file"],
         )
@@ -171,7 +167,7 @@ class HealthCommand(BaseCommand):
 
             if isinstance(port, int):
                 readiness_url = f"http://{host}:{port}{readiness_path}"
-                readiness = cli_module.check_http_health(readiness_url, timeout=1.0)
+                readiness = check_http_health(readiness_url, timeout=1.0)
             else:
                 readiness_url = "n/a"
                 readiness = {"ok": False, "status_code": None, "error": "missing-port"}
@@ -241,9 +237,6 @@ class DoctorCommand(BaseCommand):
     @handle_command_errors
     def execute(self) -> int:
         """Execute doctor command."""
-        # Import helper functions from cli module for test mocking compatibility
-        from .. import cli as cli_module
-
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
         output: Output = getattr(self.args, "_output", None) or Output.from_args(
@@ -346,7 +339,7 @@ class DoctorCommand(BaseCommand):
             missing_or_non_exec = [
                 name
                 for name, binary_path in required_bins.items()
-                if not cli_module._is_executable_file(binary_path)
+                if not _is_executable_file(binary_path)
             ]
             if missing_or_non_exec:
                 all_ok = False
@@ -471,7 +464,7 @@ class DoctorCommand(BaseCommand):
         missing_or_non_exec = [
             name
             for name, binary_path in required_bins.items()
-            if not cli_module._is_executable_file(binary_path)
+            if not _is_executable_file(binary_path)
         ]
         if missing_or_non_exec:
             all_ok = False

@@ -90,13 +90,13 @@ class CLITests(unittest.TestCase):
     def test_health_command(self):
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.health.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.cli.check_http_health",
+                "flowgate.cli.health.check_http_health",
                 return_value={"ok": True, "status_code": 200, "error": None},
             ),
             mock.patch(
-                "flowgate.health.comprehensive_health_check",
+                "flowgate.cli.health.comprehensive_health_check",
                 return_value={
                     "overall_status": "healthy",
                     "status_counts": {"healthy": 4, "degraded": 0, "unhealthy": 0},
@@ -116,13 +116,13 @@ class CLITests(unittest.TestCase):
     def test_health_command_json(self):
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.health.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.cli.check_http_health",
+                "flowgate.cli.health.check_http_health",
                 return_value={"ok": True, "status_code": 200, "error": None},
             ),
             mock.patch(
-                "flowgate.health.comprehensive_health_check",
+                "flowgate.cli.health.comprehensive_health_check",
                 return_value={
                     "overall_status": "degraded",
                     "status_counts": {"healthy": 3, "degraded": 1, "unhealthy": 0},
@@ -163,13 +163,13 @@ class CLITests(unittest.TestCase):
     def test_health_command_uses_default_readiness_path(self):
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.health.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.cli.check_http_health",
+                "flowgate.cli.health.check_http_health",
                 return_value={"ok": True, "status_code": 200, "error": None},
             ) as checker,
             mock.patch(
-                "flowgate.health.comprehensive_health_check",
+                "flowgate.cli.health.comprehensive_health_check",
                 return_value={
                     "overall_status": "healthy",
                     "status_counts": {"healthy": 4, "degraded": 0, "unhealthy": 0},
@@ -207,13 +207,13 @@ class CLITests(unittest.TestCase):
     def test_health_command_fails_when_service_not_running(self):
         out = io.StringIO()
         with (
-            mock.patch("flowgate.cli.ProcessSupervisor") as supervisor_cls,
+            mock.patch("flowgate.cli.health.ProcessSupervisor") as supervisor_cls,
             mock.patch(
-                "flowgate.cli.check_http_health",
+                "flowgate.cli.health.check_http_health",
                 return_value={"ok": True, "status_code": 200, "error": None},
             ),
             mock.patch(
-                "flowgate.health.comprehensive_health_check",
+                "flowgate.cli.health.comprehensive_health_check",
                 return_value={
                     "overall_status": "healthy",
                     "status_counts": {"healthy": 4, "degraded": 0, "unhealthy": 0},
