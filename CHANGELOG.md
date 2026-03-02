@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-03-02
+
+**Patch Release**: Code organization and CLIProxyAPIPlus auto-update
+
+This release improves code organization with a cleaner module structure and adds CLIProxyAPIPlus auto-update functionality.
+
+### Added
+
+- **CLIProxyAPIPlus Auto-Update**: New `bootstrap update` command for proactive version management:
+  - Automatically detects latest version from GitHub releases
+  - Interactive confirmation with `--yes` flag support
+  - Downloads, validates, and installs latest version
+  - Auto-restarts cliproxyapi_plus service if running
+- **Lazy CLI Loading**: CLI now loads lazily to avoid eager import issues
+
+### Changed
+
+- **Code Organization**: Major refactoring to improve maintainability:
+  - Consolidated multiple modules into `core/` sub-package
+  - Merged `oauth`, `auth_methods`, `headless_import` into `core/auth.py`
+  - Merged `config`, `PathResolver`, `validators` into `core/config.py`
+  - Merged `cliproxyapiplus_*` modules into single `cliproxyapiplus.py`
+  - Simplified CLI directory structure
+  - Removed redundant re-exports and dead code
+- **Error Handling**: Improved error messages in auth, health, and integration commands
+
+### Fixed
+
+- Import issues in `flowgate/__init__.py` (lazy-load fix)
+- CI pre-commit version constraint removed
+- Legacy documentation files cleaned up
+
+### Technical Details
+
+- Refactored 25+ modules into consolidated `core/` sub-package
+- All tests updated for new import structure
+- Backward compatible - no config or API changes
+
+### Git History
+
+This release includes 24 commits since v0.5.0:
+
+- Code organization: a53a590, 576e112, 488f5f4, bbe5c90
+- CLI imports: 5416a09, 5d286d0, 642137e
+- Module merges: ed66870, 118bc23, 33faa55
+- CLI improvements: ba16122, abcc432, 09454b1, 6b181de
+- Cleanup: b390c96, 216a21a, 5b32fb8, 547a1ac
+- Bootstrap: cbdb6bc
+- Documentation: e4c2572, d412663
+- Fixes: 984badd, d017af9
+
+Tags: `v0.5.1`
+
 ## [0.5.0] - 2026-02-28
 
 **Major Release**: CLIProxyAPIPlus-Only Mode
@@ -647,7 +700,8 @@ For issues, questions, or contributions:
 - Run `flowgate doctor` for configuration validation
 - Check event logs: `tail -n 50 .router/runtime/events.log`
 
-[Unreleased]: https://github.com/heliar-k/flowgate/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/heliar-k/flowgate/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/heliar-k/flowgate/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/heliar-k/flowgate/compare/v0.4.6...v0.5.0
 [0.4.6]: https://github.com/heliar-k/flowgate/compare/v0.4.4...v0.4.6
 [0.4.4]: https://github.com/heliar-k/flowgate/compare/v0.4.0...v0.4.4
