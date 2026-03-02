@@ -13,11 +13,12 @@ For detailed docs: [Architecture Overview](docs/architecture/README.md), [Diagra
 ### Key Components
 
 - **CLI** (`src/flowgate/cli/`): BaseCommand pattern, @handle_command_errors decorator, argparse subcommands
-- **Config** (`src/flowgate/config.py`, `config_utils/`): Schema v3 validation, PathResolver for path resolution
-- **Process** (`src/flowgate/process.py`): ProcessSupervisor for service lifecycle, PID tracking in `.router/runtime/pids/`, port conflict detection
-- **Auth** (`src/flowgate/oauth.py`, `auth_methods.py`): OAuth polling, headless import, multi-provider (Codex, GitHub Copilot)
-- **Bootstrap** (`src/flowgate/bootstrap.py`): Platform-specific binary downloads (CLIProxyAPIPlus)
-- **Integration** (`src/flowgate/integration.py`, `client_apply.py`): Client config snippets (Codex, Claude Code), automated config updates
+- **Config** (`src/flowgate/core/config.py`): Schema v3 validation, PathResolver for path resolution
+- **Process** (`src/flowgate/core/process.py`): ProcessSupervisor for service lifecycle, PID tracking in `.router/runtime/pids/`, port conflict detection
+- **Auth** (`src/flowgate/core/auth.py`): OAuth polling, headless import, multi-provider (Codex, GitHub Copilot)
+- **Bootstrap** (`src/flowgate/core/bootstrap.py`): Platform-specific binary downloads (CLIProxyAPIPlus), version checking
+- **CLIProxyAPIPlus** (`src/flowgate/core/cliproxyapiplus.py`): Version management, update checking, auto-update
+- **Health** (`src/flowgate/core/health.py`): Comprehensive health checks
 
 ### Key Data Flows
 
@@ -27,7 +28,9 @@ For detailed docs: [Architecture Overview](docs/architecture/README.md), [Diagra
 
 ## Directory Layout
 
-- `src/flowgate/`: Main package (`config.py`, `config_utils/`, `cli/`, `process.py`, `oauth.py`, `bootstrap.py`, `validators.py`)
+- `src/flowgate/`: Main package (`__init__.py` entry, `core/`, `cli/`)
+- `src/flowgate/core/`: Core business logic (`config.py`, `process.py`, `bootstrap.py`, `cliproxyapiplus.py`, `auth.py`, `health.py`, `security.py`, `observability.py`)
+- `src/flowgate/cli/`: CLI commands (`run_cli`, `base.py`, `parser.py`, `auth.py`, `bootstrap.py`, `health.py`, `service.py`, etc.)
 - `tests/`: Unit + integration tests
 - `config/examples/`: Sample configs
 - `.router/`: Runtime artifacts (gitignored)
@@ -103,7 +106,7 @@ PRs: include test evidence, document config impact, one focused change per commi
 
 ## Adding New Features
 
-**Auth Provider**: Add config under `auth.providers.<provider>`, add handler in `auth_methods.py`, add tests, verify with `auth list`/`auth status`.
+**Auth Provider**: Add config under `auth.providers.<provider>`, add handler in `auth.py`, add tests, verify with `auth list`/`auth status`.
 
 ## CI/CD
 

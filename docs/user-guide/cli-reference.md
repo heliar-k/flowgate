@@ -50,14 +50,6 @@ In `config_version: 3`, FlowGate only manages a single service: `cliproxyapi_plu
 - `flowgate auth import-headless <provider> [--source <path>] [--dest-dir <path>]`
   - Imports headless auth artifacts (currently: `codex`) and writes them under the auth directory.
 
-### `integration`
-
-- `flowgate integration print {codex|claude-code}`
-  - Prints client configuration snippets.
-- `flowgate integration apply {codex|claude-code} [--target <path>] [--dry-run] [--yes|-y]`
-  - Applies integration settings to the target config file and creates a timestamped backup.
-  - `--dry-run` previews changes without modifying files.
-
 ### `bootstrap`
 
 - `flowgate bootstrap download [--cliproxy-version <tag>] [--cliproxy-repo <owner/repo>] [--require-sha256]`

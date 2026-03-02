@@ -1,6 +1,6 @@
 # Quick Start Guide (v3, cliproxy-only)
 
-FlowGate (config_version 3) manages a single local service: **CLIProxyAPIPlus**. Configure CLIProxyAPIPlus in `config/cliproxyapi.yaml`, and let FlowGate handle bootstrap/service/auth/integration/health/doctor.
+FlowGate (config_version 3) manages a single local service: **CLIProxyAPIPlus**. Configure CLIProxyAPIPlus in `config/cliproxyapi.yaml`, and let FlowGate handle bootstrap/service/auth/health/doctor.
 
 ## Prerequisites
 
@@ -45,4 +45,3 @@ uv run flowgate --config config/flowgate.yaml service stop all
 ## Next
 
 - OAuth login: `uv run flowgate --config config/flowgate.yaml auth login codex`
-- Client snippets: `uv run flowgate --config config/flowgate.yaml integration print codex`

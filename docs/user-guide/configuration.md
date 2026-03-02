@@ -15,7 +15,6 @@ Required:
 Optional:
 - `auth.providers` (OAuth endpoints are optional; FlowGate can derive them)
 - `secret_files`
-- `integration` (client defaults)
 
 ### Minimal example
 
@@ -67,7 +66,7 @@ remote-management:
 At config load time, FlowGate:
 1) Resolves `cliproxyapi_plus.config_file` relative to the FlowGate config location
 2) Parses the file to read `host` (default `127.0.0.1`) and `port` (required)
-3) Builds an internal `services.cliproxyapi_plus` entry used by `service/health/doctor/auth/integration`
+3) Builds an internal `services.cliproxyapi_plus` entry used by `service/health/doctor/auth`
 
 ## Auth Provider Endpoints (optional)
 

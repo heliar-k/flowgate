@@ -49,10 +49,3 @@ When using Claude Code against your local proxy, you typically configure:
 ANTHROPIC_BASE_URL=http://127.0.0.1:8317
 ANTHROPIC_AUTH_TOKEN=sk-local-test
 ```
-
-FlowGate can print/apply these settings via:
-
-```bash
-uv run flowgate --config config/flowgate.yaml integration print claude-code
-uv run flowgate --config config/flowgate.yaml integration apply claude-code
-```
