@@ -5,7 +5,6 @@ import io
 import json
 import os
 import platform
-import socket
 import tarfile
 import zipfile
 from pathlib import Path

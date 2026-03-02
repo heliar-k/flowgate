@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from flowgate.constants import (
+from flowgate.core.constants import (
     DEFAULT_READINESS_PATH,
     DEFAULT_SERVICE_HOST,
     DEFAULT_SERVICE_PORTS,

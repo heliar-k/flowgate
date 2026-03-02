@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from flowgate.core.config import load_router_config
-from flowgate.constants import (
+from flowgate.core.constants import (
     DEFAULT_READINESS_PATH,
     DEFAULT_SERVICE_HOST,
     DEFAULT_SERVICE_PORTS,

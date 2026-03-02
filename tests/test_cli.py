@@ -10,7 +10,7 @@ import pytest
 
 from flowgate.cli import run_cli
 from flowgate.cli.parser import build_parser
-from flowgate.constants import (
+from flowgate.core.constants import (
     DEFAULT_READINESS_PATH,
 )
 

@@ -8,8 +8,4 @@ from .core.bootstrap import (
     http_get_json,
     download_cliproxyapi_plus,
     validate_cliproxy_binary,
-    _http_get_bytes,
-    _extract_sha256_from_checksum_text,
-    _find_expected_sha256,
-    _extract_binary_from_bytes,
 )

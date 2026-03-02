@@ -211,12 +211,6 @@ def check_update(
     )
 
 
-# Backward-compat aliases — remove after all callers are updated
-read_cliproxyapiplus_installed_version = read_installed_version
-write_cliproxyapiplus_installed_version = write_installed_version
-check_cliproxyapiplus_update = check_update
-
-
 # ── Auto-update orchestration ────────────────────────────────
 def check_latest_version(
     current_version: str, repo: str = DEFAULT_CLIPROXY_REPO

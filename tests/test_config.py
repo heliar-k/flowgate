@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from flowgate.core.config import ConfigError, load_router_config, merge_dicts
-from flowgate.constants import DEFAULT_SERVICE_HOST, DEFAULT_SERVICE_PORTS
+from flowgate.core.constants import DEFAULT_SERVICE_HOST, DEFAULT_SERVICE_PORTS
 from tests.fixtures import ConfigFactory
 
 
