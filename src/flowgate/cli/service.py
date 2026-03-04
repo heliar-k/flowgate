@@ -12,12 +12,11 @@ from typing import Any, TextIO
 
 from ..core.config import ConfigError
 from ..core.constants import CLIPROXYAPI_PLUS_SERVICE, DEFAULT_SERVICE_HOST
-from ..core.process import is_port_available, ProcessSupervisor
+from ..core.process import ProcessSupervisor, is_port_available
+from .base import BaseCommand
 from .error_handler import handle_command_errors
 from .helpers import maybe_print_update_notification
 from .output import Output, command_id_from_args
-from .base import BaseCommand
-
 
 
 def _service_names(config: dict[str, Any], target: str) -> list[str]:

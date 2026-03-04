@@ -236,9 +236,7 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.service.is_port_available",
                 return_value=True,
             ) as port_available,
-            mock.patch(
-                "flowgate.cli.service.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.service.ProcessSupervisor") as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = False
@@ -252,9 +250,7 @@ class CLITests(unittest.TestCase):
         supervisor.is_running.assert_called_once_with("cliproxyapi_plus")
 
         out = io.StringIO()
-        with mock.patch(
-            "flowgate.cli.service.ProcessSupervisor"
-        ) as supervisor_cls:
+        with mock.patch("flowgate.cli.service.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             supervisor.stop.side_effect = [True]
             code = run_cli(
@@ -270,9 +266,7 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.service.is_port_available",
                 return_value=True,
             ) as port_available,
-            mock.patch(
-                "flowgate.cli.service.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.service.ProcessSupervisor") as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = False
@@ -307,9 +301,7 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.service.is_port_available",
                 return_value=False,
             ) as port_available,
-            mock.patch(
-                "flowgate.cli.service.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.service.ProcessSupervisor") as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = False
@@ -334,9 +326,7 @@ class CLITests(unittest.TestCase):
                 "flowgate.cli.service.is_port_available",
                 return_value=False,
             ) as port_available,
-            mock.patch(
-                "flowgate.cli.service.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.service.ProcessSupervisor") as supervisor_cls,
         ):
             supervisor = supervisor_cls.return_value
             supervisor.is_running.return_value = False
@@ -362,9 +352,7 @@ class CLITests(unittest.TestCase):
     def test_auth_login(self):
         out = io.StringIO()
         with (
-            mock.patch(
-                "flowgate.cli.auth.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
                 "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/login",
@@ -390,9 +378,7 @@ class CLITests(unittest.TestCase):
     def test_auth_login_json(self):
         out = io.StringIO()
         with (
-            mock.patch(
-                "flowgate.cli.auth.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
                 "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/login",
@@ -478,9 +464,7 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch(
-                "flowgate.cli.auth.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
                 "flowgate.core.auth.fetch_auth_url",
                 return_value="https://example.com/custom-login",
@@ -542,9 +526,7 @@ class CLITests(unittest.TestCase):
                 "flowgate.core.auth.get_headless_import_handler",
                 return_value=handler,
             ) as resolver,
-            mock.patch(
-                "flowgate.cli.auth.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.auth.ProcessSupervisor") as supervisor_cls,
         ):
             code = run_cli(
                 [
@@ -797,9 +779,7 @@ class CLITests(unittest.TestCase):
     def test_service_start_reports_cliproxyapiplus_update_when_available(self):
         out = TTYStringIO()
         with (
-            mock.patch(
-                "flowgate.cli.service.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.service.ProcessSupervisor") as supervisor_cls,
             mock.patch(
                 "flowgate.core.cliproxyapiplus.read_installed_version",
                 return_value="v6.8.16-0",
@@ -864,9 +844,7 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch(
-                "flowgate.cli.auth.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
                 "flowgate.core.auth.fetch_auth_url",
                 return_value="http://example.local/auth?code=xyz",
@@ -903,9 +881,7 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         with (
-            mock.patch(
-                "flowgate.cli.auth.ProcessSupervisor"
-            ) as supervisor_cls,
+            mock.patch("flowgate.cli.auth.ProcessSupervisor") as supervisor_cls,
             mock.patch(
                 "flowgate.core.auth.fetch_auth_url",
                 return_value="http://example.local/auth?code=xyz",
@@ -935,9 +911,7 @@ class CLITests(unittest.TestCase):
 
         out = io.StringIO()
         err = io.StringIO()
-        with mock.patch(
-            "flowgate.cli.auth.ProcessSupervisor"
-        ) as supervisor_cls:
+        with mock.patch("flowgate.cli.auth.ProcessSupervisor") as supervisor_cls:
             supervisor = supervisor_cls.return_value
             code = run_cli(
                 ["--config", str(self.cfg), "auth", "login", "custom"],

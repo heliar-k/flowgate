@@ -14,7 +14,11 @@ from urllib.error import URLError
 
 import pytest
 
-from flowgate.core.auth import fetch_auth_url, import_codex_headless_auth, poll_auth_status
+from flowgate.core.auth import (
+    fetch_auth_url,
+    import_codex_headless_auth,
+    poll_auth_status,
+)
 
 
 @pytest.mark.unit
@@ -92,7 +96,9 @@ class TestOAuthErrorHandling(unittest.TestCase):
 
     def test_fetch_auth_url_timeout(self):
         """Test exception when auth-url endpoint times out."""
-        with mock.patch("flowgate.core.auth.urlopen", side_effect=TimeoutError("Timeout")):
+        with mock.patch(
+            "flowgate.core.auth.urlopen", side_effect=TimeoutError("Timeout")
+        ):
             with self.assertRaises(TimeoutError):
                 fetch_auth_url("http://localhost:9000/auth-url", timeout=1)
 

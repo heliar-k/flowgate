@@ -22,18 +22,19 @@ from .auth import (
     AuthStatusCommand,
 )
 from .bootstrap import BootstrapDownloadCommand, BootstrapUpdateCommand
+from .error_handler import EXIT_CONFIG_ERROR, EXIT_RUNTIME_ERROR
 from .health import DoctorCommand, HealthCommand, StatusCommand
+from .helpers import (
+    _load_and_resolve_config,
+)
+from .output import Output
+from .parser import build_parser
 from .service import (
     ServiceRestartCommand,
     ServiceStartCommand,
     ServiceStopCommand,
 )
-from .error_handler import EXIT_CONFIG_ERROR, EXIT_RUNTIME_ERROR
-from .output import Output
-from .parser import build_parser
-from .helpers import (
-    _load_and_resolve_config,
-)
+
 
 def run_cli(
     argv: Iterable[str], *, stdout: TextIO | None = None, stderr: TextIO | None = None

@@ -13,10 +13,10 @@ from typing import Any, TextIO
 from ..core.config import ConfigError
 from ..core.process import ProcessError, ProcessSupervisor
 from ..core.security import check_secret_file_permissions
-from .error_handler import handle_command_errors
-from .output import Output, command_id_from_args
-from .helpers import _default_auth_dir, effective_secret_files
 from .base import BaseCommand
+from .error_handler import handle_command_errors
+from .helpers import _default_auth_dir, effective_secret_files
+from .output import Output, command_id_from_args
 
 
 def _auth_providers(config: dict[str, Any]) -> dict[str, Any]:

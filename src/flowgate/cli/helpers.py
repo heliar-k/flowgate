@@ -13,8 +13,7 @@ import os
 from pathlib import Path
 from typing import Any, TextIO
 
-from ..core.config import load_router_config
-from ..core.config import PathResolver
+from ..core.config import PathResolver, load_router_config
 
 
 def _load_and_resolve_config(path: str) -> dict[str, Any]:
@@ -81,9 +80,7 @@ def maybe_print_update_notification(config: dict[str, Any], *, stdout: TextIO) -
     if not runtime_dir:
         return
 
-    current_version = read_installed_version(
-        runtime_dir, DEFAULT_CLIPROXY_VERSION
-    )
+    current_version = read_installed_version(runtime_dir, DEFAULT_CLIPROXY_VERSION)
     update = check_update(
         runtime_dir=runtime_dir,
         current_version=current_version,

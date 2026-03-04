@@ -7,6 +7,7 @@ from unittest import mock
 
 import pytest
 
+from flowgate.cli.bootstrap import _check_latest_version
 from flowgate.core.bootstrap import (
     _extract_binary_from_bytes,
     _extract_sha256_from_checksum_text,
@@ -14,15 +15,18 @@ from flowgate.core.bootstrap import (
     pick_release_asset,
     validate_cliproxy_binary,
 )
-from flowgate.cli.bootstrap import _check_latest_version
 
 
 @pytest.mark.unit
 class BootstrapTests(unittest.TestCase):
     def test_detect_platform_darwin_arm64(self):
         with (
-            mock.patch("flowgate.core.bootstrap.platform.system", return_value="Darwin"),
-            mock.patch("flowgate.core.bootstrap.platform.machine", return_value="arm64"),
+            mock.patch(
+                "flowgate.core.bootstrap.platform.system", return_value="Darwin"
+            ),
+            mock.patch(
+                "flowgate.core.bootstrap.platform.machine", return_value="arm64"
+            ),
         ):
             os_name, arch = detect_platform()
         self.assertEqual(os_name, "darwin")
@@ -31,7 +35,9 @@ class BootstrapTests(unittest.TestCase):
     def test_detect_platform_linux_amd64(self):
         with (
             mock.patch("flowgate.core.bootstrap.platform.system", return_value="Linux"),
-            mock.patch("flowgate.core.bootstrap.platform.machine", return_value="x86_64"),
+            mock.patch(
+                "flowgate.core.bootstrap.platform.machine", return_value="x86_64"
+            ),
         ):
             os_name, arch = detect_platform()
         self.assertEqual(os_name, "linux")

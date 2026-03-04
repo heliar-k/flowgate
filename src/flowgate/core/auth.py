@@ -39,6 +39,7 @@ def _load_json(path: Path) -> dict:
 
 # ── OAuth helpers ────────────────────────────────────────────
 
+
 @measure_time("oauth_fetch_auth_url")
 def fetch_auth_url(auth_url_endpoint: str, *, timeout: float = 5.0) -> str:
     payload = _get_json(auth_url_endpoint, timeout)
@@ -87,6 +88,7 @@ def poll_auth_status(
 
 # ── Headless import ───────────────────────────────────────────
 
+
 @measure_time("oauth_import_headless")
 def import_codex_headless_auth(source: str | Path, dest_dir: str | Path) -> Path:
     src = Path(source).expanduser().resolve()
@@ -126,6 +128,7 @@ def import_codex_headless_auth(source: str | Path, dest_dir: str | Path) -> Path
 
 
 # ── Provider registry ─────────────────────────────────────────
+
 
 def headless_import_handlers() -> dict[str, HeadlessImportHandler]:
     return {

@@ -47,5 +47,6 @@ class DevScriptTests(unittest.TestCase):
         self.assertIn("SMOKE_UPSTREAM_CLIPROXY_API_KEY", text)
         self.assertIn("ensure_upstream_api_key_file", text)
 
+
 if __name__ == "__main__":
     unittest.main()

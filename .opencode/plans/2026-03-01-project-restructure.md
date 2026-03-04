@@ -185,7 +185,7 @@ def fetch_latest_release(
 
 def http_get_json(url: str, *, timeout: int = 10) -> dict[str, Any]:
     """Shared HTTP GET JSON helper.
-    
+
     Replaces duplicates in bootstrap.py and update_check.py.
     """
     # 统一两个 _http_get_json 实现
@@ -327,7 +327,7 @@ def maybe_print_update_notification(config: dict[str, Any], *, stdout: TextIO) -
     """Print CLIProxyAPIPlus update notification if available (TTY only)."""
     from ..cliproxyapiplus import check_update, read_installed_version
     from ..bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
-    
+
     isatty = getattr(stdout, "isatty", None)
     if callable(isatty) and not isatty():
         return

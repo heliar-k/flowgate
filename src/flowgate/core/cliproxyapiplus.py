@@ -6,13 +6,14 @@ import json
 import os
 import re
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from .bootstrap import (
     DEFAULT_CLIPROXY_REPO,
-    http_get_json,
     download_cliproxyapi_plus,
+    http_get_json,
     validate_cliproxy_binary,
 )
 from .constants import CLIPROXYAPI_PLUS_SERVICE

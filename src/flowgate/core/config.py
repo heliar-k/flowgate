@@ -10,14 +10,15 @@ from typing import Any
 from .constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
 from .observability import measure_time
 
-
 # ── Exceptions ────────────────────────────────────────────────
+
 
 class ConfigError(ValueError):
     """Raised when router tool config is invalid."""
 
 
 # ── Path Resolution ───────────────────────────────────────────
+
 
 class PathResolver:
     """Unified configuration path resolver.
@@ -309,6 +310,7 @@ def merge_dicts(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]
 
 
 # ── Validation ────────────────────────────────────────────────
+
 
 class ConfigValidator:
     """Centralized configuration validation for FlowGate.

@@ -68,19 +68,31 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     auth = sub.add_parser("auth", help="Authentication management")
-    auth_sub = auth.add_subparsers(dest="provider", required=True, title="auth commands")
-    auth_sub.add_parser("list", help="List available OAuth providers and their capabilities")
+    auth_sub = auth.add_subparsers(
+        dest="provider", required=True, title="auth commands"
+    )
+    auth_sub.add_parser(
+        "list", help="List available OAuth providers and their capabilities"
+    )
     auth_sub.add_parser("status", help="Show current authentication status")
 
     login_any = auth_sub.add_parser(
         "login", help="Perform OAuth login flow (e.g. codex, github-copilot)"
     )
-    login_any.add_argument("login_provider", metavar="provider", help="OAuth provider name")
     login_any.add_argument(
-        "--timeout", type=float, default=120, help="OAuth polling timeout in seconds (default: 120)"
+        "login_provider", metavar="provider", help="OAuth provider name"
     )
     login_any.add_argument(
-        "--poll-interval", type=float, default=2, help="Polling interval in seconds (default: 2)"
+        "--timeout",
+        type=float,
+        default=120,
+        help="OAuth polling timeout in seconds (default: 120)",
+    )
+    login_any.add_argument(
+        "--poll-interval",
+        type=float,
+        default=2,
+        help="Polling interval in seconds (default: 2)",
     )
 
     import_headless_any = auth_sub.add_parser(
@@ -91,14 +103,18 @@ def build_parser() -> argparse.ArgumentParser:
         "import_provider", metavar="provider", help="OAuth provider name"
     )
     import_headless_any.add_argument(
-        "--source", default="~/.codex/auth.json", help="Source auth file path (default: ~/.codex/auth.json)"
+        "--source",
+        default="~/.codex/auth.json",
+        help="Source auth file path (default: ~/.codex/auth.json)",
     )
     import_headless_any.add_argument(
         "--dest-dir", default="", help="Destination directory for imported credentials"
     )
 
     service = sub.add_parser("service", help="Service lifecycle management")
-    service_sub = service.add_subparsers(dest="service_cmd", required=True, title="service commands")
+    service_sub = service.add_subparsers(
+        dest="service_cmd", required=True, title="service commands"
+    )
     service_help = {
         "start": "Start services",
         "stop": "Stop services",
@@ -146,7 +162,11 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"GitHub repository (default: {DEFAULT_CLIPROXY_REPO})",
     )
     update.add_argument(
-        "--yes", "-y", action="store_true", default=False, help="Skip confirmation prompt"
+        "--yes",
+        "-y",
+        action="store_true",
+        default=False,
+        help="Skip confirmation prompt",
     )
     update.add_argument(
         "--require-sha256",

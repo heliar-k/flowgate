@@ -23,9 +23,9 @@ from ..core.cliproxyapiplus import (
     write_installed_version,
 )
 from ..core.constants import CLIPROXYAPI_PLUS_SERVICE
+from .base import BaseCommand
 from .error_handler import handle_command_errors
 from .output import Output, command_id_from_args
-from .base import BaseCommand
 
 
 class BootstrapDownloadCommand(BaseCommand):
@@ -57,9 +57,7 @@ class BootstrapDownloadCommand(BaseCommand):
         if not validate_cliproxy_binary(cliproxy):
             raise RuntimeError(f"Invalid CLIProxyAPIPlus binary downloaded: {cliproxy}")
 
-        write_installed_version(
-            self.config["paths"]["runtime_dir"], cliproxy_version
-        )
+        write_installed_version(self.config["paths"]["runtime_dir"], cliproxy_version)
         if output.format != "legacy":
             output.emit_envelope(
                 {
@@ -112,9 +110,7 @@ class BootstrapUpdateCommand(BaseCommand):
         auto_yes = self.args.yes
         require_sha256 = bool(getattr(self.args, "require_sha256", False))
 
-        current_version = read_installed_version(
-            runtime_dir, DEFAULT_CLIPROXY_VERSION
-        )
+        current_version = read_installed_version(runtime_dir, DEFAULT_CLIPROXY_VERSION)
 
         update_info = _check_latest_version(current_version, repo)
 

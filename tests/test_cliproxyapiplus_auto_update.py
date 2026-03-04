@@ -62,9 +62,7 @@ def test_perform_update_restarts_running_service(tmp_path: Path):
         mock.patch(
             "flowgate.core.cliproxyapiplus.write_installed_version"
         ) as write_ver,
-        mock.patch(
-            "flowgate.core.cliproxyapiplus.ProcessSupervisor"
-        ) as supervisor_cls,
+        mock.patch("flowgate.core.cliproxyapiplus.ProcessSupervisor") as supervisor_cls,
     ):
         supervisor = supervisor_cls.return_value
         supervisor.is_running.return_value = True
