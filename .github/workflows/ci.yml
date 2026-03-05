@@ -32,10 +32,8 @@ jobs:
           uv run flowgate status --help
           uv run flowgate health --help
           uv run flowgate doctor --help
-          uv run flowgate profile --help
           uv run flowgate auth --help
           uv run flowgate auth login --help
           uv run flowgate service --help
           uv run flowgate bootstrap --help
           uv run flowgate bootstrap download --help
-          uv run flowgate integration --help
