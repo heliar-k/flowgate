@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-03-08
+
+**Patch Release**: Absolute import consistency and regression guardrails
+
+This release standardizes Python imports across guarded FlowGate packages and adds an automated check to keep that convention in place.
+
+### Changed
+
+- **Import Consistency Guardrails**: Standardized FlowGate's Python package imports on absolute module paths and added an automated test to prevent relative imports from being reintroduced.
+  - Keeps the internal module graph more predictable as the codebase evolves
+  - Preserves existing runtime behavior and config path handling
+
+### Technical Details
+
+- Migrated FlowGate CLI, core modules, and guarded test packages away from relative imports
+- Added an AST-based test that fails if relative imports are introduced in guarded packages
+- No config schema, CLI flag, or runtime path resolution changes
+
+### Git History
+
+This release includes 1 commit since v0.5.1:
+
+- Import consistency: 04e14b6
+
+Tags: `v0.5.2`
+
 ## [0.5.1] - 2026-03-02
 
 **Patch Release**: Code organization and CLIProxyAPIPlus auto-update
@@ -700,7 +726,8 @@ For issues, questions, or contributions:
 - Run `flowgate doctor` for configuration validation
 - Check event logs: `tail -n 50 .router/runtime/events.log`
 
-[Unreleased]: https://github.com/heliar-k/flowgate/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/heliar-k/flowgate/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/heliar-k/flowgate/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/heliar-k/flowgate/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/heliar-k/flowgate/compare/v0.4.6...v0.5.0
 [0.4.6]: https://github.com/heliar-k/flowgate/compare/v0.4.4...v0.4.6
