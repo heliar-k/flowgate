@@ -24,7 +24,7 @@ import pytest
 
 from flowgate.core.process import ProcessSupervisor
 
-from .base import IntegrationTestBase
+from tests.integration.base import IntegrationTestBase
 
 _SLEEP_CMD = [sys.executable, "-c", "import time; time.sleep(120)"]
 

@@ -11,21 +11,21 @@ import sys
 from pathlib import Path
 from typing import TextIO
 
-from ..core.bootstrap import (
+from flowgate.core.bootstrap import (
     DEFAULT_CLIPROXY_VERSION,
     download_cliproxyapi_plus,
     validate_cliproxy_binary,
 )
-from ..core.cliproxyapiplus import (
+from flowgate.core.cliproxyapiplus import (
     check_latest_version,
     perform_update,
     read_installed_version,
     write_installed_version,
 )
-from ..core.constants import CLIPROXYAPI_PLUS_SERVICE
-from .base import BaseCommand
-from .error_handler import handle_command_errors
-from .output import Output, command_id_from_args
+from flowgate.core.constants import CLIPROXYAPI_PLUS_SERVICE
+from flowgate.cli.base import BaseCommand
+from flowgate.cli.error_handler import handle_command_errors
+from flowgate.cli.output import Output, command_id_from_args
 
 
 class BootstrapDownloadCommand(BaseCommand):

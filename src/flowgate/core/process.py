@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .observability import measure_time
+from flowgate.core.observability import measure_time
 
 
 class ProcessError(RuntimeError):

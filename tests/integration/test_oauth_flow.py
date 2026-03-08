@@ -24,7 +24,7 @@ import pytest
 
 from flowgate.core.auth import fetch_auth_url, poll_auth_status
 
-from .base import IntegrationTestBase
+from tests.integration.base import IntegrationTestBase
 
 # ---------------------------------------------------------------------------
 # Mock OAuth server

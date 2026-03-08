@@ -8,7 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from urllib.request import urlopen
 
-from .observability import measure_time
+from flowgate.core.observability import measure_time
 
 _SUCCESS_STATES = frozenset({"success", "completed", "authorized", "ok"})
 _FAILED_STATES = frozenset({"failed", "error", "denied", "expired", "cancelled"})

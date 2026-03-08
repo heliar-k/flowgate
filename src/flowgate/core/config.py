@@ -7,8 +7,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
-from .observability import measure_time
+from flowgate.core.constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
+from flowgate.core.observability import measure_time
 
 # ── Exceptions ────────────────────────────────────────────────
 

@@ -12,15 +12,15 @@ import sys
 from pathlib import Path
 from typing import Any, TextIO
 
-from ..core.bootstrap import is_executable_file
-from ..core.constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
-from ..core.health import check_http_health, comprehensive_health_check
-from ..core.process import ProcessSupervisor
-from ..core.security import check_secret_file_permissions
-from .base import BaseCommand
-from .error_handler import handle_command_errors
-from .helpers import effective_secret_files, maybe_print_update_notification
-from .output import Output, command_id_from_args
+from flowgate.core.bootstrap import is_executable_file
+from flowgate.core.constants import DEFAULT_READINESS_PATH, DEFAULT_SERVICE_HOST
+from flowgate.core.health import check_http_health, comprehensive_health_check
+from flowgate.core.process import ProcessSupervisor
+from flowgate.core.security import check_secret_file_permissions
+from flowgate.cli.base import BaseCommand
+from flowgate.cli.error_handler import handle_command_errors
+from flowgate.cli.helpers import effective_secret_files, maybe_print_update_notification
+from flowgate.cli.output import Output, command_id_from_args
 
 
 class StatusCommand(BaseCommand):

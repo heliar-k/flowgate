@@ -12,9 +12,9 @@ import logging
 import sys
 from collections.abc import Callable
 
-from ..core.config import ConfigError
-from ..core.process import ProcessError
-from .output import Output, command_id_from_args
+from flowgate.core.config import ConfigError
+from flowgate.core.process import ProcessError
+from flowgate.cli.output import Output, command_id_from_args
 
 logger = logging.getLogger(__name__)
 

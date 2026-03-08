@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 from typing import Any, TextIO
 
-from ..core.config import PathResolver, load_router_config
+from flowgate.core.config import PathResolver, load_router_config
 
 
 def _load_and_resolve_config(path: str) -> dict[str, Any]:
@@ -66,8 +66,8 @@ def maybe_print_update_notification(config: dict[str, Any], *, stdout: TextIO) -
 
     No-ops when stdout is not a TTY or lacks isatty attribute.
     """
-    from ..core.bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
-    from ..core.cliproxyapiplus import (
+    from flowgate.core.bootstrap import DEFAULT_CLIPROXY_REPO, DEFAULT_CLIPROXY_VERSION
+    from flowgate.core.cliproxyapiplus import (
         check_update,
         read_installed_version,
     )

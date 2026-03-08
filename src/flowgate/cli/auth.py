@@ -10,13 +10,13 @@ from __future__ import annotations
 import sys
 from typing import Any, TextIO
 
-from ..core.config import ConfigError
-from ..core.process import ProcessError, ProcessSupervisor
-from ..core.security import check_secret_file_permissions
-from .base import BaseCommand
-from .error_handler import handle_command_errors
-from .helpers import _default_auth_dir, effective_secret_files
-from .output import Output, command_id_from_args
+from flowgate.core.config import ConfigError
+from flowgate.core.process import ProcessError, ProcessSupervisor
+from flowgate.core.security import check_secret_file_permissions
+from flowgate.cli.base import BaseCommand
+from flowgate.cli.error_handler import handle_command_errors
+from flowgate.cli.helpers import _default_auth_dir, effective_secret_files
+from flowgate.cli.output import Output, command_id_from_args
 
 
 def _auth_providers(config: dict[str, Any]) -> dict[str, Any]:
@@ -71,7 +71,7 @@ class AuthListCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth list command."""
         # Import here to avoid circular dependency
-        from ..core.auth import headless_import_handlers
+        from flowgate.core.auth import headless_import_handlers
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -158,7 +158,7 @@ class AuthStatusCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth status command."""
         # Import here to avoid circular dependency
-        from ..core.auth import headless_import_handlers
+        from flowgate.core.auth import headless_import_handlers
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -247,7 +247,7 @@ class AuthLoginCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth login command."""
         # Import here to avoid circular dependency
-        from ..core.auth import fetch_auth_url, poll_auth_status
+        from flowgate.core.auth import fetch_auth_url, poll_auth_status
 
         stdout: TextIO = getattr(self.args, "stdout", None) or sys.stdout
         stderr: TextIO = getattr(self.args, "stderr", None) or sys.stderr
@@ -385,7 +385,7 @@ class AuthImportCommand(BaseCommand):
     def execute(self) -> int:
         """Execute auth import-headless command."""
         # Import here to avoid circular dependency
-        from ..core.auth import (
+        from flowgate.core.auth import (
             get_headless_import_handler,
             headless_import_handlers,
         )

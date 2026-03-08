@@ -13,23 +13,23 @@ import traceback
 from collections.abc import Iterable
 from typing import Any, TextIO
 
-from ..core.config import ConfigError
-from ..core.observability import events_log_context, set_events_log_path
-from .auth import (
+from flowgate.core.config import ConfigError
+from flowgate.core.observability import events_log_context, set_events_log_path
+from flowgate.cli.auth import (
     AuthImportCommand,
     AuthListCommand,
     AuthLoginCommand,
     AuthStatusCommand,
 )
-from .bootstrap import BootstrapDownloadCommand, BootstrapUpdateCommand
-from .error_handler import EXIT_CONFIG_ERROR, EXIT_RUNTIME_ERROR
-from .health import DoctorCommand, HealthCommand, StatusCommand
-from .helpers import (
+from flowgate.cli.bootstrap import BootstrapDownloadCommand, BootstrapUpdateCommand
+from flowgate.cli.error_handler import EXIT_CONFIG_ERROR, EXIT_RUNTIME_ERROR
+from flowgate.cli.health import DoctorCommand, HealthCommand, StatusCommand
+from flowgate.cli.helpers import (
     _load_and_resolve_config,
 )
-from .output import Output
-from .parser import build_parser
-from .service import (
+from flowgate.cli.output import Output
+from flowgate.cli.parser import build_parser
+from flowgate.cli.service import (
     ServiceRestartCommand,
     ServiceStartCommand,
     ServiceStopCommand,

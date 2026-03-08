@@ -10,14 +10,14 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from .bootstrap import (
+from flowgate.core.bootstrap import (
     DEFAULT_CLIPROXY_REPO,
     download_cliproxyapi_plus,
     http_get_json,
     validate_cliproxy_binary,
 )
-from .constants import CLIPROXYAPI_PLUS_SERVICE
-from .process import ProcessSupervisor
+from flowgate.core.constants import CLIPROXYAPI_PLUS_SERVICE
+from flowgate.core.process import ProcessSupervisor
 
 CHECK_CACHE_FILE = "cliproxyapiplus_update_cache.json"
 INSTALLED_VERSION_FILE = "cliproxyapiplus.version"
