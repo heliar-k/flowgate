@@ -32,6 +32,7 @@ auth:
   providers:
     codex: {}
     copilot: {}
+    kiro: {}
 ```
 
 ## CLIProxyAPIPlus config (`cliproxyapi.yaml`)
@@ -78,6 +79,13 @@ For `auth login`, if `auth_url_endpoint` / `status_endpoint` are missing, FlowGa
 - Copilot:
   - `http://<host>:<port>/v0/management/oauth/github-copilot/auth-url`
   - `http://<host>:<port>/v0/management/oauth/github-copilot/status`
+
+Kiro is supported too, but FlowGate does not derive its endpoints automatically.
+Configure them explicitly:
+
+- Kiro:
+  - `http://<host>:<port>/v0/management/kiro-auth-url`
+  - `http://<host>:<port>/v0/management/get-auth-status?provider=kiro`
 
 ## Path Resolution
 

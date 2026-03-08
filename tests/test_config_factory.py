@@ -76,11 +76,12 @@ class TestConfigFactory(unittest.TestCase):
         self.assertIn("/v0/management/oauth/codex/status", provider["status_endpoint"])
 
     def test_with_auth_creates_auth_providers(self):
-        config = ConfigFactory.with_auth(["codex", "copilot"])
+        config = ConfigFactory.with_auth(["codex", "copilot", "kiro"])
         providers = config["auth"]["providers"]
 
         self.assertIn("codex", providers)
         self.assertIn("copilot", providers)
+        self.assertIn("kiro", providers)
         self.assertIn("auth_url_endpoint", providers["codex"])
         self.assertIn("status_endpoint", providers["codex"])
 

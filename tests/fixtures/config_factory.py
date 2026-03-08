@@ -105,9 +105,16 @@ class ConfigFactory:
         provider_path_map = {
             "codex": "codex",
             "copilot": "github-copilot",
+            "kiro": "kiro",
         }
         provider_path = provider_path_map.get(provider_name, provider_name)
         base_url = f"http://{host}:{port}"
+        if provider_name == "kiro":
+            return {
+                "method": method,
+                "auth_url_endpoint": f"{base_url}/v0/management/kiro-auth-url",
+                "status_endpoint": f"{base_url}/v0/management/get-auth-status?provider=kiro",
+            }
         return {
             "method": method,
             "auth_url_endpoint": f"{base_url}/v0/management/oauth/{provider_path}/auth-url",
@@ -123,7 +130,7 @@ class ConfigFactory:
     ) -> dict[str, Any]:
         """Create minimal config + auth.providers entries."""
         if providers is None:
-            providers = ["codex", "copilot"]
+            providers = ["codex", "copilot", "kiro"]
 
         config = ConfigFactory.minimal()
         config["auth"] = {"providers": {}}

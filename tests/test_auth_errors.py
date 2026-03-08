@@ -4,7 +4,9 @@ This module tests error handling in oauth.py and headless_import.py,
 ensuring proper exception handling for OAuth flows and headless imports.
 """
 
+import base64
 import json
+import os
 import tempfile
 import time
 import unittest
@@ -17,6 +19,7 @@ import pytest
 from flowgate.core.auth import (
     fetch_auth_url,
     import_codex_headless_auth,
+    import_kiro_headless_auth,
     poll_auth_status,
 )
 
@@ -468,6 +471,152 @@ class TestHeadlessImportErrorHandling(unittest.TestCase):
         self.assertEqual(output_data["refresh_token"], "refresh123")
         self.assertEqual(output_data["id_token"], "")
         self.assertEqual(output_data["account_id"], "")
+
+
+@pytest.mark.unit
+class TestKiroHeadlessImport(unittest.TestCase):
+    """Test Kiro headless import scanning and normalization."""
+
+    def setUp(self) -> None:
+        self.home = Path(tempfile.mkdtemp())
+        self.dest_dir = Path(tempfile.mkdtemp())
+
+    def _jwt_with_email(self, email: str) -> str:
+        payload = base64.urlsafe_b64encode(
+            json.dumps({"email": email}).encode("utf-8")
+        ).decode("ascii")
+        payload = payload.rstrip("=")
+        return f"header.{payload}.signature"
+
+    def _write_kiro_token(
+        self,
+        path: Path,
+        *,
+        access_token: str | None = None,
+        refresh_token: str = "refresh-token",
+        provider: str = "Google",
+        email: str = "",
+    ) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "accessToken": access_token or self._jwt_with_email("kiro@example.com"),
+            "refreshToken": refresh_token,
+            "expiresAt": "2030-01-01T00:00:00Z",
+            "profileArn": "arn:aws:codewhisperer:us-east-1:123456789012:profile/test-profile",
+            "authMethod": "social",
+            "provider": provider,
+            "clientId": "client-id",
+            "clientSecret": "client-secret",
+            "clientIdHash": "client-hash",
+            "email": email,
+            "startUrl": "https://example.awsapps.com/start",
+            "region": "us-east-1",
+        }
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    def test_import_kiro_source_file_not_found(self):
+        with self.assertRaises(FileNotFoundError) as ctx:
+            import_kiro_headless_auth("/non/existent/kiro.json", self.dest_dir)
+        self.assertIn("Source auth file not found", str(ctx.exception))
+
+    def test_import_kiro_scans_primary_known_location(self):
+        source = self._write_kiro_token(self.home / ".kiro" / "kiro-auth-token.json")
+
+        with mock.patch.dict(os.environ, {"HOME": str(self.home)}):
+            output_path = import_kiro_headless_auth("", self.dest_dir)
+
+        self.assertTrue(output_path.exists())
+        self.assertEqual(output_path.name, "kiro-google-kiro-example-com.json")
+        output_data = json.loads(output_path.read_text(encoding="utf-8"))
+        self.assertEqual(output_data["access_token"], json.loads(source.read_text())["accessToken"])
+        self.assertEqual(output_data["refresh_token"], "refresh-token")
+        self.assertEqual(output_data["provider"], "Google")
+        self.assertEqual(output_data["email"], "kiro@example.com")
+
+    def test_import_kiro_scans_fallback_location(self):
+        self._write_kiro_token(self.home / ".aws" / "sso" / "cache" / "kiro-auth-token.json")
+
+        with mock.patch.dict(os.environ, {"HOME": str(self.home)}):
+            output_path = import_kiro_headless_auth("", self.dest_dir)
+
+        self.assertTrue(output_path.exists())
+        self.assertEqual(output_path.name, "kiro-google-kiro-example-com.json")
+
+    def test_import_kiro_uses_explicit_source_before_scan(self):
+        explicit = self._write_kiro_token(
+            self.home / "explicit.json",
+            provider="Enterprise",
+            email="explicit@example.com",
+        )
+        self._write_kiro_token(self.home / ".kiro" / "kiro-auth-token.json")
+
+        with mock.patch.dict(os.environ, {"HOME": str(self.home)}):
+            output_path = import_kiro_headless_auth(str(explicit), self.dest_dir)
+
+        self.assertEqual(output_path.name, "kiro-enterprise-explicit-example-com.json")
+
+    def test_import_kiro_reports_scanned_locations_when_not_found(self):
+        with mock.patch.dict(os.environ, {"HOME": str(self.home)}):
+            with self.assertRaises(FileNotFoundError) as ctx:
+                import_kiro_headless_auth("", self.dest_dir)
+
+        message = str(ctx.exception)
+        self.assertIn("Kiro IDE token file not found", message)
+        self.assertIn(str((self.home / ".kiro" / "kiro-auth-token.json").resolve()), message)
+        self.assertIn(
+            str((self.home / ".aws" / "sso" / "cache" / "kiro-auth-token.json").resolve()),
+            message,
+        )
+
+    def test_import_kiro_missing_access_token(self):
+        source = self.home / ".kiro" / "kiro-auth-token.json"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(
+            json.dumps({"refreshToken": "refresh-token", "expiresAt": "2030-01-01T00:00:00Z"}),
+            encoding="utf-8",
+        )
+
+        with self.assertRaises(ValueError) as ctx:
+            import_kiro_headless_auth(str(source), self.dest_dir)
+        self.assertIn("Headless auth file missing accessToken", str(ctx.exception))
+
+    def test_import_kiro_missing_refresh_token(self):
+        source = self.home / ".kiro" / "kiro-auth-token.json"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(
+            json.dumps(
+                {
+                    "accessToken": self._jwt_with_email("kiro@example.com"),
+                    "expiresAt": "2030-01-01T00:00:00Z",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        with self.assertRaises(ValueError) as ctx:
+            import_kiro_headless_auth(str(source), self.dest_dir)
+        self.assertIn("Headless auth file missing refreshToken", str(ctx.exception))
+
+    def test_import_kiro_extracts_email_from_jwt(self):
+        source = self._write_kiro_token(
+            self.home / ".kiro" / "kiro-auth-token.json",
+            email="",
+            access_token=self._jwt_with_email("derived@example.com"),
+        )
+
+        output_path = import_kiro_headless_auth(str(source), self.dest_dir)
+
+        output_data = json.loads(output_path.read_text(encoding="utf-8"))
+        self.assertEqual(output_data["email"], "derived@example.com")
+        self.assertEqual(output_path.name, "kiro-google-derived-example-com.json")
+
+    def test_import_kiro_output_permissions(self):
+        source = self._write_kiro_token(self.home / ".kiro" / "kiro-auth-token.json")
+
+        output_path = import_kiro_headless_auth(str(source), self.dest_dir)
+
+        self.assertEqual(output_path.stat().st_mode & 0o777, 0o600)
 
 
 if __name__ == "__main__":

@@ -104,8 +104,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     import_headless_any.add_argument(
         "--source",
-        default="~/.codex/auth.json",
-        help="Source auth file path (default: ~/.codex/auth.json)",
+        default="",
+        help="Source auth file path (optional; defaults vary by provider)",
     )
     import_headless_any.add_argument(
         "--dest-dir", default="", help="Destination directory for imported credentials"

@@ -48,7 +48,9 @@ In `config_version: 3`, FlowGate only manages a single service: `cliproxyapi_plu
 - `flowgate auth login <provider> [--timeout <sec>] [--poll-interval <sec>]`
   - Fetches `login_url=...` then polls the provider status endpoint until success/failure/timeout.
 - `flowgate auth import-headless <provider> [--source <path>] [--dest-dir <path>]`
-  - Imports headless auth artifacts (currently: `codex`) and writes them under the auth directory.
+  - Imports headless auth artifacts and writes them under the auth directory.
+  - Supported headless providers currently include `codex` and `kiro`.
+  - For `kiro`, omitting `--source` triggers a scan of known Kiro IDE token locations.
 
 ### `bootstrap`
 

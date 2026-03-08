@@ -551,6 +551,26 @@ class CLITests(unittest.TestCase):
         supervisor = supervisor_cls.return_value
         supervisor.record_event.assert_called_once()
 
+    def test_auth_import_headless_without_source_passes_empty_string(self):
+        out = io.StringIO()
+        handler = mock.Mock(return_value=Path("/tmp/auths/kiro-google-user.json"))
+        with mock.patch(
+            "flowgate.core.auth.get_headless_import_handler", return_value=handler
+        ) as resolver:
+            code = run_cli(
+                [
+                    "--config",
+                    str(self.cfg),
+                    "auth",
+                    "import-headless",
+                    "kiro",
+                ],
+                stdout=out,
+            )
+        self.assertEqual(code, 0)
+        resolver.assert_called_once_with("kiro")
+        handler.assert_called_once_with("", str((self.root / "auths").resolve()))
+
     def test_auth_login_generic_command_unknown_provider(self):
         out = io.StringIO()
         err = io.StringIO()

@@ -28,6 +28,29 @@ If you already have a Codex auth JSON:
 uv run flowgate --config config/flowgate.yaml auth import-headless codex --source ~/.codex/auth.json
 ```
 
+## Headless import (Kiro)
+
+If you already logged into Kiro IDE, FlowGate can scan the known Kiro token locations for you:
+
+```bash
+uv run flowgate --config config/flowgate.yaml auth import-headless kiro
+```
+
+Known scan locations:
+
+- `~/.kiro/kiro-auth-token.json`
+- `~/.aws/sso/cache/kiro-auth-token.json`
+
+You can still override the scan and import from a specific file:
+
+```bash
+uv run flowgate --config config/flowgate.yaml auth import-headless kiro --source /path/to/kiro-auth-token.json
+```
+
+## OAuth login (Kiro)
+
+`flowgate auth login kiro` reuses the generic OAuth login flow, but Kiro endpoints must be configured explicitly in `auth.providers.kiro`.
+
 ## Check auth status and file permissions
 
 ```bash

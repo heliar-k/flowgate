@@ -60,6 +60,11 @@ def write_minimal_v3_config(root: Path) -> Path:
                             "auth_url_endpoint": "http://example.local/copilot/auth-url",
                             "status_endpoint": "http://example.local/copilot/status",
                         },
+                        "kiro": {
+                            "method": "oauth_poll",
+                            "auth_url_endpoint": "http://example.local/kiro/auth-url",
+                            "status_endpoint": "http://example.local/kiro/status",
+                        },
                     }
                 },
                 "secret_files": [],
@@ -255,6 +260,7 @@ class TestAuthCommandOutput(unittest.TestCase):
         self.assertIn(
             "provider=copilot", output, "Output should include copilot provider"
         )
+        self.assertIn("provider=kiro", output, "Output should include kiro provider")
 
         # Verify output contains capability information
         self.assertIn(
@@ -320,6 +326,24 @@ class TestAuthCommandOutput(unittest.TestCase):
         )
         self.assertIn("oauth_status=", output, "Output should include oauth_status")
 
+    def test_auth_login_kiro_uses_explicit_endpoints(self) -> None:
+        """auth login kiro uses configured endpoints without derivation"""
+        out = io.StringIO()
+        with (
+            mock.patch(
+                "flowgate.core.auth.fetch_auth_url",
+                return_value="https://example.com/kiro-login",
+            ) as fetch_mock,
+            mock.patch("flowgate.core.auth.poll_auth_status", return_value="success"),
+        ):
+            result = run_cli(
+                ["--config", str(self.cfg), "auth", "login", "kiro", "--timeout", "5"],
+                stdout=out,
+            )
+        self.assertEqual(result, 0)
+        fetch_mock.assert_called_once_with("http://example.local/kiro/auth-url", timeout=5)
+        self.assertIn("https://example.com/kiro-login", out.getvalue())
+
     def test_auth_import_headless_success_output_format(self) -> None:
         """auth import-headless success output includes saved_auth path"""
         valid_auth_path = self.root / "valid_auth.json"
@@ -354,6 +378,27 @@ class TestAuthCommandOutput(unittest.TestCase):
             output,
             "Output should include actual save path",
         )
+
+    def test_auth_import_headless_kiro_without_source_uses_scan_mode(self) -> None:
+        """auth import-headless kiro works without explicit --source"""
+        out = io.StringIO()
+        handler = mock.Mock(return_value=Path("/tmp/auths/kiro-google-user.json"))
+        with mock.patch(
+            "flowgate.core.auth.get_headless_import_handler", return_value=handler
+        ):
+            result = run_cli(
+                [
+                    "--config",
+                    str(self.cfg),
+                    "auth",
+                    "import-headless",
+                    "kiro",
+                ],
+                stdout=out,
+            )
+        self.assertEqual(result, 0)
+        handler.assert_called_once_with("", str((self.root / "auths").resolve()))
+        self.assertIn("/tmp/auths/kiro-google-user.json", out.getvalue())
 
     def test_auth_login_error_output_contains_hint(self) -> None:
         """auth login error output includes debugging hint"""
