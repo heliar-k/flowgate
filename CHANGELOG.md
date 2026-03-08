@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-03-08
+
+**Patch Release**: Kiro authentication support
+
+This release adds Kiro as a first-class auth provider in FlowGate, including scan-based Kiro IDE import and documented login configuration.
+
+### Added
+
+- **Kiro Headless Import**: Added `flowgate auth import-headless kiro` support for importing Kiro IDE credentials without manually locating the token file.
+  - Scans the known Kiro token locations automatically
+  - Supports explicit `--source` overrides when needed
+  - Writes CLIProxyAPIPlus-compatible Kiro auth metadata with secure file permissions
+
+### Changed
+
+- **Auth Provider Coverage**: `auth list` and `auth status` now report Kiro capabilities alongside Codex and Copilot.
+- **CLI Import Defaults**: `auth import-headless` no longer hardcodes a Codex-only default source path, allowing provider-specific discovery logic.
+- **Examples and Docs**: Updated FlowGate examples and auth/configuration docs to show Kiro login and import behavior.
+
+### Technical Details
+
+- Added scan-based Kiro token discovery for `~/.kiro/kiro-auth-token.json` and `~/.aws/sso/cache/kiro-auth-token.json`
+- Added Kiro auth normalization for CLIProxyAPIPlus-compatible metadata payloads and filenames
+- Added unit and CLI regression coverage for Kiro import, provider reporting, and explicit login endpoints
+
+### Git History
+
+This release includes 1 commit since v0.5.2:
+
+- Kiro auth support: 2c7bb94
+
+Tags: `v0.5.3`
+
 ## [0.5.2] - 2026-03-08
 
 **Patch Release**: Absolute import consistency and regression guardrails
